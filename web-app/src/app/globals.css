@@ -1,0 +1,17 @@
+/**
+ * Global CSS styles for Course Companion FTE.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+}
+
+@layer components {
+  /* Custom component styles */
+}

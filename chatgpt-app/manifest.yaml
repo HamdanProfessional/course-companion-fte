@@ -1,0 +1,235 @@
+# ChatGPT App Manifest for Course Companion FTE
+# Zero-Backend-LLM Architecture: All AI intelligence happens in ChatGPT
+
+name: Course Companion FTE
+description: |
+  Your AI-powered tutor for mastering AI Agent Development.
+  Get personalized explanations, take quizzes, track progress, and learn 24/7.
+
+  Features:
+  - Personalized concept explanations at your level
+  - Interactive quizzes with immediate feedback
+  - Progress tracking and streak gamification
+  - Socratic tutoring for problem-solving
+
+  Free tier includes first 3 chapters. Premium unlocks all content.
+
+version: 1.0.0
+author: Course Companion FTE Team
+
+# ============================================================================
+# Backend API Integration (Tools)
+# ============================================================================
+# Note: In ChatGPT App, these would be configured as HTTP tools that call
+# the backend API endpoints. The actual tool definitions are provided as
+# guidance for the Course Companion FTE agent.
+
+tools:
+  - name: content_api
+    description: Retrieve course content, chapters, and sections
+    type: http
+    endpoint: ${BACKEND_URL}/api/v1
+    endpoints:
+      - path: /chapters
+        method: GET
+        description: List all chapters
+      - path: /chapters/{chapter_id}
+        method: GET
+        description: Get chapter content
+      - path: /chapters/{chapter_id}/next
+        method: GET
+        description: Get next chapter
+      - path: /chapters/{chapter_id}/previous
+        method: GET
+        description: Get previous chapter
+      - path: /search
+        method: GET
+        description: Search course content
+
+  - name: quiz_api
+    description: Get quizzes, submit answers, view results
+    type: http
+    endpoint: ${BACKEND_URL}/api/v1
+    endpoints:
+      - path: /quizzes
+        method: GET
+        description: List all quizzes
+      - path: /quizzes/{quiz_id}
+        method: GET
+        description: Get quiz with questions
+      - path: /quizzes/{quiz_id}/submit
+        method: POST
+        description: Submit quiz answers for grading
+      - path: /quizzes/{quiz_id}/results
+        method: GET
+        description: Get quiz attempt history
+
+  - name: progress_api
+    description: Track learning progress and streaks
+    type: http
+    endpoint: ${BACKEND_URL}/api/v1
+    endpoints:
+      - path: /progress/{user_id}
+        method: GET
+        description: Get user progress
+      - path: /progress/{user_id}
+        method: PUT
+        description: Update progress (mark chapter complete)
+      - path: /streaks/{user_id}
+        method: GET
+        description: Get streak information
+      - path: /streaks/{user_id}/checkin
+        method: POST
+        description: Record daily activity
+
+  - name: access_api
+    description: Check and manage user access tiers
+    type: http
+    endpoint: ${BACKEND_URL}/api/v1
+    endpoints:
+      - path: /access/check
+        method: POST
+        description: Check access to resource
+      - path: /user/{user_id}/tier
+        method: GET
+        description: Get user subscription tier
+      - path: /access/upgrade
+        method: POST
+        description: Upgrade user to premium
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+env:
+  BACKEND_URL: "https://your-backend.fly.dev"  # Replace with deployed backend URL
+  DEFAULT_USER_ID: "00000000-0000-0000-0000-000000000000"  # For anonymous users
+
+# ============================================================================
+# Educational Skills (Loaded from .claude/skills/)
+# ============================================================================
+
+skills:
+  - concept-explainer
+  - quiz-master
+  - socratic-tutor
+  - progress-motivator
+
+# ============================================================================
+# Pricing and Access Tiers
+# ============================================================================
+
+pricing:
+  type: freemium
+
+  free_tier:
+    - "First 3 chapters of course content"
+    - "Basic quizzes for free chapters"
+    - "Progress tracking"
+    - "Streak gamification"
+    - "Concept explanations"
+
+  premium_tier:
+    - "All course chapters (unlimited access)"
+    - "Advanced quizzes with detailed feedback"
+    - "Priority support"
+    - "Certificates of completion"
+
+# ============================================================================
+# Course Information
+# ============================================================================
+
+course:
+  name: AI Agent Development
+  description: Learn to build AI agents using Claude, MCP, and the Agent Factory
+  total_chapters: 10
+  estimated_duration: "5-7 hours"
+  difficulty: "Beginner to Intermediate"
+
+# ============================================================================
+# Agent Configuration
+# ============================================================================
+
+agent:
+  name: course-companion-fte
+  role: Educational Tutor
+  instructions: |
+    You are the Course Companion FTE, a digital full-time equivalent tutor.
+    Your mission is to help students master AI Agent Development through
+    personalized, conversational learning.
+
+    Core Principles:
+    1. Zero-LLM Backend: All AI intelligence happens here in ChatGPT.
+       The backend serves content verbatim only.
+    2. Intent Detection: Detect what the student needs (explain, quiz, help, progress).
+    3. Skill Loading: Load appropriate educational skill for the task.
+    4. Backend Integration: Fetch content from backend when needed.
+
+    Intent Detection Priority:
+    1. Quiz - "quiz me", "test me", "practice"
+    2. Explain - "explain", "what is", "how does"
+    3. Socratic - "stuck", "help me think", "give me a hint"
+    4. Progress - "progress", "streak", "how am I doing"
+    5. General - Fallback to helpful tutoring
+
+    Always maintain a supportive, encouraging tone. Celebrate student
+    achievements and provide constructive feedback.
+
+# ============================================================================
+# Conversation Examples (for ChatGPT App Store listing)
+# ============================================================================
+
+examples:
+  - user: "Explain what MCP is"
+    assistant: |
+      MCP (Model Context Protocol) is like a universal USB cable for AI apps.
+      It lets AI models connect to external data sources and tools in a standardized way.
+
+      Think of it this way:
+      - Before MCP: Every AI app needed custom integrations
+      - With MCP: Universal compatibility between AI and data/tools
+
+      Would you like me to show you how to build an MCP server?
+
+  - user: "Quiz me on MCP"
+    assistant: |
+      Great! Let's test your knowledge of MCP with a quick quiz.
+
+      **Question 1:** What does MCP stand for?
+      A) Model Control Program
+      B) Model Context Protocol
+      C) Machine Learning Protocol
+      D) Multi-Cloud Platform
+
+      Type your answer (A, B, C, or D)!
+
+  - user: "How am I doing?"
+    assistant: |
+      Let me check your progress...
+
+      Great job! Here's your learning journey:
+      - Chapters completed: 2/10 (20%)
+      - Current streak: 3 days
+      - Quizzes passed: 2/2
+      - Last activity: Today
+
+      You're making excellent progress! Keep up the momentum!
+
+# ============================================================================
+# Error Handling
+# ============================================================================
+
+error_handling:
+  backend_unavailable: |
+    I'm having trouble connecting to the course backend right now.
+    Let me help you with what I know, and we can try again in a moment.
+
+  access_denied: |
+    This content is part of our premium tier.
+    Upgrade to unlock all 10 chapters, advanced quizzes, and certificates!
+
+  not_found: |
+    I couldn't find that content. Let me help you find what you're looking for.
+
+  timeout: |
+    The request is taking longer than expected. Let's try that again.
