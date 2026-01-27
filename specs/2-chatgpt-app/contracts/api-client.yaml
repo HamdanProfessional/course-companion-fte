@@ -1,0 +1,288 @@
+openapi: 3.0.0
+info:
+  title: Course Companion FTE - ChatGPT App API Client
+  version: 1.0.0
+  description: API client specification for ChatGPT App backend integration
+
+servers:
+  - url: ${BACKEND_URL}/api/v1
+    description: Backend API base URL (from environment variables)
+
+paths:
+  /chapters:
+    get:
+      summary: List all chapters
+      operationId: listChapters
+      tags: [Content]
+      description: Retrieves list of all chapters for course navigation
+      responses:
+        '200':
+          description: List of chapters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chapter'
+
+  /chapters/{chapter_id}:
+    get:
+      summary: Get chapter content
+      operationId: getChapter
+      tags: [Content]
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterDetail'
+        '404':
+          description: Chapter not found
+
+  /quizzes/{quiz_id}:
+    get:
+      summary: Get quiz
+      operationId: getQuiz
+      tags: [Quiz]
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quiz with questions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+
+  /quizzes/{quiz_id}/submit:
+    post:
+      summary: Submit quiz
+      operationId: submitQuiz
+      tags: [Quiz]
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  example:
+                    q1: "A"
+                    q2: "C"
+                    q3: "B"
+      responses:
+        '200':
+          description: Quiz results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizResult'
+
+  /progress/{user_id}:
+    get:
+      summary: Get progress
+      operationId: getProgress
+      tags: [Progress]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Progress data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Progress'
+
+  /streaks/{user_id}:
+    get:
+      summary: Get streak
+      operationId: getStreak
+      tags: [Progress]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Streak data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Streak'
+
+  /access/check:
+    post:
+      summary: Check access rights
+      operationId: checkAccess
+      tags: [Access]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, resource]
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                resource:
+                  type: string
+                  example: "chapter-4"
+      responses:
+        '200':
+          description: Access check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessResponse'
+        '403':
+          description: Access denied
+
+components:
+  schemas:
+    Chapter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        order:
+          type: integer
+        difficulty_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        estimated_time:
+          type: integer
+
+    ChapterDetail:
+      allOf:
+        - $ref: '#/components/schemas/Chapter'
+        - type: object
+          properties:
+            content:
+              type: string
+              description: Full markdown content
+            quiz_id:
+              type: string
+              format: uuid
+
+    Quiz:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question_text:
+          type: string
+        options:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            A: "Option A"
+            B: "Option B"
+            C: "Option C"
+            D: "Option D"
+
+    QuizResult:
+      type: object
+      properties:
+        score:
+          type: integer
+          description: Score percentage (0-100)
+        passed:
+          type: boolean
+        feedback:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            type: string
+
+    Progress:
+      type: object
+      properties:
+        completed_chapters:
+          type: array
+          items:
+            type: string
+            format: uuid
+        current_chapter_id:
+          type: string
+          format: uuid
+          nullable: true
+        last_activity:
+          type: string
+          format: date-time
+
+    Streak:
+      type: object
+      properties:
+        current_streak:
+          type: integer
+        longest_streak:
+          type: integer
+        last_checkin:
+          type: string
+          format: date
+          nullable: true
+
+    AccessResponse:
+      type: object
+      properties:
+        has_access:
+          type: boolean
+        tier:
+          type: string
+          enum: [free, premium, pro]
+        reason:
+          type: string
+          nullable: true

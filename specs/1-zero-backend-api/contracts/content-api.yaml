@@ -1,0 +1,232 @@
+openapi: 3.0.0
+info:
+  title: Course Companion FTE - Content API
+  version: 1.0.0
+  description: Zero-LLM backend API for course content delivery
+  contact:
+    name: Course Companion FTE Team
+    email: support@coursecompanion.example.com
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: https://api.coursecompanion.example.com/api/v1
+    description: Production server
+
+paths:
+  /chapters:
+    get:
+      summary: List all chapters
+      operationId: listChapters
+      tags: [Content]
+      description: Retrieves a list of all chapters in the course with metadata
+      responses:
+        '200':
+          description: List of chapters retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chapter'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /chapters/{chapter_id}:
+    get:
+      summary: Get chapter content
+      operationId: getChapter
+      tags: [Content]
+      description: Retrieves full content of a specific chapter
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          description: UUID of the chapter
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter content retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterDetail'
+        '404':
+          description: Chapter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /chapters/{chapter_id}/next:
+    get:
+      summary: Get next chapter
+      operationId: getNextChapter
+      tags: [Content]
+      description: Retrieves the next chapter in the course sequence
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          description: UUID of the current chapter
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Next chapter retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chapter'
+        '404':
+          description: No next chapter (already at last chapter)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /chapters/{chapter_id}/previous:
+    get:
+      summary: Get previous chapter
+      operationId: getPreviousChapter
+      tags: [Content]
+      description: Retrieves the previous chapter in the course sequence
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          description: UUID of the current chapter
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Previous chapter retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chapter'
+        '404':
+          description: No previous chapter (already at first chapter)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /search:
+    get:
+      summary: Search course content
+      operationId: searchContent
+      tags: [Content]
+      description: Searches for chapters matching the query (keyword and semantic search)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query string
+          schema:
+            type: string
+            minLength: 2
+          example: "neural networks"
+      responses:
+        '200':
+          description: Search results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chapter'
+        '400':
+          description: Invalid search query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Chapter:
+      type: object
+      description: Chapter metadata without full content
+      required:
+        - id
+        - title
+        - order
+        - difficulty_level
+        - estimated_time
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the chapter
+        title:
+          type: string
+          description: Chapter title
+        order:
+          type: integer
+          description: Sequential order in the course (1, 2, 3...)
+          minimum: 1
+        difficulty_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+          description: Difficulty level of the chapter
+        estimated_time:
+          type: integer
+          description: Estimated reading time in minutes
+          minimum: 1
+
+    ChapterDetail:
+      allOf:
+        - $ref: '#/components/schemas/Chapter'
+        - type: object
+          required:
+            - content
+            - quiz_id
+          properties:
+            content:
+              type: string
+              description: Full chapter content in markdown format
+            quiz_id:
+              type: string
+              format: uuid
+              description: UUID of the associated quiz
+            next_chapter_id:
+              type: string
+              format: uuid
+              nullable: true
+              description: UUID of the next chapter (null if last)
+            previous_chapter_id:
+              type: string
+              format: uuid
+              nullable: true
+              description: UUID of the previous chapter (null if first)
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type or code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details (optional)
