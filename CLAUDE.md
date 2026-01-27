@@ -155,7 +155,7 @@ Specialized agents for building the Course Companion FTE application. These are 
 
 # Part 3: Spec-Driven Development (SDD)
 
-You are an expert AI assistant specializing in Spec-Driven Development (SDD). Your primary goal is to work with the architect to build products.
+You are an expert AI assistant specializing in Spec-Driven Development (SDD). Your primary goal is to work with the architect to build products using the `.claude/commands/` workflow.
 
 ## Task Context
 
@@ -209,6 +209,76 @@ You MUST invoke the user for input when encountering situations that require hum
 - **Cite existing code** with code references (start:end:path)
 - **Keep reasoning private** - Output only decisions, artifacts, and justifications
 
+## Available SDD Commands
+
+Located in `.claude/commands/`:
+
+| Command | Purpose | Usage |
+|---------|---------|-------|
+| `/sp.specify` | Create feature specification from natural language | `/sp.specify <feature description>` |
+| `/sp.plan` | Generate implementation plan with research & design | `/sp.plan` |
+| `/sp.tasks` | Break down plan into testable tasks | `/sp.tasks` |
+| `/sp.clarify` | Ask targeted questions to resolve spec ambiguities | `/sp.clarify` |
+| `/sp.analyze` | Analyze cross-artifact consistency | `/sp.analyze` |
+| `/sp.checklist` | Generate quality checklists | `/sp.checklist` |
+| `/sp.constitution` | Create/update project constitution | `/sp.constitution` |
+| `/sp.adr` | Document architectural decisions | `/sp.adr <title>` |
+| `/sp.phr` | Create prompt history record | `/sp.phr` |
+| `/sp.implement` | Execute implementation tasks | `/sp.implement` |
+| `/sp.git.commit_pr` | Git workflow automation | `/sp.git.commit_pr` |
+
+## Current Project Specs
+
+Located in `specs/` directory:
+
+### Feature 1: Zero-Backend-LLM Backend API
+**Spec:** `specs/1-zero-backend-api/spec.md`
+- 4 user stories: Content Delivery, Quizzes, Progress Tracking, Access Control
+- 28 functional requirements
+- 83 implementation tasks
+
+**Artifacts:**
+- `plan.md` - Technical decisions (FastAPI, PostgreSQL, R2)
+- `tasks.md` - Implementation task breakdown
+- `research.md` - Technical research and decisions
+- `data-model.md` - Database schema and entities
+- `quickstart.md` - Development setup guide
+- `contracts/content-api.yaml` - OpenAPI specification
+- `checklists/requirements.md` - Quality checklist
+
+### Feature 2: ChatGPT App
+**Spec:** `specs/2-chatgpt-app/spec.md`
+- 4 user stories: Conversational Learning, Backend Integration, Skill Loading, Error Handling
+- 35 functional requirements
+- 68 implementation tasks
+
+**Artifacts:**
+- `plan.md` - Technical decisions (OpenAI Apps SDK, intent detection)
+- `tasks.md` - Implementation task breakdown
+- `research.md` - Technical research and decisions
+- `agent-context.md` - Course Companion FTE agent definition
+- `quickstart.md` - ChatGPT App setup guide
+- `contracts/api-client.yaml` - API client specification
+
+### Feature 3: Web Application
+**Spec:** `specs/3-web-app/spec.md`
+- 4 user stories: LMS Dashboard, Quiz Interface, Progress Visualization, Student Profile
+- 47 functional requirements
+- 167 implementation tasks
+
+**Artifacts:**
+- `plan.md` - Technical decisions (Next.js 14, React Query, Tailwind)
+- `tasks.md` - Implementation task breakdown
+- `research.md` - Technical research and decisions
+- `data-model.md` - Frontend state management
+- `quickstart.md` - Next.js development setup guide
+- `contracts/api-integration.yaml` - Frontend API integration spec
+
+### Verification
+- `specs/REQUIREMENTS_VERIFICATION.md` - Complete requirements coverage report
+
+**Total:** 3 features, 110 functional requirements, 318 implementation tasks, 24 SDD artifacts
+
 ---
 
 # Part 4: Project Structure
@@ -227,20 +297,102 @@ You MUST invoke the user for input when encountering situations that require hum
 │   ├── socratic-tutor/SKILL.md     # Guide through questioning
 │   └── progress-motivator/SKILL.md # Track progress & motivate
 └── commands/
-    └── sp.*.md                     # Spec-driven development commands
+    ├── sp.specify.md               # Create feature specification
+    ├── sp.plan.md                 # Generate implementation plan
+    ├── sp.tasks.md                # Break down into tasks
+    ├── sp.clarify.md              # Resolve spec ambiguities
+    ├── sp.analyze.md              # Analyze consistency
+    ├── sp.checklist.md            # Generate checklists
+    ├── sp.constitution.md         # Project constitution
+    ├── sp.adr.md                  # Architectural decisions
+    ├── sp.phr.md                  # Prompt history records
+    ├── sp.implement.md            # Execute implementation
+    └── sp.git.commit_pr.md        # Git automation
 
 .specify/
-├── memory/constitution.md          # Project principles
+├── memory/
+│   └── constitution.md            # Project principles (6 core principles)
 ├── templates/                      # SpecKit Plus templates
 └── scripts/                        # Helper scripts
 
 specs/
-├── <feature>/spec.md               # Feature requirements
-├── <feature>/plan.md               # Architecture decisions
-└── <feature>/tasks.md              # Testable tasks
+├── 1-zero-backend-api/             # Feature: Zero-Backend-LLM Backend API
+│   ├── spec.md                    # Feature specification (157 lines)
+│   ├── plan.md                    # Implementation plan (564 lines)
+│   ├── tasks.md                   # 83 implementation tasks
+│   ├── research.md                # Technical research & decisions
+│   ├── data-model.md              # Database schema (8 entities)
+│   ├── quickstart.md              # Development setup guide
+│   ├── contracts/
+│   │   └── content-api.yaml      # OpenAPI specification
+│   └── checklists/
+│       └── requirements.md        # Quality checklist
+│
+├── 2-chatgpt-app/                 # Feature: ChatGPT App
+│   ├── spec.md                    # Feature specification (184 lines)
+│   ├── plan.md                    # Implementation plan (398 lines)
+│   ├── tasks.md                   # 68 implementation tasks
+│   ├── research.md                # Technical research & decisions
+│   ├── agent-context.md           # Course Companion FTE agent definition
+│   ├── quickstart.md              # ChatGPT App setup guide
+│   └── contracts/
+│       └── api-client.yaml        # API client specification
+│
+├── 3-web-app/                     # Feature: Web Application
+│   ├── spec.md                    # Feature specification (200 lines)
+│   ├── plan.md                    # Implementation plan
+│   ├── tasks.md                   # 167 implementation tasks
+│   ├── research.md                # Technical research & decisions
+│   ├── data-model.md              # Frontend state management
+│   ├── quickstart.md              # Next.js development setup
+│   └── contracts/
+│       └── api-integration.yaml   # Frontend API integration spec
+│
+└── REQUIREMENTS_VERIFICATION.md    # Complete coverage report
+
+backend/                              # Feature 1: Zero-Backend-LLM API
+├── src/
+│   ├── api/                        # FastAPI endpoints
+│   ├── models/                     # SQLAlchemy models + Pydantic schemas
+│   ├── services/                   # Business logic
+│   ├── storage/                    # Cloudflare R2 integration
+│   └── core/                       # Config, security, database
+├── tests/                          # Contract, integration, unit tests
+├── requirements.txt
+├── Dockerfile
+└── fly.toml                        # Fly.io deployment config
+
+chatgpt-app/                          # Feature 2: ChatGPT App
+├── manifest.yaml                   # ChatGPT App definition
+├── api/
+│   ├── backend_client.py/ts        # Backend API integration
+│   └── types.ts                    # TypeScript interfaces
+└── lib/
+    ├── intent-detector.py/ts       # Intent detection logic
+    └── skill-loader.py/ts          # Dynamic skill loading
+
+web-app/                              # Feature 3: Web Application
+├── src/app/                        # Next.js 14 App Router
+│   ├── (auth)/                     # Login, registration
+│   ├── (dashboard)/                # Protected routes
+│   │   ├── dashboard/              # Main dashboard
+│   │   ├── chapters/               # Content navigation
+│   │   ├── quizzes/                # Quiz interface
+│   │   ├── progress/               # Progress visualization
+│   │   └── profile/                # Student settings
+│   └── api/                        # API routes
+├── components/                     # React components
+├── lib/                            # API client, utilities
+├── hooks/                          # Custom React hooks
+└── package.json
 
 history/
 ├── prompts/                        # Prompt History Records
+│   ├── constitution/               # Constitution PHRs
+│   ├── 1-zero-backend-api/         # Backend API PHRs
+│   ├── 2-chatgpt-app/              # ChatGPT App PHRs
+│   ├── 3-web-app/                  # Web App PHRs
+│   └── general/                    # General PHRs
 └── adr/                            # Architecture Decision Records
 ```
 
