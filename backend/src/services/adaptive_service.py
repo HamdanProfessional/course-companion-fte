@@ -365,15 +365,44 @@ Available chapters:
 
 Provide recommendation in JSON format."""
 
+        # Generate recommendation
+        # Note: GLM API doesn't support response_format parameter, so we don't pass it
+        # The LLM is instructed via system_prompt to respond in JSON
         response = await llm_client.generate(
             prompt=user_prompt,
             system_prompt=system_prompt,
-            temperature=0.4,
-            response_format={"type": "json_object"}
+            temperature=0.4
         )
 
         import json
-        rec_data = json.loads(response)
+        import re
+
+        # Log raw response for debugging
+        logger.info(f"GLM API response: {response[:200]}...")
+
+        # Try to parse JSON response
+        try:
+            # GLM might return JSON with markdown code blocks, extract JSON
+            json_match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if json_match:
+                response = json_match.group(1)
+            elif '```' in response:
+                # Extract content between code blocks
+                response = re.sub(r'```\w*\n?', '', response).strip()
+
+            rec_data = json.loads(response)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON from GLM response: {e}")
+            logger.error(f"Response was: {response}")
+            # Fallback to default recommendation
+            rec_data = {
+                "next_chapter_id": str(next_in_sequence.id),
+                "next_chapter_title": next_in_sequence.title,
+                "reason": "Continue with the next chapter in sequence.",
+                "alternative_paths": [],
+                "estimated_completion_minutes": 30,
+                "difficulty_match": "Appropriate for your level"
+            }
 
         return ChapterRecommendation(
             next_chapter_id=rec_data.get("next_chapter_id", str(next_in_sequence.id)),

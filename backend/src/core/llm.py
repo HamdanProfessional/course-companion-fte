@@ -20,6 +20,7 @@ class LLMProvider(Enum):
     """Supported LLM providers."""
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+    GLM = "glm"  # Zhipu AI GLM 4.7
 
 
 class LLMClientError(Exception):
@@ -54,18 +55,20 @@ class LLMClient:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
+        base_url: Optional[str] = None
     ):
         """
         Initialize LLM client.
 
         Args:
-            provider: LLM provider (openai/anthropic). Defaults to settings.llm_provider
+            provider: LLM provider (openai/anthropic/glm). Defaults to settings.llm_provider
             api_key: API key. Defaults to settings.{provider}_api_key
             model: Model name. Defaults to settings.{provider}_model
             temperature: Generation temperature. Defaults to settings.llm_temperature
             max_tokens: Max tokens. Defaults to settings.llm_max_tokens
             timeout: Request timeout. Defaults to settings.llm_timeout_seconds
+            base_url: Custom base URL for GLM provider
         """
         self.provider = LLMProvider(provider or settings.llm_provider)
         self.api_key = api_key or self._get_api_key()
@@ -73,6 +76,7 @@ class LLMClient:
         self.temperature = temperature if temperature is not None else settings.llm_temperature
         self.max_tokens = max_tokens if max_tokens is not None else settings.llm_max_tokens
         self.timeout = timeout if timeout is not None else settings.llm_timeout_seconds
+        self.base_url = base_url or self._get_base_url()  # For GLM custom endpoint
 
         # Validate API key
         if not self.api_key:
@@ -84,10 +88,11 @@ class LLMClient:
         # Lazy import of LLM libraries (only when needed)
         self._openai = None
         self._anthropic = None
+        self._glm = None
 
         logger.info(
             f"LLM client initialized: provider={self.provider.value}, "
-            f"model={self.model}"
+            f"model={self.model}, base_url={self.base_url or 'default'}"
         )
 
     def _get_api_key(self) -> str:
@@ -96,6 +101,8 @@ class LLMClient:
             return settings.openai_api_key
         elif self.provider == LLMProvider.ANTHROPIC:
             return settings.anthropic_api_key
+        elif self.provider == LLMProvider.GLM:
+            return settings.glm_api_key
         else:
             raise LLMClientError(f"Unknown provider: {self.provider}")
 
@@ -105,8 +112,16 @@ class LLMClient:
             return settings.openai_model
         elif self.provider == LLMProvider.ANTHROPIC:
             return settings.anthropic_model
+        elif self.provider == LLMProvider.GLM:
+            return settings.glm_model
         else:
             raise LLMClientError(f"Unknown provider: {self.provider}")
+
+    def _get_base_url(self) -> Optional[str]:
+        """Get base URL from settings based on provider."""
+        if self.provider == LLMProvider.GLM:
+            return settings.glm_base_url
+        return None
 
     def _get_openai_client(self):
         """Lazy load OpenAI client."""
@@ -133,6 +148,23 @@ class LLMClient:
                     "Install with: pip install anthropic"
                 )
         return self._anthropic
+
+    def _get_glm_client(self):
+        """Lazy load GLM (Zhipu AI) client using OpenAI-compatible API."""
+        if self._glm is None:
+            try:
+                import openai
+                # Use OpenAI client with custom base URL for GLM
+                self._glm = openai.AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=self.base_url
+                )
+            except ImportError:
+                raise LLMClientError(
+                    "OpenAI library not installed. "
+                    "Install with: pip install openai"
+                )
+        return self._glm
 
     async def generate(
         self,
@@ -174,6 +206,10 @@ class LLMClient:
                 elif self.provider == LLMProvider.ANTHROPIC:
                     return await self._generate_anthropic(
                         prompt, system_prompt, temp, tokens
+                    )
+                elif self.provider == LLMProvider.GLM:
+                    return await self._generate_glm(
+                        prompt, system_prompt, temp, tokens, response_format
                     )
 
             except asyncio.TimeoutError as e:
@@ -255,6 +291,42 @@ class LLMClient:
         )
 
         return response.content[0].text
+
+    async def _generate_glm(
+        self,
+        prompt: str,
+        system_prompt: Optional[str],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[Dict[str, str]] = None
+    ) -> str:
+        """Generate using GLM (Zhipu AI) API via OpenAI-compatible endpoint.
+
+        Note: GLM API doesn't support response_format parameter, so it's ignored.
+        """
+        client = self._get_glm_client()
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+        # GLM doesn't support response_format parameter, so we don't pass it
+        # The prompt should instruct the model to respond in the desired format
+
+        response = await asyncio.wait_for(
+            client.chat.completions.create(**kwargs),
+            timeout=self.timeout
+        )
+
+        return response.choices[0].message.content
 
     async def analyze(
         self,

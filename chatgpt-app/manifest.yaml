@@ -37,7 +37,7 @@ author: Course Companion FTE Team
 # ============================================================================
 
 env:
-  BACKEND_URL: "https://course-companion-fte-backend.fly.dev"
+  BACKEND_URL: "http://92.113.147.250"
   DEFAULT_USER_ID: "00000000-0000-0000-0000-000000000001"
 
   # Note: When deploying, update BACKEND_URL to your deployed backend URL

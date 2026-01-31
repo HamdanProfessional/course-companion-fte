@@ -371,10 +371,20 @@ async def get_adaptive_status():
 
     Returns configuration and provider information.
     """
+    # Get the correct model based on provider
+    if settings.llm_provider == "openai":
+        model = settings.openai_model
+    elif settings.llm_provider == "anthropic":
+        model = settings.anthropic_model
+    elif settings.llm_provider == "glm":
+        model = settings.glm_model
+    else:
+        model = "unknown"
+
     return {
         "phase_2_enabled": settings.enable_phase_2_llm,
         "llm_provider": settings.llm_provider if settings.enable_phase_2_llm else None,
-        "model": settings.openai_model if settings.llm_provider == "openai" else settings.anthropic_model,
+        "model": model,
         "features": {
             "knowledge_gap_analysis": True,
             "chapter_recommendations": True,

@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     # LLM Provider Selection
     llm_provider: str = Field(
         default="openai",
-        description="LLM provider: 'openai' or 'anthropic'"
+        description="LLM provider: 'openai', 'anthropic', or 'glm'"
     )
 
     # OpenAI Configuration
@@ -89,6 +89,20 @@ class Settings(BaseSettings):
     anthropic_model: str = Field(
         default="claude-3-haiku-20240307",
         description="Anthropic model to use (claude-3-haiku recommended for cost efficiency)"
+    )
+
+    # GLM (Zhipu AI) Configuration
+    glm_api_key: str = Field(
+        default="",
+        description="GLM API key (required if llm_provider=glm)"
+    )
+    glm_model: str = Field(
+        default="glm-4-plus",
+        description="GLM model to use (glm-4-plus recommended)"
+    )
+    glm_base_url: str = Field(
+        default="https://open.bigmodel.cn/api/paas/v4",
+        description="GLM API base URL"
     )
 
     # LLM Generation Parameters
@@ -129,8 +143,8 @@ class Settings(BaseSettings):
     def validate_llm_provider(cls, v: str) -> str:
         """Validate LLM provider choice."""
         v = v.lower()
-        if v not in ["openai", "anthropic"]:
-            raise ValueError("LLM provider must be 'openai' or 'anthropic'")
+        if v not in ["openai", "anthropic", "glm"]:
+            raise ValueError("LLM provider must be 'openai', 'anthropic', or 'glm'")
         return v
 
     @field_validator("llm_temperature")
