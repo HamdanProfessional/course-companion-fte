@@ -6,6 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { backendApi, type Chapter, type Quiz, type Progress, type Streak } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
+import { useIsPhase2Enabled } from './usePhase2';
 
 // Export backendApi for use in components
 export { backendApi };
