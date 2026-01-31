@@ -37,7 +37,7 @@ author: Course Companion FTE Team
 # ============================================================================
 
 env:
-  BACKEND_URL: "http://92.113.147.250"
+  BACKEND_URL: "http://92.113.147.250:3505"
   DEFAULT_USER_ID: "00000000-0000-0000-0000-000000000001"
 
   # Note: When deploying, update BACKEND_URL to your deployed backend URL
@@ -100,7 +100,7 @@ tools:
 
   - name: update_progress
     description: Mark a chapter as complete and update progress
-    endpoint: ${ENDPOINT_URL}/api/v1/progress/{user_id}
+    endpoint: ${BACKEND_URL}/api/v1/progress/{user_id}
     method: PUT
     parameters:
       - name: chapter_id

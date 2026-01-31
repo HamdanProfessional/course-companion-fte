@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Optional, Any
 from pathlib import Path
 
-from .intent_detector import Intent, IntentType
+from intent_detector import Intent, IntentType
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
