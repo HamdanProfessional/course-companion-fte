@@ -17,6 +17,7 @@ Student → ChatGPT App → Course Companion FTE Agent → Deterministic Backend
 |-------|---------|--------|------------|
 | **1** | Zero-Backend-LLM Backend API | ✅ **COMPLETE** | 100% |
 | **2** | ChatGPT App | ✅ **COMPLETE** | 100% |
+| **2B** | Hybrid LLM Features (Adaptive) | ✅ **COMPLETE** | 100% |
 | **3** | Web Application | ✅ **COMPLETE** | 100% |
 
 ### Phase 1: Backend API ✅
@@ -53,6 +54,34 @@ Conversational interface with intent detection and skill loading:
 
 **Documentation**: [chatgpt-app/README.md](chatgpt-app/README.md)
 
+### Phase 2B: Hybrid LLM Features ✅
+
+**Status**: PRODUCTION-READY (Optional, Feature-Flagged)
+
+LLM-powered adaptive learning features while maintaining Phase 1 Zero-LLM compliance:
+
+1. **Knowledge Gap Analysis** - AI identifies weak/strong topics from quiz performance
+2. **Chapter Recommendations** - AI suggests optimal next chapter to study
+3. **Learning Path Generation** - AI creates custom chapter sequences based on goals
+
+**Architecture**:
+- Phase 1 endpoints (`/api/v1/*`) remain Zero-LLM compliant
+- Phase 2 endpoints (`/api/v2/*`) use LLM for intelligent features
+- Feature flag `ENABLE_PHASE_2_LLM` controls activation
+
+**Tech Stack**: OpenAI GPT-4o-mini or Anthropic Claude 3 Haiku
+
+**Files**: [backend/src/core/llm.py](backend/src/core/llm.py), [backend/src/services/adaptive_service.py](backend/src/services/adaptive_service.py), [backend/src/api/adaptive.py](backend/src/api/adaptive.py)
+
+**Documentation**: [PHASE_2_README.md](PHASE_2_README.md), [PHASE_2_IMPLEMENTATION_SUMMARY.md](PHASE_2_IMPLEMENTATION_SUMMARY.md)
+
+**Quick Enable**:
+```bash
+# backend/.env
+ENABLE_PHASE_2_LLM=true
+OPENAI_API_KEY=sk-...
+```
+
 ### Phase 3: Web Application ✅
 
 **Status**: PRODUCTION-READY
@@ -74,6 +103,19 @@ Full-featured LMS web application with:
 - Backend API client with React Query integration
 
 **Documentation**: [web-app/README.md](web-app/README.md)
+
+---
+
+## 🚀 Live Deployments
+
+| Component | URL | Status |
+|-----------|-----|--------|
+| **Web Application** | https://web-app-ebon-mu.vercel.app | ✅ Live |
+| **Backend API** | http://92.113.147.250:8180 | ✅ Live |
+| **API Documentation** | http://92.113.147.250:8180/docs | ✅ Live |
+| **Health Check** | http://92.113.147.250:8180/health | ✅ Healthy |
+
+**Database**: Neon PostgreSQL (7 tables, 4 chapters, 4 quizzes, 16 questions, 1 user)
 
 ---
 
@@ -276,6 +318,7 @@ MIT License - Hackathon IV Project
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: 2026-01-28
+**Version**: 1.1.0 (Production Deployment)
+**Last Updated**: 2026-01-31
 **Architecture**: Agent Factory + Zero-Backend-LLM
+**Status**: ✅ FULLY DEPLOYED AND OPERATIONAL

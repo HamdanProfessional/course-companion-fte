@@ -1,139 +1,230 @@
-# ChatGPT App Manifest for Course Companion FTE
+# Course Companion FTE - ChatGPT App Manifest
 # Zero-Backend-LLM Architecture: All AI intelligence happens in ChatGPT
+#
+# This manifest defines the ChatGPT App configuration, including backend API tools,
+# educational skills, and conversation flow for the Course Companion FTE.
 
 name: Course Companion FTE
 description: |
   Your AI-powered tutor for mastering AI Agent Development.
-  Get personalized explanations, take quizzes, track progress, and learn 24/7.
 
-  Features:
-  - Personalized concept explanations at your level
+  Get personalized explanations, take quizzes, track progress, and learn 24/7 with
+  the Course Companion FTE - a Digital Full-Time Equivalent educational tutor.
+
+  **Features:**
+  - Personalized concept explanations at your learning level
   - Interactive quizzes with immediate feedback
   - Progress tracking and streak gamification
-  - Socratic tutoring for problem-solving
+  - Socratic tutoring for problem-solving guidance
 
-  Free tier includes first 3 chapters. Premium unlocks all content.
+  **Free Tier:**
+  - First 3 chapters of course content
+  - Basic quizzes for free chapters
+  - Progress tracking
+  - Streak gamification
+
+  **Premium Tier:**
+  - All 10 chapters (unlimited access)
+  - Advanced quizzes with detailed feedback
+  - Priority support
+  - Certificates of completion
 
 version: 1.0.0
 author: Course Companion FTE Team
-
-# ============================================================================
-# Backend API Integration (Tools)
-# ============================================================================
-# Note: In ChatGPT App, these would be configured as HTTP tools that call
-# the backend API endpoints. The actual tool definitions are provided as
-# guidance for the Course Companion FTE agent.
-
-tools:
-  - name: content_api
-    description: Retrieve course content, chapters, and sections
-    type: http
-    endpoint: ${BACKEND_URL}/api/v1
-    endpoints:
-      - path: /chapters
-        method: GET
-        description: List all chapters
-      - path: /chapters/{chapter_id}
-        method: GET
-        description: Get chapter content
-      - path: /chapters/{chapter_id}/next
-        method: GET
-        description: Get next chapter
-      - path: /chapters/{chapter_id}/previous
-        method: GET
-        description: Get previous chapter
-      - path: /search
-        method: GET
-        description: Search course content
-
-  - name: quiz_api
-    description: Get quizzes, submit answers, view results
-    type: http
-    endpoint: ${BACKEND_URL}/api/v1
-    endpoints:
-      - path: /quizzes
-        method: GET
-        description: List all quizzes
-      - path: /quizzes/{quiz_id}
-        method: GET
-        description: Get quiz with questions
-      - path: /quizzes/{quiz_id}/submit
-        method: POST
-        description: Submit quiz answers for grading
-      - path: /quizzes/{quiz_id}/results
-        method: GET
-        description: Get quiz attempt history
-
-  - name: progress_api
-    description: Track learning progress and streaks
-    type: http
-    endpoint: ${BACKEND_URL}/api/v1
-    endpoints:
-      - path: /progress/{user_id}
-        method: GET
-        description: Get user progress
-      - path: /progress/{user_id}
-        method: PUT
-        description: Update progress (mark chapter complete)
-      - path: /streaks/{user_id}
-        method: GET
-        description: Get streak information
-      - path: /streaks/{user_id}/checkin
-        method: POST
-        description: Record daily activity
-
-  - name: access_api
-    description: Check and manage user access tiers
-    type: http
-    endpoint: ${BACKEND_URL}/api/v1
-    endpoints:
-      - path: /access/check
-        method: POST
-        description: Check access to resource
-      - path: /user/{user_id}/tier
-        method: GET
-        description: Get user subscription tier
-      - path: /access/upgrade
-        method: POST
-        description: Upgrade user to premium
 
 # ============================================================================
 # Environment Variables
 # ============================================================================
 
 env:
-  BACKEND_URL: "https://your-backend.fly.dev"  # Replace with deployed backend URL
-  DEFAULT_USER_ID: "00000000-0000-0000-0000-000000000000"  # For anonymous users
+  BACKEND_URL: "https://course-companion-fte-backend.fly.dev"
+  DEFAULT_USER_ID: "00000000-0000-0000-0000-000000000001"
+
+  # Note: When deploying, update BACKEND_URL to your deployed backend URL
 
 # ============================================================================
-# Educational Skills (Loaded from .claude/skills/)
+# Backend API Tools
 # ============================================================================
+# These tools are called by the Course Companion FTE agent to fetch content
+# from the Zero-Backend-LLM backend API.
+
+tools:
+  - name: list_chapters
+    description: List all available chapters in the course
+    endpoint: ${BACKEND_URL}/api/v1/chapters
+    method: GET
+
+  - name: get_chapter
+    description: Get detailed chapter content including text and metadata
+    endpoint: ${BACKEND_URL}/api/v1/chapters/{chapter_id}
+    method: GET
+
+  - name: get_next_chapter
+    description: Get the next chapter in the course sequence
+    endpoint: ${BACKEND_URL}/api/v1/chapters/{chapter_id}/next
+    method: GET
+
+  - name: search_content
+    description: Search course content for specific topics
+    endpoint: ${BACKEND_URL}/api/v1/search
+    method: GET
+    parameters:
+      - name: q
+        description: Search query string
+        type: string
+        required: true
+      - name: limit
+        description: Maximum number of results
+        type: number
+        default: 10
+
+  - name: get_quiz
+    description: Get quiz questions for a specific quiz
+    endpoint: ${BACKEND_URL}/api/v1/quizzes/{quiz_id}
+    method: GET
+
+  - name: submit_quiz
+    description: Submit quiz answers for grading
+    endpoint: ${BACKEND_URL}/api/v1/quizzes/{quiz_id}/submit
+    method: POST
+    parameters:
+      - name: answers
+        description: Map of question IDs to selected answers
+        type: object
+        required: true
+
+  - name: get_progress
+    description: Get user's learning progress and completion stats
+    endpoint: ${BACKEND_URL}/api/v1/progress/{user_id}
+    method: GET
+
+  - name: update_progress
+    description: Mark a chapter as complete and update progress
+    endpoint: ${ENDPOINT_URL}/api/v1/progress/{user_id}
+    method: PUT
+    parameters:
+      - name: chapter_id
+        description: ID of the chapter to mark complete
+        type: string
+        required: true
+
+  - name: get_streak
+    description: Get user's streak information
+    endpoint: ${BACKEND_URL}/api/v1/streaks/{user_id}
+    method: GET
+
+  - name: record_checkin
+    description: Record daily activity checkin
+    endpoint: ${BACKEND_URL}/api/v1/streaks/{user_id}/checkin
+    method: POST
+
+  - name: check_access
+    description: Check if user has access to premium content
+    endpoint: ${BACKEND_URL}/api/v1/access/check
+    method: POST
+    parameters:
+      - name: user_id
+        description: User ID to check access for
+        type: string
+        required: true
+      - name: resource
+        description: Resource identifier (e.g., "chapter-4")
+        type: string
+        required: true
+
+  - name: get_user_tier
+    description: Get user's subscription tier
+    endpoint: ${BACKEND_URL}/api/v1/user/{user_id}/tier
+    method: GET
+
+# ============================================================================
+# Educational Skills
+# ============================================================================
+# These skills are dynamically loaded based on detected user intent.
+# Each skill contains procedural knowledge for specific educational tasks.
 
 skills:
-  - concept-explainer
-  - quiz-master
-  - socratic-tutor
-  - progress-motivator
+  concept-explainer:
+    name: Concept Explainer
+    file: .claude/skills/concept-explainer/SKILL.md
+    triggers:
+      - "explain"
+      - "what is"
+      - "how does"
+      - "describe"
+      - "tell me about"
+      - "clarify"
+      "define"
+
+  quiz-master:
+    name: Quiz Master
+    file: .claude/skills/quiz-master/SKILL.md
+    triggers:
+      - "quiz"
+      - "test me"
+      - "practice"
+      - "check my knowledge"
+      - "assess"
+
+  socratic-tutor:
+    name: Socratic Tutor
+    file: .claude/skills/socratic-tutor/SKILL.md
+    triggers:
+      - "stuck"
+      - "help me think"
+      - "give me a hint"
+      - "i'm lost"
+      - "guide me"
+      - "walk me through"
+
+  progress-motivator:
+    name: Progress Motivator
+    file: .claude/skills/progress-motivator/SKILL.md
+    triggers:
+      - "progress"
+      - "streak"
+      - "how am i doing"
+      - "my stats"
+      - "where am i"
+      - "what have i completed"
 
 # ============================================================================
-# Pricing and Access Tiers
+# Agent Configuration
 # ============================================================================
+# The Course Companion FTE agent orchestrates intent detection, skill loading,
+# and backend API integration to deliver a conversational learning experience.
 
-pricing:
-  type: freemium
+agent:
+  name: course-companion-fte
+  role: Educational Tutor
+  instructions: |
+    You are the Course Companion FTE, a Digital Full-Time Equivalent tutor for mastering AI Agent Development.
 
-  free_tier:
-    - "First 3 chapters of course content"
-    - "Basic quizzes for free chapters"
-    - "Progress tracking"
-    - "Streak gamification"
-    - "Concept explanations"
+    **Core Principles:**
+    1. Zero-LLM Backend: All AI intelligence happens here in ChatGPT. The backend serves content verbatim only.
+    2. Intent Detection: Detect what the student needs (explain, quiz, help, progress)
+    3. Skill Loading: Load appropriate educational skill for the task
+    4. Backend Integration: Fetch content from backend when needed
 
-  premium_tier:
-    - "All course chapters (unlimited access)"
-    - "Advanced quizzes with detailed feedback"
-    - "Priority support"
-    - "Certificates of completion"
+    **Intent Detection Priority:**
+    1. Quiz - "quiz me", "test me", "practice"
+    2. Explain - "explain", "what is", "how does"
+    3. Socratic - "stuck", "help me think", "give me a hint"
+    4. Progress - "progress", "streak", "how am I doing"
+    5. General - Fallback to helpful tutoring
+
+    **Tone and Style:**
+    - Supportive and encouraging
+    - Celebrate achievements
+    - Provide constructive feedback
+    - Adaptive to learner's level
+    - Professional yet friendly
+
+    **Error Handling:**
+    - If backend is unavailable: Use cached knowledge and suggest retrying
+    - If access denied: Explain premium benefits and upgrade path
+    - If content not found: Offer to help with general knowledge
+    - Always maintain conversation continuity
 
 # ============================================================================
 # Course Information
@@ -145,55 +236,38 @@ course:
   total_chapters: 10
   estimated_duration: "5-7 hours"
   difficulty: "Beginner to Intermediate"
+  topics:
+    - Model Context Protocol (MCP)
+    - Claude Agent Architecture
+    - Tool Use and Function Calling
+    - Agent Factory Pattern
+    - Multi-Agent Systems
 
 # ============================================================================
-# Agent Configuration
-# ============================================================================
-
-agent:
-  name: course-companion-fte
-  role: Educational Tutor
-  instructions: |
-    You are the Course Companion FTE, a digital full-time equivalent tutor.
-    Your mission is to help students master AI Agent Development through
-    personalized, conversational learning.
-
-    Core Principles:
-    1. Zero-LLM Backend: All AI intelligence happens here in ChatGPT.
-       The backend serves content verbatim only.
-    2. Intent Detection: Detect what the student needs (explain, quiz, help, progress).
-    3. Skill Loading: Load appropriate educational skill for the task.
-    4. Backend Integration: Fetch content from backend when needed.
-
-    Intent Detection Priority:
-    1. Quiz - "quiz me", "test me", "practice"
-    2. Explain - "explain", "what is", "how does"
-    3. Socratic - "stuck", "help me think", "give me a hint"
-    4. Progress - "progress", "streak", "how am I doing"
-    5. General - Fallback to helpful tutoring
-
-    Always maintain a supportive, encouraging tone. Celebrate student
-    achievements and provide constructive feedback.
-
-# ============================================================================
-# Conversation Examples (for ChatGPT App Store listing)
+# Conversation Examples
 # ============================================================================
 
 examples:
-  - user: "Explain what MCP is"
-    assistant: |
-      MCP (Model Context Protocol) is like a universal USB cable for AI apps.
+  - input: "Explain what MCP is"
+    output: |
+      **MCP (Model Context Protocol)** is like a universal USB cable for AI applications.
+
       It lets AI models connect to external data sources and tools in a standardized way.
 
       Think of it this way:
-      - Before MCP: Every AI app needed custom integrations
-      - With MCP: Universal compatibility between AI and data/tools
+      - **Before MCP**: Every AI app needed custom integrations
+      - **With MCP**: Universal compatibility between AI and data/tools
 
-      Would you like me to show you how to build an MCP server?
+      **Key Benefits:**
+      - Standardized connections
+      - Tool extensibility
+      - Data source flexibility
 
-  - user: "Quiz me on MCP"
-    assistant: |
-      Great! Let's test your knowledge of MCP with a quick quiz.
+      Would you like me to explain how to build an MCP server?
+
+  - input: "Quiz me on MCP"
+    output: |
+      Great! Let's test your knowledge of MCP with a quick quiz. 🎯
 
       **Question 1:** What does MCP stand for?
       A) Model Control Program
@@ -203,33 +277,101 @@ examples:
 
       Type your answer (A, B, C, or D)!
 
-  - user: "How am I doing?"
-    assistant: |
-      Let me check your progress...
+  - input: "How am I doing?"
+    output: |
+      Let me check your progress... 📊
 
-      Great job! Here's your learning journey:
-      - Chapters completed: 2/10 (20%)
-      - Current streak: 3 days
-      - Quizzes passed: 2/2
-      - Last activity: Today
+      **Your Learning Journey:**
+      - Course Completion: 20% (2/10 chapters)
+      - Current Streak: 3 days 🔥
+      - Quizzes Passed: 2/2
+      - Last Activity: Today
 
-      You're making excellent progress! Keep up the momentum!
+      You're making excellent progress! Keep up the momentum! 💪
+
+  - input: "I'm stuck on building an MCP server"
+    output: |
+      I'll help you work through this step by step! 🎯
+
+      Let me ask a guiding question: **What specific part is giving you trouble?**
+
+      - Understanding the MCP protocol itself?
+      - Setting up the server implementation?
+      - Integrating with Claude/ChatGPT?
+      - Testing and verification?
+
+      Once I understand where you're stuck, I can guide you toward the solution!
 
 # ============================================================================
-# Error Handling
+# Error Handling Responses
 # ============================================================================
 
 error_handling:
   backend_unavailable: |
-    I'm having trouble connecting to the course backend right now.
-    Let me help you with what I know, and we can try again in a moment.
+    ⚠️ **Connection Issues**
+
+    I'm having trouble connecting to the course backend right now. Let me help you with what I know, and we can try again in a moment.
+
+    What would you like to explore?
+    - Course concepts (MCP, Neural Networks, AI Agents)
+    - General questions about AI/ML
+    - Study tips and strategies
+
+    Or we can try the connection again!
 
   access_denied: |
-    This content is part of our premium tier.
-    Upgrade to unlock all 10 chapters, advanced quizzes, and certificates!
+    🔒 **Premium Content**
+
+    This content is part of our Premium tier. Your current tier doesn't include access.
+
+    **Free Tier includes:**
+    - First 3 chapters
+    - Basic quizzes
+    - Progress tracking
+
+    **Premium Tier includes:**
+    - All 10 chapters
+    - Advanced quizzes with detailed feedback
+    - Priority support
+    - Certificates
+
+    Upgrade to unlock all content! 🚀
 
   not_found: |
-    I couldn't find that content. Let me help you find what you're looking for.
+    📚 **Content Not Found**
+
+    I couldn't find that specific content in our course materials.
+
+    Let me help you find what you're looking for! What topic are you interested in?
+
+    Popular topics:
+    - Model Context Protocol (MCP)
+    - AI Agents
+    - Tool Use & Function Calling
+    - Multi-Agent Systems
 
   timeout: |
-    The request is taking longer than expected. Let's try that again.
+    ⏳ **Taking Longer Than Expected**
+
+    The request is taking longer than usual. Let's try that again.
+
+    In the meantime, is there something else I can help you with?
+
+# ============================================================================
+# Development Notes
+# ============================================================================
+
+development:
+  # Backend must be deployed first
+  backend_required: true
+
+  # Skills must be available in .claude/skills/
+  skills_required: true
+
+  # Zero-LLM compliance validation
+  zero_llm_backend: true
+  no_llm_api_calls: true
+
+  # Testing
+  test_backend_url: http://localhost:8000
+  test_user_id: 00000000-0000-0000-0000-000000000001

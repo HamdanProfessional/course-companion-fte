@@ -61,7 +61,7 @@ class ContentService:
             title=chapter.title,
             content=content,
             order=chapter.order,
-            difficulty_level=chapter.difficulty_level.value,
+            difficulty_level=chapter.difficulty_level,
             estimated_time=chapter.estimated_time,
             r2_content_key=chapter.r2_content_key,
             quiz_id=str(chapter.quiz.id) if chapter.quiz else None,
@@ -96,7 +96,7 @@ class ContentService:
                 title=chapter.title,
                 content=None,  # Exclude content from list view
                 order=chapter.order,
-                difficulty_level=chapter.difficulty_level.value,
+                difficulty_level=chapter.difficulty_level,
                 estimated_time=chapter.estimated_time,
                 r2_content_key=chapter.r2_content_key,
             )

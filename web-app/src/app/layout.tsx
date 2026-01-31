@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Providers } from './providers';
+import { Header } from '@/components/layout/Header';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -15,8 +17,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className="scroll-smooth">
+      <body className={inter.className}>
+        {/* Skip link for accessibility */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+
+        {/* Header Navigation */}
+        <Header />
+
+        {/* Main Content */}
+        <main id="main-content" className="min-h-screen">
+          <Providers>{children}</Providers>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-border-default bg-bg-secondary mt-auto">
+          <div className="container py-6 text-center text-sm text-text-secondary">
+            <p>© 2026 Course Companion FTE. Built with ❤️ for Panaversity Hackathon IV.</p>
+          </div>
+        </footer>
+      </body>
     </html>
   );
 }

@@ -5,13 +5,13 @@ Zero-LLM: Static content only, no generation.
 
 import asyncio
 import uuid
+import bcrypt
 from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import async_session_maker, init_db
+from src.core.database import async_session_maker
 from src.models.database import User, Chapter, Quiz, Question, Progress, Streak
-from src.core.security import get_password_hash
 
 
 # Sample course content: "AI Agent Development"
@@ -19,7 +19,7 @@ SAMPLE_CHAPTERS = [
     {
         "title": "Introduction to AI Agents",
         "order": 1,
-        "difficulty": "beginner",
+        "difficulty": "BEGINNER",
         "estimated_time": 30,
         "content": """# Introduction to AI Agents
 
@@ -76,7 +76,7 @@ In this course, you'll learn how to build, deploy, and scale AI agents using the
     {
         "title": "Understanding MCP (Model Context Protocol)",
         "order": 2,
-        "difficulty": "beginner",
+        "difficulty": "BEGINNER",
         "estimated_time": 35,
         "content": """# Understanding MCP (Model Context Protocol)
 
@@ -157,7 +157,7 @@ Now that you understand MCP, let's explore how to build AI agents that leverage 
     {
         "title": "Creating Your First Agent",
         "order": 3,
-        "difficulty": "intermediate",
+        "difficulty": "INTERMEDIATE",
         "estimated_time": 40,
         "content": """# Creating Your First Agent
 
@@ -244,7 +244,7 @@ Now let's explore how to add skills to your agent.
     {
         "title": "Building Reusable Skills",
         "order": 4,
-        "difficulty": "intermediate",
+        "difficulty": "INTERMEDIATE",
         "estimated_time": 45,
         "content": """# Building Reusable Skills
 
@@ -331,20 +331,26 @@ Learn how to combine skills with tools for powerful agents.
 async def create_sample_data():
     """Create sample course content in database."""
 
-    # Initialize database
-    await init_db()
-    print("✓ Database initialized")
+    # NOTE: Database tables are created by Alembic migrations
+    # Run: alembic upgrade head
+
+    # Close any existing connections to clear schema cache
+    from src.core.database import engine
+    await engine.dispose()
+
+    print("OK Using existing database schema from Alembic migrations")
 
     async with async_session_maker() as session:
         # Create test user
+        hashed = bcrypt.hashpw("pass123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         user = User(
             email="student@example.com",
-            hashed_password=get_password_hash("password123"),
-            tier="free"
+            hashed_password=hashed,
+            tier="FREE"
         )
         session.add(user)
         await session.flush()
-        print(f"✓ Created user: {user.email}")
+        print(f"OK Created user: {user.email}")
 
         # Create progress and streak
         progress = Progress(user_id=user.id, completed_chapters=[], current_chapter_id=None)
@@ -367,7 +373,7 @@ async def create_sample_data():
             session.add(chapter)
             await session.flush()
             chapters_map[chapter.order] = chapter
-            print(f"✓ Created chapter: {chapter.title}")
+            print(f"OK Created chapter: {chapter.title}")
 
             # Create quiz
             quiz = Quiz(
@@ -389,7 +395,7 @@ async def create_sample_data():
                     order=j + 1
                 )
                 session.add(question)
-            print(f"  ✓ Created quiz with {len(chapter_data['quiz_questions'])} questions")
+            print(f"  OK Created quiz with {len(chapter_data['quiz_questions'])} questions")
 
         # Link chapters (next/previous)
         for order, chapter in chapters_map.items():
@@ -399,7 +405,7 @@ async def create_sample_data():
                 chapter.previous_chapter_id = chapters_map[order - 1].id
 
         await session.commit()
-        print("\n✓ Sample data created successfully!")
+        print("\nOK Sample data created successfully!")
         print(f"  - {len(SAMPLE_CHAPTERS)} chapters")
         print(f"  - {len(SAMPLE_CHAPTERS)} quizzes")
         print(f"  - Total questions: {sum(len(c['quiz_questions']) for c in SAMPLE_CHAPTERS)}")

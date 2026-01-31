@@ -1,11 +1,13 @@
 """
 Application configuration using environment variables.
-Zero-LLM compliance: No LLM API keys or endpoints.
+Phase 1: Zero-LLM compliance (default)
+Phase 2: Hybrid LLM features (optional, feature-flagged)
 """
 
-from typing import List
+import os
+from typing import List, Union, Any
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -56,15 +58,64 @@ class Settings(BaseSettings):
     # Rate limiting
     rate_limit_per_minute: int = Field(default=60, description="Rate limit per minute")
 
-    @validator("cors_origins", mode="before")
-    def parse_cors_origins(cls, v):
+    # Phase 2: LLM Configuration (Optional)
+    # Feature flag to enable Phase 2 hybrid LLM features
+    enable_phase_2_llm: bool = Field(
+        default=False,
+        description="Enable Phase 2 LLM features (default: False for Zero-LLM compliance)"
+    )
+
+    # LLM Provider Selection
+    llm_provider: str = Field(
+        default="openai",
+        description="LLM provider: 'openai' or 'anthropic'"
+    )
+
+    # OpenAI Configuration
+    openai_api_key: str = Field(
+        default="",
+        description="OpenAI API key (required if llm_provider=openai)"
+    )
+    openai_model: str = Field(
+        default="gpt-4o-mini",
+        description="OpenAI model to use (gpt-4o-mini recommended for cost efficiency)"
+    )
+
+    # Anthropic Configuration
+    anthropic_api_key: str = Field(
+        default="",
+        description="Anthropic API key (required if llm_provider=anthropic)"
+    )
+    anthropic_model: str = Field(
+        default="claude-3-haiku-20240307",
+        description="Anthropic model to use (claude-3-haiku recommended for cost efficiency)"
+    )
+
+    # LLM Generation Parameters
+    llm_temperature: float = Field(
+        default=0.7,
+        description="LLM temperature (0.0-1.0, lower = more deterministic)"
+    )
+    llm_max_tokens: int = Field(
+        default=1000,
+        description="Maximum tokens per LLM request"
+    )
+    llm_timeout_seconds: int = Field(
+        default=30,
+        description="Timeout for LLM API requests"
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         """Parse CORS origins from string or list."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
 
-    @validator("database_url")
-    def validate_database_url(cls, v):
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
         """Ensure database URL uses asyncpg driver."""
         if not v.startswith("postgresql+asyncpg://"):
             raise ValueError(
@@ -73,10 +124,38 @@ class Settings(BaseSettings):
             )
         return v
 
-    class Config:
-        """Pydantic config."""
-        env_file = ".env"
-        case_sensitive = False
+    @field_validator("llm_provider")
+    @classmethod
+    def validate_llm_provider(cls, v: str) -> str:
+        """Validate LLM provider choice."""
+        v = v.lower()
+        if v not in ["openai", "anthropic"]:
+            raise ValueError("LLM provider must be 'openai' or 'anthropic'")
+        return v
+
+    @field_validator("llm_temperature")
+    @classmethod
+    def validate_temperature(cls, v: float) -> float:
+        """Validate temperature is in valid range."""
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("LLM temperature must be between 0.0 and 1.0")
+        return v
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        """Validate JWT secret is not default in production."""
+        # Check if using default insecure secret
+        if v in ["change-this-secret-in-production", "change-this-secret", "secret"]:
+            # Allow default only in debug mode
+            if not os.getenv("DEBUG", "").lower() in ["true", "1", "yes"]:
+                raise ValueError(
+                    "Insecure JWT secret detected. Please set a strong JWT_SECRET "
+                    "environment variable with at least 32 characters."
+                )
+        if len(v) < 32:
+            raise ValueError("JWT secret must be at least 32 characters long")
+        return v
 
 
 # Global settings instance

@@ -1,0 +1,22 @@
+{
+  "name": "Course Companion FTE",
+  "description": "Your AI-powered tutor for mastering AI Agent Development. Get personalized explanations, take quizzes, track progress, and learn 24/7.",
+  "version": "1.0.0",
+  "author": "Course Companion FTE Team",
+  "mcp_servers": [
+    {
+      "name": "backend_api",
+      "description": "Course Companion FTE Backend API - Zero-LLM architecture with MCP",
+      "url": "https://sse.testservers.online/api/v1/sse",
+      "authentication": {
+        "type": "none"
+      }
+    }
+  ],
+  "skills": [
+    "concept-explainer",
+    "quiz-master",
+    "socratic-tutor",
+    "progress-motivator"
+  ]
+}

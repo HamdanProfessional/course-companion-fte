@@ -1,22 +1,105 @@
+'use client';
+
 /**
- * Dashboard page with progress visualization and quick actions.
+ * Dashboard page with Professional/Modern SaaS theme.
+ * Clean, content-focused interface optimized for educational platforms.
  */
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Progress } from '@/components/ui/Progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Progress, CircularProgress } from '@/components/ui/Progress';
 import { Button } from '@/components/ui/Button';
-import { Loading } from '@/components/ui/Loading';
+import { LoadingSpinner } from '@/components/ui/Loading';
+import { Badge } from '@/components/ui/Badge';
+import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useProgress, useStreak, useChapters } from '@/hooks';
 import Link from 'next/link';
+import dynamicImport from 'next/dynamic';
+
+// Code split Phase 2 AI Recommendations component
+// Only loads when Phase 2 is enabled, reducing initial bundle size
+const AIRecommendations = dynamicImport(
+  () => import('@/components/AIRecommendations').then(mod => ({ default: mod.AIRecommendations })),
+  {
+    loading: () => (
+      <Card>
+        <CardContent className="p-6">
+          <LoadingSpinner size="sm" />
+        </CardContent>
+      </Card>
+    ),
+    ssr: false, // Phase 2 features are client-side only
+  }
+);
+
+export const dynamic = 'force-dynamic';
+
+// Default user ID (from database)
+const DEFAULT_USER_ID = '82b8b862-059a-416a-9ef4-e582a4870efa';
+
+// StatCard component for dashboard metrics
+function StatCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  trend,
+  variant = 'default',
+}: {
+  title: string;
+  value: string | number;
+  subtitle: string;
+  icon?: React.ReactNode;
+  trend?: { value: number; isPositive: boolean };
+  variant?: 'default' | 'success' | 'warning' | 'info';
+}) {
+  const variantStyles = {
+    default: 'text-accent-primary',
+    success: 'text-accent-success',
+    warning: 'text-accent-warning',
+    info: 'text-accent-primary',
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-text-secondary mb-1">{title}</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className={`text-3xl font-bold ${variantStyles[variant]}`}>
+                {value}
+              </h3>
+              {trend && (
+                <span
+                  className={`text-sm font-medium ${
+                    trend.isPositive ? 'text-accent-success' : 'text-accent-danger'
+                  }`}
+                >
+                  {trend.isPositive ? '↑' : '↓'} {trend.value}%
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-text-muted mt-1">{subtitle}</p>
+          </div>
+          {icon && (
+            <div className="w-12 h-12 rounded-xl bg-bg-elevated flex items-center justify-center text-2xl">
+              {icon}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function DashboardPage() {
-  const { data: progress, isLoading: progressLoading } = useProgress();
-  const { data: streak, isLoading: streakLoading } = useStreak();
+  const { data: progress, isLoading: progressLoading } = useProgress(DEFAULT_USER_ID);
+  const { data: streak, isLoading: streakLoading } = useStreak(DEFAULT_USER_ID);
   const { data: chapters, isLoading: chaptersLoading } = useChapters();
 
   if (progressLoading || streakLoading || chaptersLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loading size="lg" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -25,142 +108,134 @@ export default function DashboardPage() {
   const currentStreak = streak?.current_streak || 0;
   const completedCount = progress?.completed_chapters?.length || 0;
   const totalChapters = chapters?.length || 0;
+  const completedChapters = new Set(progress?.completed_chapters || []);
+
+  const getDifficultyBadge = (level: string) => {
+    const badges = {
+      beginner: { variant: 'beginner' as const, label: 'Beginner' },
+      intermediate: { variant: 'intermediate' as const, label: 'Intermediate' },
+      advanced: { variant: 'advanced' as const, label: 'Advanced' },
+    };
+    return badges[level.toLowerCase() as keyof typeof badges] || badges.beginner;
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, Student! 👋
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Continue your journey to mastering AI Agent Development
-        </p>
-      </div>
+    <PageContainer>
+      {/* Page Header */}
+      <PageHeader
+        title="Welcome back!"
+        description="Continue your learning journey through AI Agent Development"
+      />
 
-      {/* Progress Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Progress Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Course Progress</CardTitle>
-            <CardDescription>Your learning journey</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary-600">
-                  {completionPercentage.toFixed(0)}%
-                </div>
-                <p className="text-sm text-gray-500 mt-1">Complete</p>
-              </div>
-              <Progress value={completionPercentage} />
-              <div className="text-sm text-gray-600 text-center">
-                {completedCount} of {totalChapters} chapters completed
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Phase 2: AI Recommendations */}
+      <AIRecommendations userId={DEFAULT_USER_ID} />
 
-        {/* Streak Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Current Streak</CardTitle>
-            <CardDescription>Keep up the momentum!</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center space-y-4">
-              <div className="flex items-center justify-center">
-                {currentStreak > 0 ? (
-                  <span className="text-6xl">🔥</span>
-                ) : (
-                  <span className="text-6xl">💪</span>
-                )}
-              </div>
-              <div>
-                <div className="text-4xl font-bold text-primary-600">
-                  {currentStreak}
-                </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  {currentStreak === 1 ? 'day' : 'days'} in a row
-                </p>
-              </div>
-              {currentStreak >= 7 && (
-                <p className="text-sm font-semibold text-primary-600">
-                  🎉 Amazing! A week streak!
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Jump back into learning</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Link href="/chapters">
-              <Button className="w-full" variant="primary">
-                Continue Learning →
-              </Button>
-            </Link>
-            <Link href="/chapters">
-              <Button className="w-full" variant="outline">
-                Take a Quiz
-              </Button>
-            </Link>
-            <Link href="/progress">
-              <Button className="w-full" variant="ghost">
-                View Progress
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard
+          title="Course Progress"
+          value={`${completionPercentage.toFixed(0)}%`}
+          subtitle={`${completedCount} of ${totalChapters} chapters`}
+          icon="📊"
+          variant="info"
+        />
+        <StatCard
+          title="Current Streak"
+          value={currentStreak}
+          subtitle={currentStreak === 1 ? 'day in a row' : 'days in a row'}
+          icon="🔥"
+          variant="warning"
+        />
+        <StatCard
+          title="Completed"
+          value={completedCount}
+          subtitle={`of ${totalChapters} chapters`}
+          icon="✅"
+          variant="success"
+        />
+        <StatCard
+          title="Remaining"
+          value={totalChapters - completedCount}
+          subtitle="chapters to complete"
+          icon="📚"
+          variant="default"
+        />
       </div>
 
       {/* Course Outline */}
       <Card>
         <CardHeader>
-          <CardTitle>Course Outline</CardTitle>
-          <CardDescription>AI Agent Development - {totalChapters} Chapters</CardDescription>
+          <CardTitle className="flex items-center gap-3">
+            <span className="text-2xl">📖</span>
+            Course Outline
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {chapters?.slice(0, 5).map((chapter) => {
-              const isCompleted = progress?.completed_chapters?.includes(chapter.id);
+            {chapters?.map((chapter, index) => {
+              const isCompleted = completedChapters.has(chapter.id);
+              const difficultyBadge = getDifficultyBadge(chapter.difficulty_level);
+
               return (
                 <Link
                   key={chapter.id}
                   href={`/chapters/${chapter.id}`}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
+                  className="block group"
                 >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">
-                      {isCompleted ? '✅' : '📖'}
-                    </span>
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-border-default hover:border-accent-primary hover:bg-bg-elevated transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-bg-elevated flex items-center justify-center text-lg font-bold text-text-secondary group-hover:text-accent-primary group-hover:bg-accent-primary/10 transition-all">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-text-primary group-hover:text-accent-primary transition-colors">
+                          {chapter.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={difficultyBadge.variant}>
+                            {difficultyBadge.label}
+                          </Badge>
+                          <span className="text-sm text-text-muted">
+                            ⏱️ {chapter.estimated_time} min
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{chapter.title}</h3>
-                      <p className="text-sm text-gray-500">
-                        {chapter.difficulty_level} • {chapter.estimated_time} min
-                      </p>
+                      {isCompleted ? (
+                        <Badge variant="success">✓ Completed</Badge>
+                      ) : (
+                        <span className="text-text-secondary text-sm font-medium group-hover:text-accent-primary transition-colors">
+                          Start →
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="text-primary-600">→</span>
                 </Link>
               );
             })}
-            {totalChapters > 5 && (
-              <Link href="/chapters">
-                <Button variant="outline" className="w-full">
-                  View All {totalChapters} Chapters
-                </Button>
-              </Link>
-            )}
           </div>
         </CardContent>
       </Card>
-    </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+        <Link href="/chapters">
+          <Button variant="primary" className="w-full" size="lg">
+            📚 Browse Chapters
+          </Button>
+        </Link>
+        <Link href="/quizzes">
+          <Button variant="secondary" className="w-full" size="lg">
+            🎯 Take a Quiz
+          </Button>
+        </Link>
+        <Link href="/progress">
+          <Button variant="outline" className="w-full" size="lg">
+            📊 View Progress
+          </Button>
+        </Link>
+      </div>
+    </PageContainer>
   );
 }

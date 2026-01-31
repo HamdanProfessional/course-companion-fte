@@ -15,6 +15,14 @@ from slowapi.errors import RateLimitExceeded
 from src.core.config import settings
 from src.core.database import init_db, close_db
 from src.models.schemas import HealthResponse, ErrorResponse
+from src.api.sse import router as sse_router
+from src.api.content import router as content_router
+from src.api.quiz import router as quiz_router
+from src.api.progress import router as progress_router
+from src.api.access import router as access_router
+from src.api.adaptive import router as adaptive_router
+from src.api.quiz_llm import router as quiz_llm_router
+from src.api.costs import router as costs_router
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -93,12 +101,6 @@ async def health_check(request: Request):
 # API Routes
 # =============================================================================
 
-# Import routers
-from src.api.content import router as content_router
-from src.api.quiz import router as quiz_router
-from src.api.progress import router as progress_router
-from src.api.access import router as access_router
-
 # Include routers
 app.include_router(
     content_router,
@@ -122,6 +124,31 @@ app.include_router(
     access_router,
     prefix="/api/v1",
     tags=["Access"]
+)
+
+app.include_router(
+    sse_router,
+    prefix="/api/v1",
+    tags=["MCP", "SSE"]
+)
+
+# Phase 2: Hybrid LLM Features (Optional)
+app.include_router(
+    adaptive_router,
+    prefix="/api/v1",
+    tags=["Adaptive Learning (Phase 2)"]
+)
+
+app.include_router(
+    quiz_llm_router,
+    prefix="/api/v1",
+    tags=["Quiz (Phase 2)"]
+)
+
+app.include_router(
+    costs_router,
+    prefix="/api/v1",
+    tags=["Cost Tracking (Phase 2)"]
 )
 
 

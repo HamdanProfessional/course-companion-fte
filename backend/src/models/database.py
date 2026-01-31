@@ -12,8 +12,10 @@ from sqlalchemy import (
     Column,
     String,
     Integer,
+    Float,
     Text,
     DateTime,
+    Date,
     ForeignKey,
     Enum as SQLEnum,
     JSON,
@@ -30,9 +32,9 @@ from src.core.database import Base
 
 class UserTier(str, Enum):
     """User subscription tiers."""
-    FREE = "free"
-    PREMIUM = "premium"
-    PRO = "pro"
+    FREE = "FREE"
+    PREMIUM = "PREMIUM"
+    PRO = "PRO"
 
 
 class DifficultyLevel(str, Enum):
@@ -67,9 +69,9 @@ class User(Base):
         index=True
     )
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
-    tier: Mapped[UserTier] = mapped_column(
-        SQLEnum(UserTier),
-        default=UserTier.FREE,
+    tier: Mapped[str] = mapped_column(
+        String(20),
+        default="FREE",
         nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -99,7 +101,7 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, email={self.email}, tier={self.tier.value})>"
+        return f"<User(id={self.id}, email={self.email}, tier={self.tier})>"
 
 
 class Chapter(Base):
@@ -115,9 +117,10 @@ class Chapter(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     order: Mapped[int] = mapped_column(Integer, unique=True, nullable=False, index=True)
-    difficulty_level: Mapped[DifficultyLevel] = mapped_column(
-        SQLEnum(DifficultyLevel),
-        default=DifficultyLevel.BEGINNER
+    difficulty_level: Mapped[str] = mapped_column(
+        String(20),
+        default="BEGINNER",
+        nullable=False
     )
     estimated_time: Mapped[int] = mapped_column(Integer, default=30)  # Minutes
     r2_content_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -177,9 +180,10 @@ class Quiz(Base):
         unique=True  # One quiz per chapter
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
-    difficulty: Mapped[DifficultyLevel] = mapped_column(
-        SQLEnum(DifficultyLevel),
-        default=DifficultyLevel.BEGINNER
+    difficulty: Mapped[str] = mapped_column(
+        String(20),
+        default="BEGINNER",
+        nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -229,8 +233,8 @@ class Question(Base):
     )
     question_text: Mapped[str] = mapped_column(Text, nullable=False)
     options: Mapped[dict] = mapped_column(JSON, nullable=False)  # {"A": "...", "B": "...", ...}
-    correct_answer: Mapped[AnswerChoice] = mapped_column(
-        SQLEnum(AnswerChoice),
+    correct_answer: Mapped[str] = mapped_column(
+        String(1),
         nullable=False
     )
     explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -369,3 +373,55 @@ class QuizAttempt(Base):
 
     def __repr__(self) -> str:
         return f"<QuizAttempt(id={self.id}, user_id={self.user_id}, quiz_id={self.quiz_id}, score={self.score}%)>"
+
+
+class LLMCost(Base):
+    """Track LLM API costs for Phase 2 features."""
+
+    __tablename__ = "llm_costs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+    feature: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # "adaptive", "quiz_llm", "mentor"
+    provider: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False
+    )  # "openai" or "anthropic"
+    model: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )  # e.g., "gpt-4o-mini"
+    tokens_used: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    cost_usd: Mapped[float] = mapped_column(  # Cost in USD
+        Float,
+        nullable=False
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False
+    )
+
+    __table_args__ = (
+        Index("idx_llm_costs_user_id", "user_id"),
+        Index("idx_llm_costs_timestamp", "timestamp"),
+        CheckConstraint("tokens_used >= 0", name="check_tokens_non_negative"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<LLMCost(id={self.id}, user_id={self.user_id}, feature={self.feature}, cost=${self.cost_usd:.4f})>"

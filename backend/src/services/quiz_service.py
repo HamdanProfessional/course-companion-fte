@@ -46,7 +46,7 @@ class QuizService:
         return QuizWithQuestions(
             id=str(quiz.id),
             title=quiz.title,
-            difficulty=quiz.difficulty.value,
+            difficulty=quiz.difficulty,
             chapter_id=str(quiz.chapter_id),
             created_at=quiz.created_at,
             questions=[
@@ -79,7 +79,7 @@ class QuizService:
             QuizWithQuestions(
                 id=str(quiz.id),
                 title=quiz.title,
-                difficulty=quiz.difficulty.value,
+                difficulty=quiz.difficulty,
                 chapter_id=str(quiz.chapter_id),
                 created_at=quiz.created_at,
                 questions=[]
@@ -122,7 +122,7 @@ class QuizService:
         for question in quiz.questions:
             question_id_str = str(question.id)
             selected_answer = submission.answers.get(question_id_str)
-            correct_answer = question.correct_answer.value
+            correct_answer = question.correct_answer
 
             # Determine if correct
             is_correct = selected_answer == correct_answer if selected_answer else False

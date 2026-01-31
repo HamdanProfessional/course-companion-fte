@@ -366,3 +366,140 @@ All technical decisions prioritize:
 5. **Cost Efficiency**: Generous free tiers, predictable pricing
 
 **Next Steps**: Proceed to Phase 1 - Design & Contracts (data-model.md, API client spec, quickstart.md)
+
+---
+
+## Additional Research (January 31, 2026)
+
+### Latest Implementation Resources
+
+**Next.js 14 + App Router:**
+- [Next.js 14 TypeScript Configuration (Official Docs)](https://nextjs.org/docs/14/app/building-your-application/configuring/typescript) - Official TypeScript setup
+- [Simplifying Query Parameters in Next.js 14/15 with React Query (Medium)](https://medium.com/@jackfd120/simplifying-query-parameters-in-next-js-14-15-with-react-query-and-typescript-9e305da13bf1) - Query parameters guide
+- [Advanced Server Rendering with React Query + Next.js App Router](https://dev.to/rayenmabrouk/advanced-server-rendering-react-query-with-nextjs-app-router-bi7) - SSR patterns
+- [How to Deploy a Next.js App in 2026](https://kuberns.com/blogs/post/deploy-nextjs-app/) - Latest deployment practices
+
+**Dashboard with Progress Visualization:**
+- [How to use Next.js and Recharts to build an information dashboard](https://ably.com/blog/informational-dashboard-with-nextjs-and-recharts) - Comprehensive dashboard guide
+- [Next.js School Management Dashboard UI Design Tutorial (YouTube)](https://www.youtube.com/watch?v=myYlGLFxZas) - **Perfect for LMS use case**
+- [Building a Real-time Analytics Dashboard with Next.js 14](https://medium.com/@FAANG/building-a-real-time-analytics-dashboard-with-next-js-14-from-data-to-insights-3f2e174419f3) - Real-time focus
+- [Next.js Charts with Recharts - A Useful Guide](https://app-generator.dev/docs/technologies/nextjs/integrate-recharts.html) - Chart types reference
+
+**Vercel Deployment & Environment Variables:**
+- [How to Deploy a Next.js App in 2026](https://kuberns.com/blogs/post/deploy-nextjs-app/) - Latest deployment guide
+- [How to Deploy a Next.js App with Environment Variables](https://meetpan1048.medium.com/how-to-deploy-a-next-js-app-with-environment-variables-common-mistakes-explained-59e52aadd7e0) - Common mistakes to avoid
+- [Vercel Environment Variables (Official)](https://vercel.com/docs/environment-variables) - Official documentation
+- [How to Configure Deployment on Vercel](https://oneuptime.com/blog/post/2026-01-24/configure-vercel-deployment/view) - Recent (6 days ago)
+
+**Authentication Integration:**
+- [Combining Next.js and NextAuth with a FastAPI Backend](https://tom.catshoek.dev/posts/nextauth-fastapi/) - Best integration tutorial
+- [Full Stack FastAPI + NextJS JWT Authentication (YouTube)](https://www.youtube.com/watch?v=InzrcSk_9YU) - Complete video walkthrough
+- [Adding Next-Auth Authentication to Django, FastAPI, and Next.js](https://damianhodgkiss.com/tutorials/fullstack-django-fastapi-nextjs-next-auth) - Multi-backend tutorial
+
+### Dashboard Implementation Pattern
+
+```typescript
+// app/dashboard/page.tsx
+'use client';
+
+import { useProgress, useStreak, useChapters } from '@/hooks';
+import { PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+
+export default function DashboardPage() {
+  const { data: progress, isLoading } = useProgress();
+  const { data: streak } = useStreak();
+  const { data: chapters } = useChapters();
+
+  if (isLoading) return <Loading />;
+
+  const completionData = [
+    { name: 'Completed', value: progress?.completion_percentage || 0 },
+    { name: 'Remaining', value: 100 - (progress?.completion_percentage || 0) }
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Progress Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader><CardTitle>Progress</CardTitle></CardHeader>
+          <CardContent>
+            <PieChart width={200} height={200}>
+              <Pie data={completionData} dataKey="value">
+                <Cell fill="#10b981" />
+                <Cell fill="#e5e7eb" />
+              </Pie>
+            </PieChart>
+            <p className="text-center mt-2">{progress?.completion_percentage}% Complete</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Current Streak</CardTitle></CardHeader>
+          <CardContent className="text-center">
+            <div className="text-6xl">🔥</div>
+            <p className="text-3xl font-bold">{streak?.current_streak || 0}</p>
+            <p className="text-sm text-gray-600">days</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <Button variant="primary" className="w-full">Continue Learning</Button>
+            <Button variant="outline" className="w-full">Take Quiz</Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Course Outline */}
+      <Card>
+        <CardHeader><CardTitle>Course Outline</CardTitle></CardHeader>
+        <CardContent>
+          {chapters?.map(chapter => (
+            <div key={chapter.id} className="flex items-center justify-between py-2">
+              <span>{chapter.title}</span>
+              {progress?.completed_chapters.includes(chapter.id) && (
+                <span className="text-green-600">✓ Completed</span>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+### Environment Variables Setup
+
+```bash
+# .env.local
+NEXT_PUBLIC_BACKEND_URL=https://your-backend.fly.dev
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key-here
+
+# Vercel Environment Variables (set in dashboard)
+# NEXT_PUBLIC_BACKEND_URL
+# NEXTAUTH_SECRET
+# NEXTAUTH_URL
+```
+
+### Deployment to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login
+vercel login
+
+# Deploy
+cd web-app
+vercel
+
+# Set environment variables in Vercel dashboard:
+# NEXT_PUBLIC_BACKEND_URL
+# NEXTAUTH_SECRET
+# NEXTAUTH_URL
+```

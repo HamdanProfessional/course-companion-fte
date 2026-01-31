@@ -1,0 +1,18 @@
+# Course Companion FTE - ChatGPT App Dependencies
+# Zero-LLM Backend: No LLM dependencies in backend client
+
+# HTTP Client for async backend API calls
+aiohttp>=3.9.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Logging (optional, for development)
+colorlog>=6.7.0
+
+# Type checking (development)
+mypy>=1.8.0
+
+# Testing (development)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

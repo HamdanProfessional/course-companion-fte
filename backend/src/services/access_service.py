@@ -49,7 +49,7 @@ class AccessService:
         if not user:
             return AccessResponse(
                 access_granted=False,
-                tier=UserTier.FREE,
+                tier="FREE",
                 reason="User not found",
                 upgrade_url="/api/v1/access/upgrade"
             )
@@ -62,10 +62,10 @@ class AccessService:
                 chapter_number = int(resource.split("-")[1])
 
                 # Free tier: access to first 3 chapters only
-                if tier == UserTier.FREE and chapter_number > self.FREE_TIER_CHAPTER_LIMIT:
+                if tier == "FREE" and chapter_number > self.FREE_TIER_CHAPTER_LIMIT:
                     return AccessResponse(
                         access_granted=False,
-                        tier=tier.value,
+                        tier=tier,
                         reason=f"Chapter {chapter_number} is premium content. Free tier includes chapters 1-{self.FREE_TIER_CHAPTER_LIMIT}.",
                         upgrade_url="/api/v1/access/upgrade"
                     )
@@ -73,14 +73,14 @@ class AccessService:
                 # Premium and Pro: all chapters
                 return AccessResponse(
                     access_granted=True,
-                    tier=tier.value,
+                    tier=tier,
                     reason=None,
                     upgrade_url=None
                 )
             except (ValueError, IndexError):
                 return AccessResponse(
                     access_granted=False,
-                    tier=tier.value,
+                    tier=tier,
                     reason="Invalid resource format",
                     upgrade_url=None
                 )
@@ -88,7 +88,7 @@ class AccessService:
         # Default: deny access for unknown resource types
         return AccessResponse(
             access_granted=False,
-            tier=tier.value,
+            tier=tier,
             reason="Unknown resource type",
             upgrade_url=None
         )
@@ -113,7 +113,7 @@ class AccessService:
 
         return {
             "user_id": str(user.id),
-            "tier": user.tier.value,
+            "tier": user.tier,
             "created_at": user.created_at.isoformat(),
         }
 
@@ -149,7 +149,7 @@ class AccessService:
 
         return TierUpdateResponse(
             user_id=str(user.id),
-            old_tier=old_tier.value,
-            new_tier=new_tier.value,
+            old_tier=old_tier,
+            new_tier=new_tier,
             upgraded_at=user.created_at  # Using created_at as timestamp placeholder
         )

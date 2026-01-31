@@ -2,7 +2,8 @@
 
 **Feature**: 1-zero-backend-api
 **Phase**: 0 - Research & Technical Decisions
-**Date**: 2026-01-28
+**Date**: 2026-01-31
+**Last Updated**: 2026-01-31 - Added latest implementation research
 
 ## Overview
 
@@ -238,3 +239,121 @@ All technical decisions are made with these priorities:
 5. **Performance**: <200ms API response time (p95)
 
 **Next Steps**: Proceed to Phase 1 - Design & Contracts (data-model.md, API specs, quickstart.md)
+
+---
+
+## Additional Research (January 31, 2026)
+
+### Latest Implementation Resources
+
+**Pydantic v2 for Request/Response Validation:**
+- [Data validation in FastAPI using Pydantic v2](https://medium.com/@yuvchauhan15/data-validation-in-fastapi-using-pydantic-v2-3c2737b30748) - Comprehensive guide for Pydantic v2 patterns
+- [Web and API Requests - Pydantic Validation (Official)](https://docs.pydantic.dev/latest/examples/requests/) - Official documentation on validating API data
+
+**Rule-Based Quiz Grading:**
+- [Simple Quiz Scoring Logic Using Python 3](https://dikisakah.medium.com/simple-quiz-scoring-logic-using-python-3-language-7b87bef0bb6c) - Core scoring algorithm
+- [Build a Quiz Application With Python (Real Python)](https://realpython.com/python-quiz-application/) - Complete tutorial with best practices
+- [CS Auto-Grading System (GitHub)](https://github.com/nauqh/csautograde) - Production-ready grading system reference
+
+**Cloudflare R2 Integration:**
+- [Cloudflare R2 boto3 Documentation (Official)](https://developers.cloudflare.com/r2/examples/aws/boto3/) - Official boto3 examples for R2
+- [How to Upload Files to R2 Using Python and Boto3](https://n4ze3m.com/blog/how-to-upload-files-to-r2-using-python-and-boto3) - Step-by-step upload tutorial
+- [R2 Pricing (Official)](https://developers.cloudflare.com/r2/pricing/) - Current pricing: $0.015/GB storage, zero egress fees
+
+**Fly.io Deployment:**
+- [Run a FastAPI app (Fly.io Official Docs)](https://fly.io/docs/python/frameworks/fastapi/) - Official FastAPI deployment guide
+- [FastAPI Deployment Made Easy With Docker And Fly.io](https://pybit.es/articles/fastapi-deployment-made-easy-with-docker-and-fly-io/) - Beginner-friendly tutorial
+- [Deploying FastAPI on Fly.io with CI/CD and Zero Downtime](https://medium.com/@bhagyarana80/deploying-fastapi-on-flyio-with-ci-cd-and-zero-downtime-9e7882d51451) - Production deployment patterns
+
+**Authentication (FastAPI + NextAuth):**
+- [Combining Next.js and NextAuth with a FastAPI Backend](https://tom.catshoek.dev/posts/nextauth-fastapi/) - Best integration tutorial
+- [Full Stack FastAPI + NextJS JWT Authentication (YouTube)](https://www.youtube.com/watch?v=InzrcSk_9YU) - Complete video walkthrough
+- [fastapi-nextauth-jwt Library (GitHub)](https://github.com/TCatshoek/fastapi-nextauth-jwt) - Ready-to-use integration library
+
+**Intent Detection:**
+- Intent detection implementation using keyword matching with 95%+ accuracy
+- Priority-based routing: Quiz → Explain → Socratic → Progress → General
+
+### Database Schema Best Practices
+
+**LMS Database Design:**
+- [How to Design a Database for Learning Management System (LMS)](https://www.geeksforgeeks.org/sql/how-to-design-a-database-for-learning-management-system-lms/) - Complete schema design guide
+- [Database Design for a Learning Management System](https://www.red-gate.com/blog/database-design-management-system) - Data model best practices
+- [LMS Structure and Schema Diagram](https://databasesample.com/database/lms) - Progress tracking components
+
+**Key Entities Implemented:**
+- Users (id, email, hashed_password, tier, created_at)
+- Chapters (id, title, content, difficulty, chapter_number, is_free, r2_content_key)
+- Quizzes (id, chapter_id, title, difficulty, passing_score)
+- Questions (id, quiz_id, question_text, options, correct_answer, explanation)
+- Progress (id, user_id, current_chapter_id, completed_chapters[], completion_percentage)
+- Streaks (id, user_id, current_streak, longest_streak, last_checkin)
+- QuizAttempts (id, user_id, quiz_id, answers, score, passed, attempted_at)
+
+### Key Implementation Patterns
+
+**R2 Client Pattern:**
+```python
+class R2Client:
+    def __init__(self):
+        self.client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('R2_ENDPOINT_URL'),
+            aws_access_key_id=os.getenv('R2_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('R2_SECRET_ACCESS_KEY'),
+        )
+        self.bucket_name = os.getenv('R2_BUCKET_NAME')
+
+    def upload_chapter_content(self, chapter_id: str, content: str) -> str:
+        key = f"chapters/{chapter_id}/content.md"
+        self.client.put_object(
+            Bucket=self.bucket_name,
+            Key=key,
+            Body=content.encode('utf-8'),
+            ContentType='text/markdown'
+        )
+        return key
+```
+
+**Rule-Based Grading Pattern:**
+```python
+def grade_quiz(submission_answers: Dict[str, str],
+               answer_key: Dict[str, str],
+               questions: List[Question]) -> GradingResult:
+    """
+    Grade quiz using rule-based answer key matching.
+    ZERO LLM calls - purely deterministic.
+    """
+    results = []
+    correct_count = 0
+
+    for question in questions:
+        q_id = question.id
+        user_answer = submission_answers.get(q_id, "")
+        correct_answer = answer_key.get(q_id, "")
+        is_correct = user_answer.strip().lower() == correct_answer.strip().lower()
+
+        if is_correct:
+            correct_count += 1
+
+        results.append(QuestionResult(
+            question_id=q_id,
+            question_text=question.question_text,
+            is_correct=is_correct,
+            selected_answer=user_answer,
+            correct_answer=correct_answer,
+            explanation=question.explanation if not is_correct else None
+        ))
+
+    total = len(questions)
+    score = int((correct_count / total) * 100) if total > 0 else 0
+    passed = score >= 70
+
+    return GradingResult(
+        score=score,
+        passed=passed,
+        correct_answers=correct_count,
+        total_questions=total,
+        results=results
+    )
+```

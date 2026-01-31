@@ -159,6 +159,10 @@ class BackendClient {
     });
   }
 
+  async getUserTier(userId: string): Promise<{ tier: string }> {
+    return this.request<{ tier: string }>(`/api/v1/user/${userId}/tier`);
+  }
+
   // Access Control APIs
   async checkAccess(userId: string, resource: string): Promise<{
     access_granted: boolean;

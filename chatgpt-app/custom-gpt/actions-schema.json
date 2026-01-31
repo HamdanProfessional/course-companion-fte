@@ -1,0 +1,452 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Course Companion FTE Backend API",
+    "description": "Zero-Backend-LLM API for Course Companion FTE. Returns course content, quizzes, and progress data. No LLM processing on backend.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://92.113.147.250:8180",
+      "description": "Production backend"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development backend"
+    }
+  ],
+  "paths": {
+    "/api/v1/chapters": {
+      "get": {
+        "operationId": "listChapters",
+        "summary": "List all chapters",
+        "description": "Get a list of all available chapters in the course",
+        "tags": ["Content"],
+        "responses": {
+          "200": {
+            "description": "List of chapters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "string", "example": "chapter-1"},
+                      "title": {"type": "string", "example": "Introduction to MCP"},
+                      "order": {"type": "integer", "example": 1},
+                      "difficulty_level": {"type": "string", "enum": ["beginner", "intermediate", "advanced"], "example": "beginner"},
+                      "estimated_time": {"type": "integer", "example": 15},
+                      "quiz_id": {"type": "string", "nullable": true, "example": "quiz-1"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chapters/{chapter_id}": {
+      "get": {
+        "operationId": "getChapter",
+        "summary": "Get chapter content",
+        "description": "Get detailed chapter content including full text",
+        "tags": ["Content"],
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "example": "chapter-1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapter details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "content": {"type": "string", "description": "Full chapter content text"},
+                    "order": {"type": "integer"},
+                    "difficulty_level": {"type": "string"},
+                    "estimated_time": {"type": "integer"},
+                    "quiz_id": {"type": "string", "nullable": true}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Chapter not found"
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "operationId": "searchContent",
+        "summary": "Search course content",
+        "description": "Search for specific topics across all course materials",
+        "tags": ["Content"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Search query",
+            "example": "MCP protocol"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer", "default": 10},
+            "description": "Maximum number of results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {"type": "string"},
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "chapter_id": {"type": "string"},
+                          "title": {"type": "string"},
+                          "snippet": {"type": "string"},
+                          "relevance_score": {"type": "number"}
+                        }
+                      }
+                    },
+                    "total": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/quizzes/{quiz_id}": {
+      "get": {
+        "operationId": "getQuiz",
+        "summary": "Get quiz questions",
+        "description": "Get a quiz with all questions and answer options",
+        "tags": ["Quiz"],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "example": "quiz-1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quiz details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "difficulty": {"type": "string"},
+                    "chapter_id": {"type": "string"},
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "string"},
+                          "question_text": {"type": "string"},
+                          "options": {"type": "object", "description": "Map of A/B/C/D to answer text"},
+                          "order": {"type": "integer"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/quizzes/{quiz_id}/submit": {
+      "post": {
+        "operationId": "submitQuiz",
+        "summary": "Submit quiz answers",
+        "description": "Submit quiz answers for grading (rule-based, no LLM)",
+        "tags": ["Quiz"],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "answers": {
+                    "type": "object",
+                    "description": "Map of question IDs to selected answers (A, B, C, or D)",
+                    "example": {
+                      "question-1": "B",
+                      "question-2": "A"
+                    }
+                  }
+                },
+                "required": ["answers"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quiz results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quiz_id": {"type": "string"},
+                    "score": {"type": "number", "description": "Percentage score (0-100)"},
+                    "passed": {"type": "boolean"},
+                    "total_questions": {"type": "integer"},
+                    "correct_answers": {"type": "integer"},
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "question_id": {"type": "string"},
+                          "question_text": {"type": "string"},
+                          "selected_answer": {"type": "string"},
+                          "correct_answer": {"type": "string"},
+                          "is_correct": {"type": "boolean"},
+                          "explanation": {"type": "string", "nullable": true}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress/{user_id}": {
+      "get": {
+        "operationId": "getProgress",
+        "summary": "Get user progress",
+        "description": "Get user's learning progress and completion statistics",
+        "tags": ["Progress"],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "User ID (use '00000000-0000-0000-0000-000000000001' for anonymous users)",
+            "example": "00000000-0000-0000-0000-000000000001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "user_id": {"type": "string"},
+                    "completed_chapters": {
+                      "type": "array",
+                      "items": {"type": "string"},
+                      "description": "List of completed chapter IDs"
+                    },
+                    "current_chapter_id": {"type": "string", "nullable": true},
+                    "completion_percentage": {"type": "number", "description": "0-100"},
+                    "last_activity": {"type": "string", "format": "date-time"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress/{user_id}": {
+      "put": {
+        "operationId": "updateProgress",
+        "summary": "Mark chapter complete",
+        "description": "Mark a chapter as complete and update progress",
+        "tags": ["Progress"],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chapter_id": {
+                    "type": "string",
+                    "description": "Chapter ID to mark as complete",
+                    "example": "chapter-1"
+                  }
+                },
+                "required": ["chapter_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "user_id": {"type": "string"},
+                    "completed_chapters": {"type": "array", "items": {"type": "string"}},
+                    "completion_percentage": {"type": "number"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/streaks/{user_id}": {
+      "get": {
+        "operationId": "getStreak",
+        "summary": "Get user streak",
+        "description": "Get user's current and longest streak",
+        "tags": ["Progress"],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Streak information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "user_id": {"type": "string"},
+                    "current_streak": {"type": "integer", "description": "Current consecutive days"},
+                    "longest_streak": {"type": "integer", "description": "Longest streak achieved"},
+                    "last_checkin": {"type": "string", "format": "date-time", "nullable": true}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/access/check": {
+      "post": {
+        "operationId": "checkAccess",
+        "summary": "Check content access",
+        "description": "Check if user has access to specific content (freemium enforcement)",
+        "tags": ["Access"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "User ID to check",
+                    "example": "00000000-0000-0000-0000-000000000001"
+                  },
+                  "resource": {
+                    "type": "string",
+                    "description": "Resource identifier (e.g., 'chapter-4')",
+                    "example": "chapter-4"
+                  }
+                },
+                "required": ["user_id", "resource"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access check result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_granted": {"type": "boolean"},
+                    "tier": {"type": "string", "enum": ["free", "premium", "pro"]},
+                    "reason": {"type": "string", "nullable": true},
+                    "upgrade_url": {"type": "string", "nullable": true}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied (premium content)"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "JWT token for authenticated users (optional for anonymous users)"
+      }
+    }
+  }
+}

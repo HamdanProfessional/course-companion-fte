@@ -17,16 +17,16 @@ from pydantic import BaseModel, Field, EmailStr, validator
 
 class UserTier(str, Enum):
     """User subscription tiers."""
-    FREE = "free"
-    PREMIUM = "premium"
-    PRO = "pro"
+    FREE = "FREE"
+    PREMIUM = "PREMIUM"
+    PRO = "PRO"
 
 
 class DifficultyLevel(str, Enum):
     """Content difficulty levels."""
-    BEGINNER = "beginner"
-    INTERMEDIATE = "intermediate"
-    ADVANCED = "advanced"
+    BEGINNER = "BEGINNER"
+    INTERMEDIATE = "INTERMEDIATE"
+    ADVANCED = "ADVANCED"
 
 
 class AnswerChoice(str, Enum):

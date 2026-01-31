@@ -195,7 +195,7 @@ class IntentDetector:
             "intent": intent.type.value,
             "confidence": intent.confidence,
             "skill": intent.skill,
-            "matched_keywords": intent.keywords,
+            "matched_keywords": list(intent.keywords),
             "all_matches": all_matches,
         }
 
