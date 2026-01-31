@@ -12,7 +12,7 @@
 [![Phase 2](https://img.shields.io/badge/phase%202-hybrid--intelligence-purple)](README.md#phase-2-hybrid-intelligence)
 [![Phase 3](https://img.shields.io/badge/phase%203-web--application-blue)](README.md#phase-3-web-application)
 
-**🚀 Live Demo:** [Web App](https://web-app-ebon-mu.vercel.app) | [API Docs](https://92.113.147.250:3505/docs) | [Backend](https://92.113.147.250:3505)
+**🚀 Live Demo:** [Web App](https://web-app-ebon-mu.vercel.app) | [API Docs](http://92.113.147.250:3505/docs) | [Backend](http://92.113.147.250:3505)
 
 **💰 99.99% Cost Reduction** | **⚡ Sub-100ms Response** | **📈 Scales to 100K+ Users**
 
@@ -194,9 +194,9 @@ Deployment: Vercel (Edge Network)
 | Component | URL | Status |
 |-----------|-----|--------|
 | **Web Application** | [web-app-ebon-mu.vercel.app](https://web-app-ebon-mu.vercel.app) | ✅ Live |
-| **Backend API** | [92.113.147.250:3505](https://92.113.147.250:3505) | ✅ Live |
-| **API Documentation** | [92.113.147.250:3505/docs](https://92.113.147.250:3505/docs) | ✅ Live |
-| **Health Check** | [92.113.147.250:3505/health](https://92.113.147.250:3505/health) | ✅ Healthy |
+| **Backend API** | [92.113.147.250:3505](http://92.113.147.250:3505) | ✅ Live |
+| **API Documentation** | [92.113.147.250:3505/docs](http://92.113.147.250:3505/docs) | ✅ Live |
+| **Health Check** | [92.113.147.250:3505/health](http://92.113.147.250:3505/health) | ✅ Healthy |
 
 ### 🎬 Interactive Demo
 
@@ -207,7 +207,7 @@ Deployment: Vercel (Edge Network)
 4. View your progress and streak
 
 **Explore the API:**
-1. Visit [92.113.147.250:3505/docs](https://92.113.147.250:3505/docs)
+1. Visit [92.113.147.250:3505/docs](http://92.113.147.250:3505/docs)
 2. Try out interactive API endpoints
 3. Test Phase 2 adaptive features (requires PRO tier)
 
