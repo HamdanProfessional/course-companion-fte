@@ -42,6 +42,13 @@ class LLMProviderPricing:
         "claude-3-opus-20240229": {"input": 15.00, "output": 75.00},
     }
 
+    # GLM (Zhipu AI) pricing (as of 2026)
+    GLM_PRICING = {
+        "glm-4-plus": {"input": 0.10, "output": 0.10},  # Approximate pricing
+        "glm-4.7": {"input": 0.10, "output": 0.10},  # Latest GLM model
+        "glm-4": {"input": 0.10, "output": 0.10},
+    }
+
 
 def calculate_cost(
     provider: str,
@@ -53,7 +60,7 @@ def calculate_cost(
     Calculate LLM API cost in USD.
 
     Args:
-        provider: LLM provider ("openai" or "anthropic")
+        provider: LLM provider ("openai", "anthropic", or "glm")
         model: Model name
         input_tokens: Number of input tokens
         output_tokens: Number of output tokens
@@ -68,6 +75,8 @@ def calculate_cost(
         pricing = LLMProviderPricing.OPENAI_PRICING.get(model)
     elif provider == "anthropic":
         pricing = LLMProviderPricing.ANTHROPIC_PRICING.get(model)
+    elif provider == "glm":
+        pricing = LLMProviderPricing.GLM_PRICING.get(model)
     else:
         raise CostTrackingError(f"Unknown provider: {provider}")
 

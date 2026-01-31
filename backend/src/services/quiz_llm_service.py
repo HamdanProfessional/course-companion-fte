@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from src.core.llm import get_llm_client, LLMClientError
+from src.services.cost_tracking_service import get_cost_tracking_client
 from src.models.database import Quiz, Question, QuizAttempt, User
 from src.services.quiz_service import QuizService
 
@@ -194,12 +195,68 @@ async def grade_quiz_with_llm(
         open_max_score = 0
 
         for q_id, answer_data in open_answers.items():
-            graded = await _grade_open_answer_with_llm(
-                q_id,
-                answer_data["question"],
-                answer_data["answer"],
-                llm_client
-            )
+            # Use cost-tracking client for each LLM call
+            cost_client = get_cost_tracking_client(str(user_id), "quiz_llm", db)
+            if cost_client:
+                logger.info(f"Using cost-tracking client for quiz grading (user: {user_id})")
+                graded_response = await cost_client.generate(
+                    prompt=f"""Grade this student's answer:
+
+Question: {answer_data["question"]}
+
+Student Answer:
+{answer_data["answer"]}
+
+Provide grading in JSON format.""",
+                    system_prompt="""You are an AI tutor grading open-ended quiz questions about AI agents, MCP, and ChatGPT app development.
+
+Grading Rubric:
+- 25-30 points: Excellent (accurate, complete, well-explained)
+- 20-24 points: Good (mostly correct, minor gaps)
+- 15-19 points: Fair (some correct concepts, significant gaps)
+- 10-14 points: Needs Work (minimal understanding)
+- 0-9 points: Incorrect (not on track)
+
+Respond in JSON format with keys: score, max_score, feedback, corrections, strengths, suggestions""",
+                    temperature=0.3
+                )
+                # Parse JSON from cost_client response
+                import json
+                import re
+                try:
+                    json_match = re.search(r'```json\s*(\{.*?\})\s*```', graded_response, re.DOTALL)
+                    if json_match:
+                        graded_response = json_match.group(1)
+                    elif '```' in graded_response:
+                        graded_response = re.sub(r'```\w*\n?', '', graded_response).strip()
+                    grading = json.loads(graded_response)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse JSON from GLM response: {e}")
+                    grading = {
+                        "score": 15,
+                        "max_score": 30,
+                        "feedback": "Unable to parse grading. Please try again.",
+                        "corrections": [],
+                        "strengths": [],
+                        "suggestions": ["Review the question and answer more carefully."]
+                    }
+                graded = LLMGradedResponse(
+                    question_id=q_id,
+                    score=grading.get("score", 15),
+                    max_score=grading.get("max_score", 30),
+                    feedback=grading.get("feedback", "Review the course material."),
+                    corrections=grading.get("corrections", []),
+                    strengths=grading.get("strengths", []),
+                    suggestions=grading.get("suggestions", [])
+                )
+            else:
+                # Fallback to original function without cost tracking
+                graded = await _grade_open_answer_with_llm(
+                    q_id,
+                    answer_data["question"],
+                    answer_data["answer"],
+                    llm_client
+                )
 
             llm_graded_results.append(graded)
             open_score += graded.score
@@ -291,15 +348,42 @@ Student Answer:
 
 Provide grading in JSON format."""
 
+    # Get cost-tracking client if user_id is available
+    # Note: We don't have user_id in this function scope, so we skip cost tracking here
+    # Cost tracking will be done in the calling function
+
     response = await llm_client.generate(
         prompt=user_prompt,
         system_prompt=system_prompt,
-        temperature=0.3,  # Low temperature for consistent grading
-        response_format={"type": "json_object"}
+        temperature=0.3  # Low temperature for consistent grading
     )
 
     import json
-    grading = json.loads(response)
+    import re
+
+    # Try to parse JSON response
+    try:
+        # GLM might return JSON with markdown code blocks, extract JSON
+        json_match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+        if json_match:
+            response = json_match.group(1)
+        elif '```' in response:
+            # Extract content between code blocks
+            response = re.sub(r'```\w*\n?', '', response).strip()
+
+        grading = json.loads(response)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse JSON from GLM response: {e}")
+        logger.error(f"Response was: {response}")
+        # Fallback to default grading
+        grading = {
+            "score": 15,
+            "max_score": 30,
+            "feedback": "Unable to parse grading. Please try again.",
+            "corrections": [],
+            "strengths": [],
+            "suggestions": ["Review the question and answer more carefully."]
+        }
 
     return LLMGradedResponse(
         question_id=question_id,

@@ -14,6 +14,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from src.core.llm import get_llm_client, LLMClientError
+from src.services.cost_tracking_service import get_cost_tracking_client
 from src.models.database import (
     User, Chapter, Quiz, QuizAttempt, Progress, Question
 )
@@ -365,14 +366,25 @@ Available chapters:
 
 Provide recommendation in JSON format."""
 
-        # Generate recommendation
+        # Generate recommendation with cost tracking
         # Note: GLM API doesn't support response_format parameter, so we don't pass it
         # The LLM is instructed via system_prompt to respond in JSON
-        response = await llm_client.generate(
-            prompt=user_prompt,
-            system_prompt=system_prompt,
-            temperature=0.4
-        )
+
+        # Use cost-tracking client if available
+        cost_client = get_cost_tracking_client(str(user_id), "adaptive", db)
+        if cost_client:
+            logger.info(f"Using cost-tracking client for adaptive recommendations (user: {user_id})")
+            response = await cost_client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                temperature=0.4
+            )
+        else:
+            response = await llm_client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                temperature=0.4
+            )
 
         import json
         import re
