@@ -1,115 +1,100 @@
-# Final MCP Server Setup for ChatGPT App
+# MCP Server for ChatGPT App - WORKING! ✅
 
-## ✅ Current Status
+## ✅ Current Status (Feb 1, 2026)
 
-**MCP Server:** Running locally on port 3506
-- ✅ Responding at `http://localhost:3506/sse`
-- ✅ Returns proper SSE headers: `content-type: text/event-stream`
+**MCP Server:** RUNNING on port 3506
+- ✅ Listening at `http://92.113.147.250:3506`
+- ✅ HTTPS proxy working at `https://sse.testservers.online/mcp/sse`
+- ✅ Firewall ports 3505 and 3506 opened
+- ✅ Returns proper JSON-RPC responses following MCP specification
 - ✅ Tools available: `list_quizzes`, `get_quiz`, `search_content`
+- ✅ Mock data fallback when backend is unavailable
 
-**Backend API:** Running on port 3505
-- ✅ 4 quizzes with 6 questions each
+## 🔧 How It Works
 
-**React UI:** Available at `http://92.113.147.250:3505/ui`
+**Architecture:**
+```
+ChatGPT (Developer Mode)
+    ↓ HTTPS
+Cloudflare Proxy (sse.testservers.online)
+    ↓ HTTP
+nginx Reverse Proxy (/mcp/sse → localhost:3506)
+    ↓
+FastAPI MCP Server (mcp_server_proper.py)
+    ↓ JSON-RPC
+Backend API (optional) OR Mock Data (fallback)
+```
 
-**Domain:** `sse.testservers.online` (with Cloudflare HTTPS proxy)
+**Tools Available:**
 
-## ⚠️ Issue: nginx Configuration Not Updated
+1. **list_quizzes** - List all available quizzes
+   - Returns: Quiz ID, title, difficulty, question count
+   - Mock data includes 3 demo quizzes
 
-The nginx configuration at `/etc/nginx/sites-available/sse-testservers` needs to be updated. The current config proxies to port 8000, not 3506.
+2. **get_quiz** - Get a specific quiz with widget
+   - Returns: Quiz data with `_meta` for ChatGPT widget
+   - Includes interactive quiz UI component
+   - Mock data includes 3 questions per quiz
 
-## 🔧 Fix (You need to do this):
+3. **search_content** - Search course content
+   - Returns: Chapter ID, title, snippet
+   - Mock data returns 2 sample chapters
 
-### Option 1: Update nginx Configuration Manually
+## 🚀 How to Start MCP Server
 
-SSH to the server and update the config:
+If the MCP server is not running:
 
 ```bash
+# SSH to server
 ssh n00bi2761@92.113.147.250
-sudo nano /etc/nginx/sites-available/sse-testservers
+
+# Run the startup script
+cd ~/course-companion/backend
+./start_mcp_proper.sh
+
+# Or manually:
+cd ~/course-companion/backend
+export PATH=/home/n00bi2761/.local/bin:$PATH
+nohup python3 mcp_server_proper.py > mcp_proper.log 2>&1 &
+
+# Check logs
+tail -f ~/course-companion/backend/mcp_proper.log
 ```
 
-Replace the content with:
+## 🧪 Test the MCP Server
 
-```nginx
-# MCP Server proxy for ChatGPT Apps
-server {
-    listen 80;
-    server_name sse.testservers.online;
-
-    # Serve React UI component
-    location /ui/ {
-        proxy_pass http://92.113.147.250:3505/ui/;
-        add_header Cache-Control "no-cache";
-    }
-
-    # Serve UI component.js
-    location /ui/dist/component.js {
-        proxy_pass http://92.113.147.250:3505/ui/dist/component.js;
-        add_header Content-Type "application/javascript";
-    }
-
-    # Proxy MCP server (FastMCP) - /sse endpoint
-    location /sse {
-        proxy_pass http://localhost:3506/sse;
-
-        # SSE specific headers
-        proxy_http_version 1.1;
-        proxy_set_header Connection "";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_buffering off;
-        proxy_cache off;
-        chunked_transfer_encoding off;
-
-        # Timeouts for SSE
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
-    }
-
-    # Root MCP endpoint (if needed)
-    location /mcp {
-        proxy_pass http://localhost:3506/mcp;
-
-        proxy_http_version 1.1;
-        proxy_set_header Connection "";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Then reload nginx:
+**Test 1: Health Check**
 ```bash
-sudo nginx -t
-sudo systemctl reload nginx
+curl http://92.113.147.250:3506/health
+# Expected: {"status":"healthy","mcp_endpoint":"/sse"}
 ```
 
-### Option 2: Use the New Config File I Created
-
-I've created the updated config at `/tmp/sse-testservers-new.conf`. Apply it:
-
+**Test 2: Initialize (MCP handshake)**
 ```bash
-ssh n00bi27761@92.113.147.250
-sudo cp /tmp/sse-testservers-new.conf /etc/nginx/sites-available/sse-testservers
-sudo nginx -t
-sudo systemctl reload nginx
+curl -X POST "https://sse.testservers.online/mcp/sse" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"initialize","id":1}'
 ```
 
-## ✅ Test After Fix
-
-Once nginx is reloaded, test with:
-
+**Test 3: List Tools**
 ```bash
-# Should return 200 OK with SSE headers
-curl -I https://sse.testservers.online/sse
+curl -X POST "https://sse.testservers.online/mcp/sse" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":2}'
+```
 
-# Should list available quizzes
-# (This will work once you connect in ChatGPT Developer Mode)
+**Test 4: Call list_quizzes**
+```bash
+curl -X POST "https://sse.testservers.online/mcp/sse" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"list_quizzes","arguments":{}},"id":3}'
+```
+
+**Test 5: Get Quiz with Widget**
+```bash
+curl -X POST "https://sse.testservers.online/mcp/sse" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"get_quiz","arguments":{"quiz_id":"quiz-001"}},"id":4}'
 ```
 
 ## 🎯 Connect in ChatGPT Developer Mode
@@ -117,28 +102,88 @@ curl -I https://sse.testservers.online/sse
 1. Go to https://chatgpt.com (with Developer Mode enabled)
 2. Apps → Create New App → Add MCP Server
 3. Server URL: `https://sse.testservers.online/mcp/sse`
-4. Use the app and test with:
+4. Test with:
    ```
    List all quizzes
-   Get the quiz "Introduction to AI Agents - Quiz"
+   Get the quiz "Introduction to AI Agents"
+   Search for "MCP protocol"
    ```
 
 ## 📝 What's Working
 
-- ✅ MCP Server running on `http://localhost:3506/sse`
-- ✅ Returns SSE streams correctly
-- ✅ Backend API with quiz data
-- ✅ React UI component built
-- ✅ Domain configured with Cloudflare HTTPS
+- ✅ MCP server running on port 3506
+- ✅ JSON-RPC responses following MCP spec exactly
+- ✅ nginx reverse proxy configured correctly
+- ✅ HTTPS via Cloudflare proxy
+- ✅ Firewall ports opened
+- ✅ Three tools available: list_quizzes, get_quiz, search_content
+- ✅ Mock data fallback for demo purposes
+- ✅ Widget metadata (`_meta`) included in quiz responses
 
-## 🚀 After nginx is fixed
+## 🔍 Server Details
 
-Your ChatGPT App will have:
-- ✅ Interactive quiz widget in ChatGPT
-- ✅ List quizzes tool
-- ✅ Get quiz with UI widget tool
-- ✅ Search content tool
-- ✅ All rendered inside ChatGPT interface!
+**MCP Server Process:**
+- File: `~/course-companion/backend/mcp_server_proper.py`
+- Port: 3506
+- Host: 0.0.0.0 (all interfaces)
+- Process: Running as user n00bi2761
+- Logs: `~/course-companion/backend/mcp_proper.log`
+
+**Dependencies Installed:**
+- fastapi
+- uvicorn
+- httpx
+- pydantic
+- pydantic-settings
+
+## 🛠️ Troubleshooting
+
+**If MCP server stops responding:**
+```bash
+# Check if process is running
+ssh n00bi2761@92.113.147.250 "ps aux | grep mcp_server"
+
+# Check logs
+ssh n00bi2761@92.113.147.250 "tail -50 ~/course-companion/backend/mcp_proper.log"
+
+# Restart server
+ssh n00bi2761@92.113.147.250 "~/course-companion/backend/start_mcp_proper.sh"
+```
+
+**If HTTPS endpoint fails:**
+```bash
+# Check nginx status
+ssh n00bi2761@92.113.147.250 "echo 2763 | sudo -S systemctl status nginx"
+
+# Check nginx error logs
+ssh n00bi2761@92.113.147.250 "echo 2763 | sudo -S tail -20 /var/log/nginx/error.log"
+
+# Reload nginx
+ssh n00bi2761@92.113.147.250 "echo 2763 | sudo -S systemctl reload nginx"
+```
+
+## 📊 Mock Data
+
+**Quizzes Available:**
+1. **quiz-001** - Introduction to AI Agents (Beginner)
+2. **quiz-002** - MCP Protocol Basics (Intermediate)
+3. **quiz-003** - ChatGPT Apps Development (Advanced)
+
+**Sample Questions:**
+Each quiz includes 3 questions with:
+- Multiple choice options (a, b, c, d)
+- Correct answer
+- Explanation
+
+## 🎉 ChatGPT App Features
+
+When connected to ChatGPT, the app provides:
+
+1. **Conversational Quiz Discovery** - "Show me available quizzes"
+2. **Interactive Quiz Widget** - Renders quiz UI inside ChatGPT
+3. **Instant Feedback** - Shows correct/incorrect with explanations
+4. **Content Search** - Search course material for topics
+5. **Zero-LLM Backend** - All content served deterministically
 
 **Sources:**
 - [Build your ChatGPT UI](https://developers.openai.com/apps-sdk/build/chatgpt-ui/)
