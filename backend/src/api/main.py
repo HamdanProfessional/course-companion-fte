@@ -5,9 +5,10 @@ Zero-Backend-LLM: All AI intelligence happens in ChatGPT, backend serves content
 
 from datetime import datetime
 from typing import List
+from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -171,6 +172,39 @@ async def root(request: Request):
         "docs": "/docs",
         "health": "/health",
     }
+
+
+# =============================================================================
+# ChatGPT App UI (Static Files)
+# =============================================================================
+
+# Path to ChatGPT UI static files
+UI_DIR = Path("/app/chatgpt-ui")
+
+
+@app.get("/ui", tags=["ChatGPT UI"])
+async def ui_index():
+    """Serve ChatGPT App UI index.html"""
+    index_path = UI_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return JSONResponse(status_code=404, content={"detail": "UI not found"})
+
+
+@app.get("/ui/{file_path:path}", tags=["ChatGPT UI"])
+async def ui_static_files(file_path: str):
+    """Serve ChatGPT App UI static files"""
+    file_path = file_path.lstrip("/")
+    static_path = UI_DIR / file_path
+
+    # Security: Prevent directory traversal
+    if ".." in file_path or not static_path.resolve().is_relative_to(UI_DIR.resolve()):
+        return JSONResponse(status_code=403, content={"detail": "Access denied"})
+
+    if static_path.exists() and static_path.is_file():
+        return FileResponse(static_path)
+
+    return JSONResponse(status_code=404, content={"detail": "File not found"})
 
 
 if __name__ == "__main__":

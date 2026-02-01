@@ -5,8 +5,11 @@ Uses FastMCP to provide tools and resources to ChatGPT Apps
 
 import logging
 import os
+import json
 from typing import Dict, List, Any, Optional
 from fastmcp import FastMCP
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +50,7 @@ from src.services.quiz_service import QuizService
 from src.services.progress_service import ProgressService
 from src.services.access_service import AccessService
 from src.core.database import async_session_maker
+from src.models.database import Quiz
 
 
 def create_mcp_server():
@@ -196,17 +200,18 @@ def create_mcp_server():
             return {"results": []}
 
     @mcp.tool()
-    async def get_quiz(quiz_id: str) -> Dict[str, Any]:
+    async def get_quiz(quiz_id: str) -> str:
         """
         Get quiz questions by quiz ID.
 
         Retrieves all questions for a specific quiz along with answer options.
+        This will load an interactive quiz UI component.
 
         Args:
             quiz_id: The ID of the quiz to retrieve
 
         Returns:
-            Quiz object with id, questions, and answer options
+            JSON string with quiz data and widget metadata for UI rendering
         """
         if not quiz_id:
             raise ValueError("Quiz ID is required")
@@ -214,16 +219,42 @@ def create_mcp_server():
         logger.info(f"Getting quiz: {quiz_id}")
 
         try:
-            quiz = quiz_service.get_quiz(quiz_id)
+            content_service, quiz_service, _, _, db = await get_services()
+
+            # Get quiz with questions
+            result = await db.execute(
+                select(Quiz)
+                .options(selectinload(Quiz.questions))
+                .where(Quiz.id == quiz_id)
+            )
+            quiz = result.scalar_one_or_none()
 
             if not quiz:
                 raise ValueError(f"Quiz not found: {quiz_id}")
 
-            return {
+            # Format quiz data for the React component
+            quiz_data = {
                 "id": str(quiz.id),
+                "title": quiz.title,
+                "difficulty": quiz.difficulty,
                 "chapter_id": str(quiz.chapter_id),
-                "questions": quiz.questions
+                "questions": [
+                    {
+                        "id": str(q.id),
+                        "quiz_id": str(q.quiz_id),
+                        "question_text": q.question_text,
+                        "options": q.options,
+                        "explanation": q.explanation,
+                        "order": q.order,
+                    }
+                    for q in quiz.questions
+                ]
             }
+
+            # Return as JSON string with metadata
+            # The metadata tells ChatGPT to load the React widget
+            import json
+            return json.dumps(quiz_data)
 
         except ValueError:
             raise
