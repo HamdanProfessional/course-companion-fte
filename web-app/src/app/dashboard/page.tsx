@@ -130,6 +130,55 @@ export default function DashboardPage() {
       {/* Phase 2: AI Recommendations */}
       <AIRecommendations userId={DEFAULT_USER_ID} />
 
+      {/* Phase 3: AI Features Quick Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <Link href="/adaptive-learning" className="group">
+          <Card className="group-hover:border-accent-secondary group-hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent-secondary/10 flex items-center justify-center text-2xl group-hover:bg-accent-secondary/20 transition-all">
+                  🧠
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-text-primary group-hover:text-accent-secondary transition-colors">
+                    Adaptive Learning
+                  </h3>
+                  <p className="text-sm text-text-muted mt-1">
+                    AI-powered personalized recommendations
+                  </p>
+                </div>
+                <span className="px-2 py-1 rounded text-xs font-bold bg-accent-secondary text-white">
+                  AI
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/ai-mentor" className="group">
+          <Card className="group-hover:border-accent-secondary group-hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent-secondary/10 flex items-center justify-center text-2xl group-hover:bg-accent-secondary/20 transition-all">
+                  🤖
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-text-primary group-hover:text-accent-secondary transition-colors">
+                    AI Mentor
+                  </h3>
+                  <p className="text-sm text-text-muted mt-1">
+                    24/7 interactive tutoring and Q&A
+                  </p>
+                </div>
+                <span className="px-2 py-1 rounded text-xs font-bold bg-accent-secondary text-white">
+                  AI
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard

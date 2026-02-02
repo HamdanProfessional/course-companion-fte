@@ -5,13 +5,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { SearchBar } from '@/components/SearchBar';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Chapters', href: '/chapters' },
   { name: 'Quizzes', href: '/quizzes' },
   { name: 'Progress', href: '/progress' },
-  { name: 'Profile', href: '/profile' },
+];
+
+// Phase 3 AI Features (shown separately)
+const aiFeatures = [
+  { name: 'Adaptive Learning', href: '/adaptive-learning', badge: 'AI' },
+  { name: 'AI Mentor', href: '/ai-mentor', badge: 'AI' },
 ];
 
 export function Header() {
@@ -49,6 +55,37 @@ export function Header() {
               </Link>
             );
           })}
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-border-default mx-2" />
+
+          {/* AI Features */}
+          {aiFeatures.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2',
+                  isActive
+                    ? 'bg-accent-secondary text-white'
+                    : 'text-text-secondary hover:text-accent-secondary hover:bg-accent-secondary/10'
+                )}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {item.name}
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-accent-secondary text-white">
+                  {item.badge}
+                </span>
+              </Link>
+            );
+          })}
+
+          {/* Search Bar */}
+          <div className="w-64 ml-4">
+            <SearchBar placeholder="Search..." />
+          </div>
         </div>
 
         {/* User menu - desktop */}
@@ -108,6 +145,36 @@ export function Header() {
                 </Link>
               );
             })}
+
+            {/* AI Features Section */}
+            <div className="pt-4 pb-2">
+              <div className="px-4 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                AI Features
+              </div>
+            </div>
+            {aiFeatures.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    'block px-4 py-2 rounded-lg text-base font-medium transition-colors flex items-center justify-between',
+                    isActive
+                      ? 'bg-accent-secondary text-white'
+                      : 'text-text-secondary hover:text-accent-secondary hover:bg-accent-secondary/10'
+                  )}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.name}
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-accent-secondary text-white">
+                    {item.badge}
+                  </span>
+                </Link>
+              );
+            })}
+
             <Link
               href="/profile"
               className="block px-4 py-2 rounded-lg text-base font-medium text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors"

@@ -16,7 +16,7 @@ from slowapi.errors import RateLimitExceeded
 from src.core.config import settings
 from src.core.database import init_db, close_db
 from src.models.schemas import HealthResponse, ErrorResponse
-from src.api.sse import router as sse_router
+from src.api.mcp_proper import router as mcp_router
 from src.api.content import router as content_router
 from src.api.quiz import router as quiz_router
 from src.api.progress import router as progress_router
@@ -24,6 +24,8 @@ from src.api.access import router as access_router
 from src.api.adaptive import router as adaptive_router
 from src.api.quiz_llm import router as quiz_llm_router
 from src.api.costs import router as costs_router
+# Phase 3: Unified API
+from src.api.v3 import router as v3_router
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -128,9 +130,9 @@ app.include_router(
 )
 
 app.include_router(
-    sse_router,
+    mcp_router,
     prefix="/api/v1",
-    tags=["MCP", "SSE"]
+    tags=["MCP"]
 )
 
 # Phase 2: Hybrid LLM Features (Optional)
@@ -150,6 +152,13 @@ app.include_router(
     costs_router,
     prefix="/api/v1",
     tags=["Cost Tracking (Phase 2)"]
+)
+
+# Phase 3: Unified API (Full LLM Integration)
+app.include_router(
+    v3_router,
+    prefix="/api/v3",
+    tags=["Unified Tutor API v3 (Phase 3)"]
 )
 
 
