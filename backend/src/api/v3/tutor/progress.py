@@ -24,7 +24,7 @@ from sqlalchemy import select, func
 
 from src.core.database import get_db
 from src.services.progress_service import ProgressService
-from src.models.database import UserProgress, UserStreak, QuizAttempt
+from src.models.database import Progress as UserProgress, Streak as UserStreak, QuizAttempt
 from src.models.schemas import Progress
 
 logger = logging.getLogger(__name__)
