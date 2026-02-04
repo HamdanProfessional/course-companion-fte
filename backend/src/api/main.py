@@ -24,8 +24,8 @@ from src.api.access import router as access_router
 from src.api.adaptive import router as adaptive_router
 from src.api.quiz_llm import router as quiz_llm_router
 from src.api.costs import router as costs_router
-# Phase 3: Unified API
-from src.api.v3 import router as v3_router
+# Phase 3: Unified API (Temporarily disabled due to import errors)
+# from src.api.v3 import router as v3_router
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -154,12 +154,12 @@ app.include_router(
     tags=["Cost Tracking (Phase 2)"]
 )
 
-# Phase 3: Unified API (Full LLM Integration)
-app.include_router(
-    v3_router,
-    prefix="/api/v3",
-    tags=["Unified Tutor API v3 (Phase 3)"]
-)
+# Phase 3: Unified API (Temporarily disabled due to import errors)
+# app.include_router(
+#     v3_router,
+#     prefix="/api/v3",
+#     tags=["Unified Tutor API v3 (Phase 3)"]
+# )
 
 
 # =============================================================================
