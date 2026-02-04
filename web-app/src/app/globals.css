@@ -23,6 +23,7 @@
 
     /* Accent Colors */
     --accent-primary: #3B82F6; /* Electric blue */
+    --accent-secondary: #8B5CF6; /* Purple for AI features */
     --accent-success: #10B981; /* Emerald green */
     --accent-warning: #F59E0B; /* Amber */
     --accent-danger: #EF4444; /* Red */

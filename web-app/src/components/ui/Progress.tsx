@@ -54,7 +54,7 @@ export const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgres
     const offset = circumference - (percentage / 100) * circumference;
 
     return (
-      <div ref={ref} className={cn('inline-flex items-center justify-center', className)} {...props}>
+      <div ref={ref} className={cn('relative inline-flex items-center justify-center', className)} {...props}>
         <svg width={size} height={size} className="transform -rotate-90">
           {/* Background circle */}
           <circle
