@@ -17,8 +17,6 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { SearchBar } from '@/components/SearchBar';
 import { useV3Search } from '@/hooks/useV3';
 
-export const dynamic = 'force-dynamic';
-
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
@@ -35,8 +33,19 @@ export default function SearchPage() {
 
   const highlightMatch = (text: string, query: string) => {
     if (!query) return text;
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark class="bg-accent-warning/30 text-text-primary px-0.5 rounded">$1</mark>');
+
+    // Escape HTML special characters in text to prevent XSS
+    const escapeHtml = (str: string) => {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    };
+
+    const safeText = escapeHtml(text);
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    return safeText.replace(regex, '<mark class="bg-accent-warning/30 text-text-primary px-0.5 rounded">$1</mark>');
   };
 
   return (

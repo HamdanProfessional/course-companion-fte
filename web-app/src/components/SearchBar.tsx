@@ -9,7 +9,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card } from './ui/Card';
+import { Card, CardContent } from './ui/Card';
 import { LoadingSpinner } from './ui/Loading';
 import { useV3Search } from '@/hooks/useV3';
 
@@ -56,8 +56,19 @@ export function SearchBar({ className, placeholder = 'Search course content...' 
 
   const highlightMatch = (text: string, query: string) => {
     if (!query) return text;
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark class="bg-accent-warning/30 text-text-primary">$1</mark>');
+
+    // Escape HTML special characters in text to prevent XSS
+    const escapeHtml = (str: string) => {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    };
+
+    const safeText = escapeHtml(text);
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    return safeText.replace(regex, '<mark class="bg-accent-warning/30 text-text-primary">$1</mark>');
   };
 
   const hasResults = searchResults && searchResults.results && searchResults.results.length > 0;

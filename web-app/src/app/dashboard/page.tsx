@@ -12,11 +12,11 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useProgress, useStreak, useChapters } from '@/hooks';
 import Link from 'next/link';
-import dynamicImport from 'next/dynamic';
+import dynamic from 'next/dynamic';
 
 // Code split Phase 2 AI Recommendations component
 // Only loads when Phase 2 is enabled, reducing initial bundle size
-const AIRecommendations = dynamicImport(
+const AIRecommendations = dynamic(
   () => import('@/components/AIRecommendations').then(mod => ({ default: mod.AIRecommendations })),
   {
     loading: () => (
@@ -29,8 +29,6 @@ const AIRecommendations = dynamicImport(
     ssr: false, // Phase 2 features are client-side only
   }
 );
-
-export const dynamic = 'force-dynamic';
 
 // Default user ID (from database)
 const DEFAULT_USER_ID = '82b8b862-059a-416a-9ef4-e582a4870efa';
