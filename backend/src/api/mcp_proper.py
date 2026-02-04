@@ -419,6 +419,1345 @@ QUIZ_WIDGET = """<!DOCTYPE html>
 </body>
 </html>"""
 
+ACHIEVEMENTS_WIDGET = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achievements</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f9fafb;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        h2 { font-size: 18px; font-weight: 600; color: #111827; }
+        .stats {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .stat { display: flex; align-items: center; gap: 4px; }
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        .achievement-card {
+            padding: 16px;
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: default;
+        }
+        .achievement-card.unlocked {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+        }
+        .achievement-card.locked {
+            opacity: 0.6;
+            filter: grayscale(0.5);
+        }
+        .icon { font-size: 32px; margin-bottom: 8px; }
+        .achievement-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        .achievement-description {
+            font-size: 10px;
+            color: #6b7280;
+            line-height: 1.3;
+        }
+        .rarity {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .rarity.common { background: #d1d5db; color: #374151; }
+        .rarity.rare { background: #bfdbfe; color: #1e40af; }
+        .rarity.epic { background: #c4b5fd; color: #5b21b6; }
+        .rarity.legendary { background: #fde047; color: #854d0e; }
+        .progress-bar {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h2>🏆 Achievements</h2>
+            <div class="stats">
+                <div class="stat">
+                    <span id="unlocked-count">0</span>
+                    <span>/</span>
+                    <span id="total-count">0</span>
+                    <span>Unlocked</span>
+                </div>
+            </div>
+        </div>
+        <div class="achievements-grid" id="achievements-grid"></div>
+    </div>
+    <script>
+        const toolOutput = window.openai?.toolOutput;
+        const grid = document.getElementById('achievements-grid');
+        const unlockedCount = document.getElementById('unlocked-count');
+        const totalCount = document.getElementById('total-count');
+
+        if (toolOutput && Array.isArray(toolOutput)) {
+            const achievements = toolOutput;
+            const unlocked = achievements.filter(a => a.unlocked_at);
+
+            totalCount.textContent = achievements.length;
+            unlockedCount.textContent = unlocked.length;
+
+            if (achievements.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <p>No achievements available</p>
+                    </div>
+                `;
+                return;
+            }
+
+            achievements.forEach(achievement => {
+                const card = document.createElement('div');
+                const isUnlocked = achievement.unlocked_at !== null;
+                card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+
+                card.innerHTML = `
+                    <div class="icon">${achievement.icon}</div>
+                    <div class="achievement-name">${achievement.name}</div>
+                    <div class="achievement-description">${achievement.description}</div>
+                    <span class="rarity ${achievement.rarity}">${achievement.rarity}</span>
+                    ${!isUnlocked && achievement.progress > 0 ? `
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${achievement.progress}%"></div>
+                        </div>
+                    ` : ''}
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>"""
+
+STREAK_CALENDAR_WIDGET = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streak Calendar</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f9fafb;
+            padding: 16px;
+        }
+        .header { margin-bottom: 20px; }
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        h2 { font-size: 18px; font-weight: 600; color: #111827; }
+        .month-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .month-nav button {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .month-nav button:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            flex: 1;
+            padding: 12px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f59e0b;
+        }
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .calendar {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .weekday {
+            text-align: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            padding: 8px 0;
+        }
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: default;
+            transition: all 0.2s;
+        }
+        .day.inactive {
+            color: #d1d5db;
+        }
+        .day.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+        }
+        .day.today {
+            border: 2px solid #3b82f6;
+        }
+        .day.streak-day {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="title-row">
+                <h2>🔥 Streak Calendar</h2>
+                <div class="month-nav">
+                    <button onclick="changeMonth(-1)">←</button>
+                    <span id="month-label"></span>
+                    <button onclick="changeMonth(1)">→</button>
+                </div>
+            </div>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value" id="current-streak">0</div>
+                    <div class="stat-label">Current Streak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="longest-streak">0</div>
+                    <div class="stat-label">Longest Streak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="active-days">0</div>
+                    <div class="stat-label">Active Days</div>
+                </div>
+            </div>
+        </div>
+        <div class="calendar">
+            <div class="weekdays">
+                <div class="weekday">Sun</div>
+                <div class="weekday">Mon</div>
+                <div class="weekday">Tue</div>
+                <div class="weekday">Wed</div>
+                <div class="weekday">Thu</div>
+                <div class="weekday">Fri</div>
+                <div class="weekday">Sat</div>
+            </div>
+            <div class="days" id="calendar-days"></div>
+        </div>
+    </div>
+    <script>
+        const toolOutput = window.openai?.toolOutput;
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        function renderCalendar() {
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('month-label').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const today = new Date();
+
+            const daysContainer = document.getElementById('calendar-days');
+            daysContainer.innerHTML = '';
+
+            // Empty cells for days before first of month
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'day inactive';
+                daysContainer.appendChild(emptyDay);
+            }
+
+            // Days of month
+            if (toolOutput && toolOutput.days) {
+                const activeDates = new Set(
+                    toolOutput.days
+                        .filter(d => d.active)
+                        .map(d => new Date(d.date).toDateString())
+                );
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayEl = document.createElement('div');
+                    const date = new Date(currentYear, currentMonth, day);
+                    const isToday = date.toDateString() === today.toDateString();
+                    const isActive = activeDates.has(date.toDateString());
+
+                    dayEl.className = 'day';
+                    dayEl.textContent = day;
+
+                    if (isActive) {
+                        dayEl.classList.add('active', 'streak-day');
+                    }
+                    if (isToday) {
+                        dayEl.classList.add('today');
+                    }
+
+                    daysContainer.appendChild(dayEl);
+                }
+            }
+
+            // Update stats
+            if (toolOutput) {
+                document.getElementById('current-streak').textContent = toolOutput.current_streak || 0;
+                document.getElementById('longest-streak').textContent = toolOutput.longest_streak || 0;
+                document.getElementById('active-days').textContent = toolOutput.total_active_days || 0;
+            }
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        renderCalendar();
+    </script>
+</body>
+</html>"""
+
+PROGRESS_DASHBOARD_WIDGET = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f9fafb;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        h2 { font-size: 18px; font-weight: 600; color: #111827; }
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .overview-card {
+            padding: 20px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .overview-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+        .icon { font-size: 32px; margin-bottom: 8px; }
+        .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        .label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .progress-section { margin-bottom: 24px; }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+        .progress-bar-container {
+            padding: 20px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+        }
+        .circular-progress {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+        }
+        .circular-chart {
+            width: 120px;
+            height: 120px;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: #e5e7eb;
+            stroke-width: 3;
+        }
+        .circle {
+            fill: none;
+            stroke: url(#gradient);
+            stroke-width: 3;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        .percentage {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .chapters-list {
+            margin-top: 16px;
+        }
+        .chapter-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .chapter-item.completed { background: #ecfdf5; }
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .chapter-item.completed .checkbox {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+        .chapter-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h2>📊 Progress Dashboard</h2>
+        </div>
+
+        <div class="overview-grid">
+            <div class="overview-card">
+                <div class="icon">📖</div>
+                <div class="value" id="completion-pct">0%</div>
+                <div class="label">Completion</div>
+            </div>
+            <div class="overview-card">
+                <div class="icon">✅</div>
+                <div class="value" id="completed-count">0</div>
+                <div class="label">Chapters Done</div>
+            </div>
+            <div class="overview-card">
+                <div class="icon">✏️</div>
+                <div class="value" id="quiz-count">0</div>
+                <div class="label">Quizzes Taken</div>
+            </div>
+            <div class="overview-card">
+                <div class="icon">🔥</div>
+                <div class="value" id="streak-count">0</div>
+                <div class="label">Day Streak</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="section-title">Course Progress</div>
+            <div class="progress-bar-container">
+                <svg class="circular-progress" viewBox="0 0 36 36">
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#667eea"/>
+                            <stop offset="100%" style="stop-color:#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                    <path class="circle-bg"
+                          d="M18 2.0845
+                             a 15.9155 15.9155 0 0 1 0 31.831
+                             a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path class="circle" id="progress-circle"
+                          stroke-dasharray="0, 100"
+                          d="M18 2.0845
+                             a 15.9155 15.9155 0 0 1 0 31.831
+                             a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <div class="percentage" id="percentage-display">0%</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="section-title">Chapters</div>
+            <div class="chapters-list" id="chapters-list"></div>
+        </div>
+    </div>
+    <script>
+        const toolOutput = window.openai?.toolOutput;
+
+        if (toolOutput) {
+            // Update overview cards
+            document.getElementById('completion-pct').textContent =
+                Math.round(toolOutput.completion_percentage) + '%';
+            document.getElementById('completed-count').textContent =
+                (toolOutput.completed_chapters || []).length;
+            document.getElementById('quiz-count').textContent =
+                toolOutput.total_quizzes_taken || 0;
+            document.getElementById('streak-count').textContent =
+                toolOutput.current_streak || 0;
+
+            // Update circular progress
+            const percentage = toolOutput.completion_percentage || 0;
+            document.getElementById('progress-circle').setAttribute(
+                'stroke-dasharray', `${percentage}, 100`
+            );
+            document.getElementById('percentage-display').textContent = Math.round(percentage) + '%';
+
+            // Render chapters list
+            const chaptersList = document.getElementById('chapters-list');
+            const completedIds = new Set(toolOutput.completed_chapters || []);
+
+            if (toolOutput.chapters && Array.isArray(toolOutput.chapters)) {
+                toolOutput.chapters.forEach(chapter => {
+                    const isCompleted = completedIds.has(chapter.id);
+                    const item = document.createElement('div');
+                    item.className = `chapter-item ${isCompleted ? 'completed' : ''}`;
+                    item.innerHTML = `
+                        <div class="checkbox">${isCompleted ? '✓' : ''}</div>
+                        <div class="chapter-name">${chapter.title}</div>
+                    `;
+                    chaptersList.appendChild(item);
+                });
+            }
+        }
+    </script>
+</body>
+</html>"""
+
+QUIZ_INSIGHTS_WIDGET = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Insights</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f9fafb;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        h2 { font-size: 18px; font-weight: 600; color: #111827; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            padding: 16px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .chart-container {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 16px;
+        }
+        .score-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .score-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .quiz-name {
+            flex: 1;
+            font-size: 12px;
+            font-weight: 500;
+            color: #374151;
+            min-width: 120px;
+        }
+        .bar-container {
+            flex: 2;
+            height: 24px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        .bar-fill.passed { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+        .bar-fill.failed { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+        .history-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .quiz-title { font-size: 13px; font-weight: 500; color: #111827; }
+        .quiz-date { font-size: 11px; color: #6b7280; }
+        .score-badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .score-badge.passed { background: #d1fae5; color: #065f46; }
+        .score-badge.failed { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h2>📈 Quiz Insights</h2>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-quizzes">0</div>
+                <div class="stat-label">Total Quizzes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-score">0%</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="pass-rate">0%</div>
+                <div class="stat-label">Pass Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="best-score">0%</div>
+                <div class="stat-label">Best Score</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Recent Quiz Scores</div>
+            <div class="score-bars" id="score-bars"></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Quiz History</div>
+            <div class="history-list" id="history-list"></div>
+        </div>
+    </div>
+    <script>
+        const toolOutput = window.openai?.toolOutput;
+
+        if (toolOutput && Array.isArray(toolOutput)) {
+            const history = toolOutput;
+
+            // Calculate stats
+            const totalQuizzes = history.length;
+            const avgScore = totalQuizzes > 0
+                ? Math.round(history.reduce((sum, h) => sum + h.score, 0) / totalQuizzes)
+                : 0;
+            const passCount = history.filter(h => h.passed).length;
+            const passRate = totalQuizzes > 0 ? Math.round((passCount / totalQuizzes) * 100) : 0;
+            const bestScore = totalQuizzes > 0 ? Math.max(...history.map(h => h.score)) : 0;
+
+            document.getElementById('total-quizzes').textContent = totalQuizzes;
+            document.getElementById('avg-score').textContent = avgScore + '%';
+            document.getElementById('pass-rate').textContent = passRate + '%';
+            document.getElementById('best-score').textContent = bestScore + '%';
+
+            // Render score bars
+            const scoreBars = document.getElementById('score-bars');
+            history.slice(0, 5).forEach(attempt => {
+                const bar = document.createElement('div');
+                bar.className = 'score-bar';
+                bar.innerHTML = `
+                    <div class="quiz-name">${attempt.quiz_title}</div>
+                    <div class="bar-container">
+                        <div class="bar-fill ${attempt.passed ? 'passed' : 'failed'}"
+                             style="width: ${attempt.score}%">
+                            ${attempt.score}%
+                        </div>
+                    </div>
+                `;
+                scoreBars.appendChild(bar);
+            });
+
+            // Render history list
+            const historyList = document.getElementById('history-list');
+            history.forEach(attempt => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                const date = new Date(attempt.date).toLocaleDateString();
+                item.innerHTML = `
+                    <div class="history-info">
+                        <div class="quiz-title">${attempt.quiz_title}</div>
+                        <div class="quiz-date">${date}</div>
+                    </div>
+                    <div class="score-badge ${attempt.passed ? 'passed' : 'failed'}">
+                        ${attempt.score}%
+                    </div>
+                `;
+                historyList.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>"""
+
+ADAPTIVE_LEARNING_WIDGET = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive Learning</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f9fafb;
+            padding: 16px;
+        }
+        .header {
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        h2 { font-size: 18px; font-weight: 600; color: #111827; }
+        .badge {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .section {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .gaps-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .gap-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+        }
+        .gap-icon { font-size: 20px; }
+        .gap-info { flex: 1; }
+        .gap-topic {
+            font-size: 13px;
+            font-weight: 600;
+            color: #92400e;
+        }
+        .gap-desc {
+            font-size: 11px;
+            color: #b45309;
+        }
+        .recommendations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .recommendation-card {
+            padding: 12px;
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+            border: 1px solid #c4b5fd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .recommendation-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2);
+        }
+        .rec-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #5b21b6;
+            margin-bottom: 4px;
+        }
+        .rec-reason {
+            font-size: 11px;
+            color: #7c3aed;
+        }
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .premium-lock {
+            text-align: center;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .lock-icon { font-size: 32px; margin-bottom: 8px; }
+        .lock-text {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="header-row">
+                <h2>🎯 Adaptive Learning</h2>
+                <span class="badge">Premium</span>
+            </div>
+            <div class="subtitle">Personalized recommendations based on your performance</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span>⚠️</span>
+                <span>Knowledge Gaps</span>
+            </div>
+            <div class="gaps-grid" id="gaps-grid">
+                <div class="premium-lock">
+                    <div class="lock-icon">🔒</div>
+                    <div class="lock-text">Upgrade to Premium to see your knowledge gaps</div>
+                    <button class="action-btn" onclick="upgradePremium()">Upgrade Now</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span>💡</span>
+                <span>Recommended Next Steps</span>
+            </div>
+            <div class="recommendations-list" id="recommendations-list">
+                <div class="premium-lock">
+                    <div class="lock-icon">🔒</div>
+                    <div class="lock-text">Upgrade to Premium for personalized recommendations</div>
+                    <button class="action-btn" onclick="upgradePremium()">Upgrade Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const toolOutput = window.openai?.toolOutput;
+
+        function upgradePremium() {
+            window.openai.sendFollowUpMessage('I\\'d like to upgrade to Premium to access adaptive learning features.');
+        }
+
+        if (toolOutput) {
+            // Render knowledge gaps
+            const gapsGrid = document.getElementById('gaps-grid');
+            if (toolOutput.gaps && Array.isArray(toolOutput.gaps) && toolOutput.gaps.length > 0) {
+                gapsGrid.innerHTML = '';
+                toolOutput.gaps.forEach(gap => {
+                    const item = document.createElement('div');
+                    item.className = 'gap-item';
+                    item.innerHTML = `
+                        <div class="gap-icon">📚</div>
+                        <div class="gap-info">
+                            <div class="gap-topic">${gap.topic}</div>
+                            <div class="gap-desc">${gap.description}</div>
+                        </div>
+                    `;
+                    gapsGrid.appendChild(item);
+                });
+            }
+
+            // Render recommendations
+            const recList = document.getElementById('recommendations-list');
+            if (toolOutput.recommendations && Array.isArray(toolOutput.recommendations) && toolOutput.recommendations.length > 0) {
+                recList.innerHTML = '';
+                toolOutput.recommendations.forEach(rec => {
+                    const card = document.createElement('div');
+                    card.className = 'recommendation-card';
+                    card.innerHTML = `
+                        <div class="rec-title">${rec.title}</div>
+                        <div class="rec-reason">${rec.reason}</div>
+                    `;
+                    card.addEventListener('click', () => {
+                        if (rec.action) {
+                            window.openai.callTool(rec.action.tool, rec.action.params);
+                        }
+                    });
+                    recList.appendChild(card);
+                });
+            }
+        }
+    </script>
+</body>
+</html>"""
+
+AI_MENTOR_CHAT_WIDGET = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mentor</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f9fafb;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        h2 { font-size: 16px; font-weight: 600; color: #111827; }
+        .status {
+            font-size: 11px;
+            color: #10b981;
+            font-weight: 500;
+        }
+        .badge {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-right: 8px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.mentor {
+            align-self: flex-start;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #1a1a1a;
+            border-bottom-left-radius: 4px;
+        }
+        .input-container {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: #667eea;
+        }
+        .send-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .quick-prompts {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .prompt-btn {
+            padding: 6px 12px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .prompt-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+        .welcome-icon { font-size: 48px; margin-bottom: 12px; }
+        .welcome-text {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .welcome-subtext {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="header-left">
+                <div class="avatar">🤖</div>
+                <div>
+                    <h2>AI Mentor</h2>
+                    <div class="status">● Online</div>
+                </div>
+            </div>
+            <span class="badge">Premium</span>
+        </div>
+
+        <div class="quick-prompts">
+            <button class="prompt-btn" onclick="sendQuickPrompt('Explain this concept')">
+                Explain Concept
+            </button>
+            <button class="prompt-btn" onclick="sendQuickPrompt('Give me a practice problem')">
+                Practice Problem
+            </button>
+            <button class="prompt-btn" onclick="sendQuickPrompt('Create a study plan')">
+                Study Plan
+            </button>
+        </div>
+
+        <div class="messages-container" id="messages">
+            <div class="welcome-message">
+                <div class="welcome-icon">👋</div>
+                <div class="welcome-text">Hi! I'm your AI Mentor</div>
+                <div class="welcome-subtext">Ask me anything about your course</div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input
+                type="text"
+                class="input-field"
+                id="message-input"
+                placeholder="Ask your mentor anything..."
+                onkeypress="handleKeyPress(event)"
+            />
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script>
+        const toolOutput = window.openai?.toolOutput;
+        const messagesContainer = document.getElementById('messages');
+        const inputField = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function addMessage(text, type) {
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            messagesContainer.appendChild(message);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function sendQuickPrompt(text) {
+            inputField.value = text;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            // Remove welcome message
+            const welcome = messagesContainer.querySelector('.welcome-message');
+            if (welcome) welcome.remove();
+
+            // Add user message
+            addMessage(text, 'user');
+            inputField.value = '';
+            sendBtn.disabled = true;
+
+            // Send to AI mentor via ChatGPT
+            window.openai.sendFollowUpMessage(text);
+
+            // Simulate mentor response (in real widget, would call ask_mentor tool)
+            setTimeout(() => {
+                addMessage('Thanks for your question! Let me help you with that...', 'mentor');
+                sendBtn.disabled = false;
+            }, 1000);
+        }
+
+        // If chat history provided, render it
+        if (toolOutput && toolOutput.messages && Array.isArray(toolOutput.messages)) {
+            const welcome = messagesContainer.querySelector('.welcome-message');
+            if (welcome) welcome.remove();
+
+            toolOutput.messages.forEach(msg => {
+                addMessage(msg.text, msg.role);
+            });
+        }
+
+        inputField.focus();
+    </script>
+</body>
+</html>"""
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -1076,6 +2415,42 @@ async def mcp_endpoint(request: Request):
                         "name": "Quiz Widget",
                         "description": "Interactive quiz with multiple choice questions",
                         "mimeType": "text/html+skybridge"
+                    },
+                    {
+                        "uri": "ui://widget/achievements.html",
+                        "name": "Achievements Widget",
+                        "description": "Display user achievements and badges with gamification",
+                        "mimeType": "text/html+skybridge"
+                    },
+                    {
+                        "uri": "ui://widget/streak-calendar.html",
+                        "name": "Streak Calendar Widget",
+                        "description": "Visual calendar of checkin history",
+                        "mimeType": "text/html+skybridge"
+                    },
+                    {
+                        "uri": "ui://widget/progress-dashboard.html",
+                        "name": "Progress Dashboard Widget",
+                        "description": "Comprehensive progress overview with stats",
+                        "mimeType": "text/html+skybridge"
+                    },
+                    {
+                        "uri": "ui://widget/quiz-insights.html",
+                        "name": "Quiz Insights Widget",
+                        "description": "Quiz performance analytics and trends",
+                        "mimeType": "text/html+skybridge"
+                    },
+                    {
+                        "uri": "ui://widget/adaptive-learning.html",
+                        "name": "Adaptive Learning Widget",
+                        "description": "Personalized recommendations and knowledge gaps",
+                        "mimeType": "text/html+skybridge"
+                    },
+                    {
+                        "uri": "ui://widget/ai-mentor-chat.html",
+                        "name": "AI Mentor Chat Widget",
+                        "description": "Interactive Q&A interface with AI tutor",
+                        "mimeType": "text/html+skybridge"
                     }
                 ]
             }, req_id))
@@ -1097,6 +2472,18 @@ async def mcp_endpoint(request: Request):
                 html_content = CHAPTER_LIST_WIDGET
             elif uri == "ui://widget/quiz.html":
                 html_content = QUIZ_WIDGET
+            elif uri == "ui://widget/achievements.html":
+                html_content = ACHIEVEMENTS_WIDGET
+            elif uri == "ui://widget/streak-calendar.html":
+                html_content = STREAK_CALENDAR_WIDGET
+            elif uri == "ui://widget/progress-dashboard.html":
+                html_content = PROGRESS_DASHBOARD_WIDGET
+            elif uri == "ui://widget/quiz-insights.html":
+                html_content = QUIZ_INSIGHTS_WIDGET
+            elif uri == "ui://widget/adaptive-learning.html":
+                html_content = ADAPTIVE_LEARNING_WIDGET
+            elif uri == "ui://widget/ai-mentor-chat.html":
+                html_content = AI_MENTOR_CHAT_WIDGET
             else:
                 return JSONResponse(
                     content=create_jsonrpc_error(-32602, f"Unknown resource URI: {uri}", req_id),
