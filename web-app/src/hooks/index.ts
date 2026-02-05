@@ -12,8 +12,14 @@ import { useIsPhase2Enabled } from './usePhase2';
 export { backendApi };
 export type { Chapter, Quiz, Progress, Streak };
 
-// Default demo user ID (from database)
-const DEFAULT_USER_ID = '82b8b862-059a-416a-9ef4-e582a4870efa';
+/**
+ * Helper function to get current user ID from localStorage
+ * Returns null if user is not logged in
+ */
+function getCurrentUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('user_id');
+}
 
 /**
  * Hook for fetching chapters.
@@ -60,24 +66,28 @@ export function useQuiz(quizId: string) {
 
 /**
  * Hook for fetching user progress.
+ * Uses provided userId or falls back to logged-in user from localStorage.
  */
 export function useProgress(userId?: string) {
-  const id = userId || DEFAULT_USER_ID;
+  const id = userId || getCurrentUserId();
+
   return useQuery({
     queryKey: ['progress', id],
-    queryFn: () => backendApi.getProgress(id),
+    queryFn: () => backendApi.getProgress(id!),
     enabled: !!id && typeof window !== 'undefined', // Only run on client
   });
 }
 
 /**
  * Hook for fetching user streak.
+ * Uses provided userId or falls back to logged-in user from localStorage.
  */
 export function useStreak(userId?: string) {
-  const id = userId || DEFAULT_USER_ID;
+  const id = userId || getCurrentUserId();
+
   return useQuery({
     queryKey: ['streak', id],
-    queryFn: () => backendApi.getStreak(id),
+    queryFn: () => backendApi.getStreak(id!),
     enabled: !!id && typeof window !== 'undefined', // Only run on client
   });
 }
@@ -94,13 +104,17 @@ export function useAuth() {
 
 /**
  * Hook for fetching user tier.
+ * Uses provided userId or falls back to logged-in user from localStorage.
  * Note: Disabled during SSR to prevent server-side fetch issues.
  */
 export function useUserTier(userId?: string) {
-  const id = userId || DEFAULT_USER_ID;
+  const id = userId || getCurrentUserId();
+
   return useQuery({
     queryKey: ['userTier', id],
     queryFn: async () => {
+      if (!id) return 'FREE';
+
       try {
         const response = await backendApi.getUserTier(id);
         return response.tier;
