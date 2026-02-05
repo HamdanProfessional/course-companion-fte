@@ -52,8 +52,8 @@ export default function LoginPage() {
 
       console.log('Login successful, redirecting to dashboard...');
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Redirect to dashboard using window.location for reliable navigation
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed');

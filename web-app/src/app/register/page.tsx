@@ -75,8 +75,8 @@ export default function RegisterPage() {
       localStorage.setItem('user_role', data.role);
       localStorage.setItem('user_tier', data.tier);
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Redirect to dashboard using window.location for reliable navigation
+      window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
