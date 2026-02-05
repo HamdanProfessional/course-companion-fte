@@ -15,8 +15,6 @@ import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useV3LLMCosts, useV3AIStatus, useV3SubscriptionInfo } from '@/hooks/useV3';
 
-export const dynamic = 'force-dynamic';
-
 const TIME_PERIODS = [
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },

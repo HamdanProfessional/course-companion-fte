@@ -23,8 +23,6 @@ import {
   useV3UpgradeTier,
 } from '@/hooks/useV3';
 
-export const dynamic = 'force-dynamic';
-
 const BILLING_CYCLES = {
   monthly: { label: 'Monthly', discount: 0 },
   yearly: { label: 'Yearly', discount: 0.17 }, // ~17% discount (2 months free)
@@ -160,7 +158,7 @@ export default function SubscriptionPage() {
             >
               {isPopular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge variant="primary" className="px-4 py-1">
+                  <Badge variant="info" className="px-4 py-1">
                     Most Popular
                   </Badge>
                 </div>

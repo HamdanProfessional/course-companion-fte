@@ -23,8 +23,6 @@ import {
 } from '@/hooks/useV3';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
-
 // Learning goals for path generation
 const LEARNING_GOALS = [
   'Master MCP integration',

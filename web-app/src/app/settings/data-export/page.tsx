@@ -17,8 +17,6 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useV3DataExport } from '@/hooks/useV3';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
-
 const DATA_CATEGORIES = {
   progress: {
     id: 'progress',
@@ -191,7 +189,7 @@ export default function DataExportPage() {
                       <p className="text-xs text-text-muted">{fmt.description}</p>
                     </div>
                     {format === fmt.value && (
-                      <Badge variant="primary" className="ml-2">
+                      <Badge variant="info" className="ml-2">
                         Selected
                       </Badge>
                     )}

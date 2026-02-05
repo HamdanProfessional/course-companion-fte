@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   description: 'Your AI-powered tutor for mastering AI Agent Development',
 };
 
+// Force dynamic rendering to prevent static generation with QueryClient
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: {
@@ -19,25 +22,27 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={inter.className}>
-        {/* Skip link for accessibility */}
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
+        <Providers>
+          {/* Skip link for accessibility */}
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
 
-        {/* Header Navigation */}
-        <Header />
+          {/* Header Navigation */}
+          <Header />
 
-        {/* Main Content */}
-        <main id="main-content" className="min-h-screen">
-          <Providers>{children}</Providers>
-        </main>
+          {/* Main Content */}
+          <main id="main-content" className="min-h-screen">
+            {children}
+          </main>
 
-        {/* Footer */}
-        <footer className="border-t border-border-default bg-bg-secondary mt-auto">
-          <div className="container py-6 text-center text-sm text-text-secondary">
-            <p>© 2026 Course Companion FTE. Built with ❤️ for Panaversity Hackathon IV.</p>
-          </div>
-        </footer>
+          {/* Footer */}
+          <footer className="border-t border-border-default bg-bg-secondary mt-auto">
+            <div className="container py-6 text-center text-sm text-text-secondary">
+              <p>© 2026 Course Companion FTE. Built with ❤️ for Panaversity Hackathon IV.</p>
+            </div>
+          </footer>
+        </Providers>
       </body>
     </html>
   );

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  course-backend:
+    image: backend-backend
+    container_name: course-backend
+    ports:
+      - "3505:3505"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - APP_NAME=${APP_NAME}
+      - APP_VERSION=${APP_VERSION}
+      - DEBUG=${DEBUG}
+      - PORT=3505
+    restart: unless-stopped
+
+  course-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: course-mcp
+    ports:
+      - "3506:3506"
+    environment:
+      - BACKEND_URL=http://92.113.147.250:3505
+      - WIDGET_URL=http://92.113.147.250:3505/ui
+    command: ["python", "mcp_server_app.py"]
+    restart: unless-stopped

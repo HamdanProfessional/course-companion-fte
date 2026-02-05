@@ -10,10 +10,9 @@ import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { QuizCard } from '@/components/ui/QuizCard';
+import { EmptyStates } from '@/components/ui/EmptyState';
 import { useQuizzes, useChapters, useProgress } from '@/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-
-export const dynamic = 'force-dynamic';
 
 export default function QuizzesPage() {
   const { data: quizzes, isLoading: quizzesLoading } = useQuizzes();
@@ -22,9 +21,28 @@ export default function QuizzesPage() {
 
   if (quizzesLoading || chaptersLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-screen">
+          <LoadingSpinner size="lg" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // Handle case when quizzes array is empty or null
+  if (!quizzes || quizzes.length === 0) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Quizzes"
+          description="Test your knowledge with interactive assessments"
+        />
+        <EmptyStates.NoQuizzes
+          title="No quizzes available yet"
+          description="Quizzes will be added as you complete chapters."
+          size="lg"
+        />
+      </PageContainer>
     );
   }
 

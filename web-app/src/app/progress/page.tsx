@@ -9,9 +9,8 @@ import { Progress, CircularProgress } from '@/components/ui/Progress';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { EmptyStates } from '@/components/ui/EmptyState';
 import { useProgress, useStreak, useChapters } from '@/hooks';
-
-export const dynamic = 'force-dynamic';
 
 export default function ProgressPage() {
   const { data: progress, isLoading: progressLoading } = useProgress();
@@ -20,9 +19,24 @@ export default function ProgressPage() {
 
   if (progressLoading || streakLoading || chaptersLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-screen">
+          <LoadingSpinner size="lg" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // Handle case when there's no data at all
+  if (!progress && !streak && !chapters) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Your Progress"
+          description="Track your learning journey and achievements"
+        />
+        <EmptyStates.NoProgress size="lg" />
+      </PageContainer>
     );
   }
 

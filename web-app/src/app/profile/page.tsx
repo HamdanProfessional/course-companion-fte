@@ -11,8 +11,6 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useAuth } from '@/hooks';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
-
 export default function ProfilePage() {
   const { data: user } = useAuth();
 

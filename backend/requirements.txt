@@ -1,5 +1,5 @@
 # FastAPI and ASGI Server
-fastapi==0.104.1
+fastapi>=0.115.12
 uvicorn[standard]==0.24.0
 gunicorn==21.2.0
 
@@ -9,7 +9,7 @@ asyncpg==0.29.0
 alembic==1.13.0
 
 # Data Validation
-pydantic==2.5.0
+pydantic>=2.7.0
 pydantic-settings==2.1.0
 email-validator==2.1.0
 
@@ -27,13 +27,13 @@ boto3==1.29.0
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
-httpx==0.25.2
+httpx>=0.28.1
 
 # CORS
 python-dotenv==1.0.0
 
-# MCP Server for ChatGPT Apps
-fastmcp>=2.0.0
+# MCP Server for ChatGPT Apps (Note: local uses manual JSON-RPC 2.0, not FastMCP)
+# fastmcp is NOT needed for local version
 
 # Phase 2: LLM Support (Optional - only needed if ENABLE_PHASE_2_LLM=true)
 # Uncomment the provider(s) you plan to use

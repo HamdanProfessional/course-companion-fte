@@ -19,8 +19,6 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useV3MentorChat, useV3AIStatus } from '@/hooks/useV3';
 import type { MentorMessage } from '@/lib/api-v3';
 
-export const dynamic = 'force-dynamic';
-
 // Suggested questions to help users get started
 const SUGGESTED_QUESTIONS = [
   "How do MCP servers connect to ChatGPT?",

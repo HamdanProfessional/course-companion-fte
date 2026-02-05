@@ -11,11 +11,10 @@ import { Progress } from '@/components/ui/Progress';
 import { Badge } from '@/components/ui/Badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { EmptyStates } from '@/components/ui/EmptyState';
 import { useChapters, useProgress, useUserTier } from '@/hooks';
 import Link from 'next/link';
 import * as React from 'react';
-
-export const dynamic = 'force-dynamic';
 
 type FilterType = 'all' | 'completed' | 'in-progress' | 'locked';
 
@@ -27,9 +26,28 @@ export default function ChaptersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-screen">
+          <LoadingSpinner size="lg" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // Handle case when chapters array is empty or null
+  if (!chapters || chapters.length === 0) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Course Chapters"
+          description="Master AI Agent Development step by step"
+        />
+        <EmptyStates.NoChapters
+          title="No chapters available yet"
+          description="Course content is being prepared. Check back soon!"
+          size="lg"
+        />
+      </PageContainer>
     );
   }
 
@@ -97,8 +115,26 @@ export default function ChaptersPage() {
       </Tabs>
 
       {/* Chapters Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredChapters.map((chapter, index) => {
+      {filteredChapters.length === 0 ? (
+        <EmptyStates.NoChapters
+          title={`No ${filter === 'all' ? '' : filter.replace('-', ' ')} chapters`}
+          description={
+            filter === 'completed'
+              ? "You haven't completed any chapters yet. Start learning!"
+              : filter === 'in-progress'
+              ? "All chapters are either completed or locked."
+              : filter === 'locked'
+              ? tier === 'FREE'
+              ? 'Upgrade to PRO to unlock more chapters!'
+              : 'No locked chapters. Enjoy full access!'
+              : 'Check back later for new course content.'
+          }
+          actionLabel={filter === 'completed' ? 'Browse Chapters' : undefined}
+          actionHref={filter === 'completed' ? '/chapters' : undefined}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredChapters.map((chapter, index) => {
           const isCompleted = completedChapters.has(chapter.id);
           const isLocked = tier === 'FREE' && index >= 3;
           const difficultyBadge = getDifficultyBadge(chapter.difficulty_level);
@@ -183,7 +219,8 @@ export default function ChaptersPage() {
             </Card>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Motivational footer */}
       {chapters && completedChapters.size < chapters.length ? (

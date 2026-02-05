@@ -10,7 +10,7 @@ export interface Chapter {
   title: string;
   content: string | null;
   order: number;
-  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  difficulty_level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'beginner' | 'intermediate' | 'advanced';
   estimated_time: number;
   r2_content_key: string | null;
   quiz_id: string | null;
@@ -19,7 +19,7 @@ export interface Chapter {
 export interface Quiz {
   id: string;
   title: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'beginner' | 'intermediate' | 'advanced';
   chapter_id: string;
   created_at: string;
   questions: Question[];
@@ -110,11 +110,21 @@ class BackendClient {
 
   // Content APIs
   async getChapters(): Promise<Chapter[]> {
-    return this.request<Chapter[]>('/api/v1/chapters');
+    const chapters = await this.request<any[]>('/api/v1/chapters');
+    // Normalize difficulty_level to lowercase for Badge component compatibility
+    return chapters.map(chapter => ({
+      ...chapter,
+      difficulty_level: chapter.difficulty_level?.toLowerCase() || 'beginner',
+    }));
   }
 
   async getChapter(chapterId: string): Promise<Chapter> {
-    return this.request<Chapter>(`/api/v1/chapters/${chapterId}`);
+    const chapter = await this.request<any>(`/api/v1/chapters/${chapterId}`);
+    // Normalize difficulty_level to lowercase for Badge component compatibility
+    return {
+      ...chapter,
+      difficulty_level: chapter.difficulty_level?.toLowerCase() || 'beginner',
+    };
   }
 
   async searchContent(query: string, limit = 10): Promise<{ query: string; results: SearchResult[]; total: number }> {
@@ -123,11 +133,21 @@ class BackendClient {
 
   // Quiz APIs
   async getQuizzes(): Promise<Quiz[]> {
-    return this.request<Quiz[]>('/api/v1/quizzes');
+    const quizzes = await this.request<any[]>('/api/v1/quizzes');
+    // Normalize difficulty to lowercase for Badge component compatibility
+    return quizzes.map(quiz => ({
+      ...quiz,
+      difficulty: quiz.difficulty?.toLowerCase() || 'beginner',
+    }));
   }
 
   async getQuiz(quizId: string): Promise<Quiz> {
-    return this.request<Quiz>(`/api/v1/quizzes/${quizId}`);
+    const quiz = await this.request<any>(`/api/v1/quizzes/${quizId}`);
+    // Normalize difficulty to lowercase for Badge component compatibility
+    return {
+      ...quiz,
+      difficulty: quiz.difficulty?.toLowerCase() || 'beginner',
+    };
   }
 
   async submitQuiz(quizId: string, answers: Record<string, string>): Promise<QuizResult> {

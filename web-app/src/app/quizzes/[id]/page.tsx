@@ -15,6 +15,7 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useQuiz, useCanAccessPhase2 } from '@/hooks';
 import { useV3QuizSubmit } from '@/hooks/useV3';
 import type { QuizSubmission, QuizGradingResult } from '@/lib/api-v3';
+import { tutorApi } from '@/lib/api-v3';
 import Link from 'next/link';
 
 type GradingMode = 'auto' | 'llm' | 'hybrid';
@@ -59,6 +60,17 @@ export default function QuizPage({ params }: { params: { id: string } }) {
       const data = await submitMutation.mutateAsync({ quizId: params.id, submission });
       setResult(data as QuizGradingResult);
       setShowResults(true);
+
+      // If quiz is passed, update progress to mark chapter as complete
+      if (data.passed && quiz?.chapter_id) {
+        try {
+          await tutorApi.updateProgress(quiz.chapter_id, data.percentage);
+          console.log(`Progress updated: Chapter ${quiz.chapter_id} marked as complete`);
+        } catch (progressError) {
+          console.error('Failed to update progress:', progressError);
+          // Don't fail the quiz submission if progress update fails
+        }
+      }
     } catch (error) {
       console.error('Quiz submission failed:', error);
     }

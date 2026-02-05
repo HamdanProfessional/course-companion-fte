@@ -8,7 +8,8 @@ from src.core.config import settings
 router = APIRouter(tags=["MCP", "SSE"])
 
 # Backend API URL for tool execution
-BACKEND_API_URL = "http://localhost:8180"
+# Note: Backend runs in the same FastAPI app on port 3505
+BACKEND_API_URL = "http://localhost:3505"
 
 @router.post("/sse")
 async def mcp_post(request: Request):
@@ -202,6 +203,29 @@ async def mcp_post(request: Request):
                                 },
                                 "required": ["quiz_id", "user_id", "answer"]
                             }
+                        }
+                    ]
+                },
+                "id": req_id
+            })
+
+        # Handle resources/list - Register widget HTML files
+        elif method == "resources/list":
+            return JSONResponse(content={
+                "jsonrpc": "2.0",
+                "result": {
+                    "resources": [
+                        {
+                            "uri": "ui://widget/chapter-list.html",
+                            "name": "Chapter List Widget",
+                            "description": "Interactive list of course chapters",
+                            "mimeType": "text/html+skybridge"
+                        },
+                        {
+                            "uri": "ui://widget/quiz.html",
+                            "name": "Quiz Widget",
+                            "description": "Interactive quiz with multiple choice questions",
+                            "mimeType": "text/html+skybridge"
                         }
                     ]
                 },
@@ -434,7 +458,7 @@ async def mcp_post(request: Request):
                         })
 
                 # Return result in MCP format
-                # Check if this is a quiz - if so, add UI component metadata
+                # Add widget UI metadata for interactive tools
                 if tool_name == "get_quiz":
                     return JSONResponse(content={
                         "jsonrpc": "2.0",
@@ -444,19 +468,40 @@ async def mcp_post(request: Request):
                                     "type": "text",
                                     "text": json.dumps(result, indent=2)
                                 }
-                            ]
+                            ],
+                            "_meta": {
+                                "openai/widgetDomain": "https://sse.testservers.online",
+                                "openai/outputTemplate": "ui://widget/quiz.html",
+                                "openai/widgetCSP": {
+                                    "connect_domains": ["https://chatgpt.com"],
+                                    "script_domains": ["https://sse.testservers.online"],
+                                    "resource_domains": ["https://*.oaistatic.com"]
+                                }
+                            }
                         },
-                        "id": req_id,
-                        # Metadata for React UI component
-                        "metadata": {
-                            "openai/widgetDomain": "https://sse.testservers.online",
-                            "openai/widgetCSP": {
-                                "connect_domains": ["https://chatgpt.com"],
-                                "script_domains": ["https://sse.testservers.online"],
-                                "resource_domains": ["https://*.oaistatic.com"]
-                            },
-                            "openai/widgetUrl": "https://sse.testservers.online/ui/index.html"
-                        }
+                        "id": req_id
+                    })
+                elif tool_name == "list_chapters":
+                    return JSONResponse(content={
+                        "jsonrpc": "2.0",
+                        "result": {
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": json.dumps(result, indent=2)
+                                }
+                            ],
+                            "_meta": {
+                                "openai/widgetDomain": "https://sse.testservers.online",
+                                "openai/outputTemplate": "ui://widget/chapter-list.html",
+                                "openai/widgetCSP": {
+                                    "connect_domains": ["https://chatgpt.com"],
+                                    "script_domains": ["https://sse.testservers.online"],
+                                    "resource_domains": ["https://*.oaistatic.com"]
+                                }
+                            }
+                        },
+                        "id": req_id
                     })
                 else:
                     return JSONResponse(content={
@@ -542,7 +587,7 @@ async def mcp_sse():
             data = json.dumps(error_msg)
             yield f"event: error\ndata: {data}\n\n"
 
-    return Response(
+    return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
         headers={

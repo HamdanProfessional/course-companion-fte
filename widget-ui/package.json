@@ -1,0 +1,25 @@
+{
+  "name": "course-companion-widgets",
+  "version": "1.0.0",
+  "description": "Interactive widgets for Course Companion FTE ChatGPT App",
+  "type": "module",
+  "scripts": {
+    "dev": "esbuild esbuild.config.js --watch",
+    "build": "esbuild esbuild.config.js",
+    "build:chapter-list": "esbuild esbuild.config.chapter-list.js",
+    "build:chapter-content": "esbuild esbuild.config.chapter-content.js",
+    "build:quiz": "esbuild esbuild.config.quiz.js",
+    "build:progress": "esbuild esbuild.config.progress.js",
+    "build:search": "esbuild esbuild.config.search.js"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "esbuild": "^0.19.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f9fafb;
+            padding: 16px;
+        }
+        .header { margin-bottom: 20px; }
+        .title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        h2 { font-size: 18px; font-weight: 600; color: #111827; }
+        .difficulty {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        .difficulty-BEGINNER { background: #d1fae5; color: #065f46; }
+        .difficulty-INTERMEDIATE { background: #fef3c7; color: #92400e; }
+        .difficulty-ADVANCED { background: #fee2e2; color: #991b1b; }
+        .progress {
+            position: relative;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 11px;
+            font-weight: 600;
+            color: #374151;
+        }
+        .question-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .question-header { margin-bottom: 16px; }
+        .question-number {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .question-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .option:hover { border-color: #667eea; background: #f5f3ff; }
+        .option.selected { border-color: #667eea; background: #ede9fe; }
+        .option-key {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e5e7eb;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .option.selected .option-key { background: #667eea; color: white; }
+        .option-value { flex: 1; font-size: 14px; color: #374151; }
+        .navigation {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .nav-btn, .submit-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .nav-btn { background: #f3f4f6; color: #374151; }
+        .nav-btn:hover:not(:disabled) { background: #e5e7eb; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .explanation-box {
+            margin-top: 16px;
+            padding: 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+        .results { text-align: center; padding: 20px; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .score-circle.passed {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .score-circle.failed {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .score { font-size: 36px; font-weight: 700; }
+        .label { font-size: 12px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="title">
+                <h2 id="quiz-title">Loading quiz...</h2>
+                <span id="difficulty" class="difficulty"></span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+                <span class="progress-text" id="progress-text">1 / 1</span>
+            </div>
+        </div>
+
+        <div id="quiz-container"></div>
+    </div>
+    <script>
+        let currentQuestion = 0;
+        let quiz = null;
+        let selectedAnswers = {};
+        let submitted = false;
+
+        // Get quiz data from tool output
+        const toolOutput = window.openai?.toolOutput;
+        const container = document.getElementById('quiz-container');
+
+        if (toolOutput?.questions) {
+            quiz = toolOutput;
+            document.getElementById('quiz-title').textContent = quiz.title;
+            document.getElementById('difficulty').textContent = quiz.difficulty;
+            document.getElementById('difficulty').className = `difficulty difficulty-${quiz.difficulty}`;
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            if (!quiz) return;
+
+            const question = quiz.questions[currentQuestion];
+            const progress = ((currentQuestion + 1) / quiz.questions.length) * 100;
+
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-text').textContent = `${currentQuestion + 1} / ${quiz.questions.length}`;
+
+            container.innerHTML = `
+                <div class="question-card">
+                    <div class="question-header">
+                        <span class="question-number">Question ${currentQuestion + 1}</span>
+                    </div>
+                    <h3 class="question-text">${question.question_text}</h3>
+                    <div class="options">
+                        ${Object.entries(question.options).map(([key, value]) => `
+                            <button class="option ${selectedAnswers[currentQuestion] === key ? 'selected' : ''}"
+                                    onclick="selectAnswer('${key}')" ${submitted ? 'disabled' : ''}>
+                                <span class="option-key">${key}</span>
+                                <span class="option-value">${value}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="navigation">
+                        <button class="nav-btn" onclick="prevQuestion()" ${currentQuestion === 0 || submitted ? 'disabled' : ''}>← Previous</button>
+                        ${currentQuestion === quiz.questions.length - 1 ? `
+                            <button class="submit-btn" onclick="submitQuiz()" ${Object.keys(selectedAnswers).length < quiz.questions.length || submitted ? 'disabled' : ''}>
+                                ${submitted ? 'Submitted ✓' : 'Submit Quiz'}
+                            </button>
+                        ` : `
+                            <button class="nav-btn" onclick="nextQuestion()">Next →</button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectAnswer(option) {
+            if (submitted) return;
+            selectedAnswers[currentQuestion] = option;
+            renderQuestion();
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < quiz.questions.length - 1) {
+                currentQuestion++;
+                renderQuestion();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                renderQuestion();
+            }
+        }
+
+        async function submitQuiz() {
+            if (Object.keys(selectedAnswers).length < quiz.questions.length) return;
+
+            submitted = true;
+            const correctCount = Object.values(selectedAnswers).filter(a => a === 'A').length;
+            const percentage = Math.round((correctCount / quiz.questions.length) * 100);
+
+            container.innerHTML = `
+                <div class="results">
+                    <div class="score-circle ${percentage >= 70 ? 'passed' : 'failed'}">
+                        <div class="score">${percentage}%</div>
+                        <div class="label">${percentage >= 70 ? 'Passed!' : 'Keep practicing'}</div>
+                    </div>
+                    <h2>Quiz Complete!</h2>
+                    <p style="color: #6b7280;">You got ${correctCount} out of ${quiz.questions.length} questions correct.</p>
+                </div>
+            `;
+
+            // Send follow-up message
+            window.openai.sendFollowUpMessage(`Quiz completed! Score: ${correctCount}/${quiz.questions.length} correct.`);
+        }
+    </script>
+</body>
+</html>

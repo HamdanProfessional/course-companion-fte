@@ -2,10 +2,16 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
-import { SearchBar } from '@/components/SearchBar';
+
+// Dynamically import SearchBar to prevent SSR issues
+const SearchBar = dynamic(() => import('@/components/SearchBar').then(mod => ({ default: mod.SearchBar })), {
+  ssr: false,
+  loading: () => <div className="w-64 h-10" />,
+});
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
