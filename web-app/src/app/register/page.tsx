@@ -12,18 +12,25 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/Loading';
 
+type UserRole = 'student' | 'teacher';
+
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'student' as UserRole,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleRoleSelect = (role: UserRole) => {
+    setFormData({ ...formData, role });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +58,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
+          role: formData.role,
         }),
       });
 
@@ -81,7 +89,7 @@ export default function RegisterPage() {
             <div className="text-4xl mb-2">🎓</div>
             <CardTitle className="text-2xl">Create Account</CardTitle>
             <CardDescription>
-              Start your learning journey today
+              Join as a student or teacher
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -91,6 +99,52 @@ export default function RegisterPage() {
                   {error}
                 </div>
               )}
+
+              {/* Role Selection */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  I am a...
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Student Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleRoleSelect('student')}
+                    className={`p-4 rounded-lg border-2 text-center transition-all ${
+                      formData.role === 'student'
+                        ? 'border-accent-primary bg-accent-primary/10 shadow-md'
+                        : 'border-border-default hover:border-accent-primary/50 hover:bg-bg-elevated'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">👨‍🎓</div>
+                    <div className={`font-semibold ${formData.role === 'student' ? 'text-accent-primary' : 'text-text-primary'}`}>
+                      Student
+                    </div>
+                    <div className="text-xs text-text-muted mt-1">
+                      Learn & grow
+                    </div>
+                  </button>
+
+                  {/* Teacher Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleRoleSelect('teacher')}
+                    className={`p-4 rounded-lg border-2 text-center transition-all ${
+                      formData.role === 'teacher'
+                        ? 'border-accent-secondary bg-accent-secondary/10 shadow-md'
+                        : 'border-border-default hover:border-accent-secondary/50 hover:bg-bg-elevated'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">👨‍🏫</div>
+                    <div className={`font-semibold ${formData.role === 'teacher' ? 'text-accent-secondary' : 'text-text-primary'}`}>
+                      Teacher
+                    </div>
+                    <div className="text-xs text-text-muted mt-1">
+                      Create & manage
+                    </div>
+                  </button>
+                </div>
+              </div>
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1.5">
@@ -145,12 +199,12 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                variant="primary"
+                variant={formData.role === 'teacher' ? 'secondary' : 'primary'}
                 size="lg"
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? <LoadingSpinner size="sm" /> : 'Create Account'}
+                {isLoading ? <LoadingSpinner size="sm" /> : `Create ${formData.role === 'teacher' ? 'Teacher' : 'Student'} Account`}
               </Button>
             </form>
 
@@ -165,9 +219,19 @@ export default function RegisterPage() {
 
         <div className="mt-4 p-4 rounded-lg bg-bg-elevated border border-border-default">
           <p className="text-xs text-text-secondary text-center">
-            By signing up, you agree to start with our{' '}
-            <span className="font-medium">Free</span> tier (access to first 3 chapters).
-            Upgrade to <span className="font-medium">Premium</span> or <span className="font-medium">Pro</span> for full access.
+            {formData.role === 'teacher' ? (
+              <>
+                Teachers can create courses, manage students, and track progress.
+                Start with <span className="font-medium">Free</span> tier (up to 20 students).
+                Upgrade for unlimited students and advanced analytics.
+              </>
+            ) : (
+              <>
+                By signing up as a student, you'll start with our{' '}
+                <span className="font-medium">Free</span> tier (access to first 3 chapters).
+                Upgrade to <span className="font-medium">Premium</span> or <span className="font-medium">Pro</span> for full access.
+              </>
+            )}
           </p>
         </div>
       </div>
