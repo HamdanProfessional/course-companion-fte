@@ -13,10 +13,23 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import JWTError, jwt
+from pydantic import BaseModel
 
 from src.core.database import get_db
 from src.core.config import settings
-from src.models.user import User
+from src.models.database import User
+
+
+# Request/Response Models
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    role: str = "student"
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 router = APIRouter()
 
@@ -42,9 +55,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 @router.post("/auth/register", tags=["Authentication"])
 async def register(
-    email: str,
-    password: str,
-    role: str = "student",
+    request: RegisterRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -56,6 +67,10 @@ async def register(
 
     Returns access token and user ID on successful registration.
     """
+    email = request.email
+    password = request.password
+    role = request.role
+
     # Validate role
     if role not in ["student", "teacher"]:
         raise HTTPException(
@@ -81,10 +96,8 @@ async def register(
         )
 
     # Hash password
-    hashed_password = bcrypt.hash(
-        password.encode('utf-8'),
-        salt_rounds=12
-    ).decode('utf-8')
+    salt = bcrypt.gensalt(rounds=12)
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
     # Create new user
     new_user = User(
@@ -118,8 +131,7 @@ async def register(
 
 @router.post("/auth/login", tags=["Authentication"])
 async def login(
-    email: str,
-    password: str,
+    request: LoginRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -130,6 +142,9 @@ async def login(
 
     Returns access token and user info on successful login.
     """
+    email = request.email
+    password = request.password
+
     # Find user by email
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
@@ -144,7 +159,7 @@ async def login(
 
     # Verify password
     try:
-        is_valid = bcrypt.verify(password.encode('utf-8'), user.hashed_password)
+        is_valid = bcrypt.checkpw(password.encode('utf-8'), user.hashed_password.encode('utf-8'))
     except Exception:
         is_valid = False
 

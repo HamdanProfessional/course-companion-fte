@@ -68,9 +68,12 @@ export default function RegisterPage() {
         throw new Error(data.detail || 'Registration failed');
       }
 
-      // Store token
+      // Store auth token and user info
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user_id', data.user_id);
+      localStorage.setItem('user_email', data.email);
+      localStorage.setItem('user_role', data.role);
+      localStorage.setItem('user_tier', data.tier);
 
       // Redirect to dashboard
       router.push('/dashboard');
@@ -159,6 +162,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   disabled={isLoading}
+                  autoComplete="email"
                 />
               </div>
 
@@ -176,6 +180,7 @@ export default function RegisterPage() {
                   required
                   disabled={isLoading}
                   minLength={6}
+                  autoComplete="new-password"
                 />
                 <p className="text-xs text-text-muted mt-1">Minimum 6 characters</p>
               </div>
@@ -194,6 +199,7 @@ export default function RegisterPage() {
                   required
                   disabled={isLoading}
                   minLength={6}
+                  autoComplete="new-password"
                 />
               </div>
 

@@ -37,9 +37,12 @@ export default function LoginPage() {
         throw new Error(data.detail || 'Login failed');
       }
 
-      // Store token
+      // Store auth token and user info
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user_id', data.user_id);
+      localStorage.setItem('user_email', data.email);
+      localStorage.setItem('user_role', data.role);
+      localStorage.setItem('user_tier', data.tier);
 
       // Redirect to dashboard
       router.push('/dashboard');
@@ -75,12 +78,14 @@ export default function LoginPage() {
                 </label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
+                  autoComplete="email"
                 />
               </div>
 
@@ -90,12 +95,14 @@ export default function LoginPage() {
                 </label>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
               </div>
 
