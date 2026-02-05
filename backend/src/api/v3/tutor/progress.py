@@ -593,8 +593,9 @@ async def get_achievements(
 
         for achievement_id, achievement in ACHIEVEMENTS.items():
             is_unlocked = achievement_id in unlocked_ids
+            base_data = achievement.model_dump(exclude_unset=True, exclude={'unlocked_at', 'progress'})
             achievements.append(AchievementItem(
-                **achievement.model_dump(),
+                **base_data,
                 unlocked_at=datetime.utcnow() if is_unlocked else None,
                 progress=100.0 if is_unlocked else 0.0
             ))

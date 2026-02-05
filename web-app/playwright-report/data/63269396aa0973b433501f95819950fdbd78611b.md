@@ -1,0 +1,41 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - navigation "Global" [ref=e4]:
+      - link "C Course Companion" [ref=e5] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e7]: C
+        - generic [ref=e8]: Course Companion
+      - generic [ref=e9]:
+        - link "Dashboard" [ref=e10] [cursor=pointer]:
+          - /url: /dashboard
+        - link "Chapters" [ref=e11] [cursor=pointer]:
+          - /url: /chapters
+        - link "Quizzes" [ref=e12] [cursor=pointer]:
+          - /url: /quizzes
+        - link "Progress" [ref=e13] [cursor=pointer]:
+          - /url: /progress
+        - link "Adaptive Learning AI" [ref=e15] [cursor=pointer]:
+          - /url: /adaptive-learning
+          - text: Adaptive Learning
+          - generic [ref=e16]: AI
+        - link "AI Mentor AI" [ref=e17] [cursor=pointer]:
+          - /url: /ai-mentor
+          - text: AI Mentor
+          - generic [ref=e18]: AI
+        - generic [ref=e22]:
+          - textbox "Search..." [ref=e23]
+          - img [ref=e24]
+      - link [ref=e27] [cursor=pointer]:
+        - /url: /profile
+        - button [ref=e28]:
+          - img [ref=e29]
+  - main [ref=e31]
+  - contentinfo [ref=e35]:
+    - paragraph [ref=e37]: © 2026 Course Companion FTE. Built with ❤️ for Panaversity Hackathon IV.
+  - alert [ref=e38]
+```

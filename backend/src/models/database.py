@@ -69,6 +69,11 @@ class User(Base):
         index=True
     )
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(
+        String(20),
+        default="student",
+        nullable=False
+    )  # "student" or "teacher"
     tier: Mapped[str] = mapped_column(
         String(20),
         default="FREE",

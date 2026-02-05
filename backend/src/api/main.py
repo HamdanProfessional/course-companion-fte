@@ -24,8 +24,11 @@ from src.api.access import router as access_router
 from src.api.adaptive import router as adaptive_router
 from src.api.quiz_llm import router as quiz_llm_router
 from src.api.costs import router as costs_router
-# Phase 3: Unified API (Temporarily disabled due to import errors)
-# from src.api.v3 import router as v3_router
+from src.api.qa import router as qa_router
+from src.api.synthesis import router as synthesis_router
+from src.api.auth import router as auth_router
+# Phase 3: Unified API
+from src.api.v3 import router as v3_router
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -106,6 +109,12 @@ async def health_check(request: Request):
 
 # Include routers
 app.include_router(
+    auth_router,
+    prefix="/api/v1",
+    tags=["Authentication"]
+)
+
+app.include_router(
     content_router,
     prefix="/api/v1",
     tags=["Content"]
@@ -135,6 +144,12 @@ app.include_router(
     tags=["MCP"]
 )
 
+app.include_router(
+    qa_router,
+    prefix="/api/v1/qa",
+    tags=["Q&A (Phase 1)"]
+)
+
 # Phase 2: Hybrid LLM Features (Optional)
 app.include_router(
     adaptive_router,
@@ -154,12 +169,18 @@ app.include_router(
     tags=["Cost Tracking (Phase 2)"]
 )
 
-# Phase 3: Unified API (Temporarily disabled due to import errors)
-# app.include_router(
-#     v3_router,
-#     prefix="/api/v3",
-#     tags=["Unified Tutor API v3 (Phase 3)"]
-# )
+app.include_router(
+    synthesis_router,
+    prefix="/api/v1/synthesis",
+    tags=["Cross-Chapter Synthesis (Phase 2)"]
+)
+
+# Phase 3: Unified API
+app.include_router(
+    v3_router,
+    prefix="/api/v3",
+    tags=["Unified Tutor API v3 (Phase 3)"]
+)
 
 
 # =============================================================================

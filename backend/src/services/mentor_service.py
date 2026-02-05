@@ -436,3 +436,157 @@ def format_analysis(data: Dict[str, Any]) -> str:
     for key, value in data.items():
         lines.append(f"{key}: {value}")
     return "\n".join(lines)
+
+
+# =============================================================================
+# MentorService Class - Wrapper for v3 API
+# =============================================================================
+
+
+class MentorService:
+    """
+    AI Mentor service wrapper class for Phase 3 API.
+
+    Provides instance-based interface for mentor functionality.
+    Wraps standalone async functions into a class-based API.
+    """
+
+    def __init__(self, db: AsyncSession):
+        """
+        Initialize mentor service.
+
+        Args:
+            db: Database session
+        """
+        self.db = db
+
+    async def answer_question(
+        self,
+        user_id: str,
+        question: str,
+        chapter_context: Optional[str] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None
+    ) -> Dict[str, Any]:
+        """
+        Answer student's question using AI.
+
+        Args:
+            user_id: User UUID
+            question: Student's question
+            chapter_context: Optional chapter context
+            conversation_history: Optional conversation history
+
+        Returns:
+            Dict with answer, follow_up_questions, related_chapters, confidence
+        """
+        context = {"chapter_context": chapter_context} if chapter_context else None
+
+        # Call the standalone function
+        response = await answer_concept_question(
+            user_id=user_id,
+            question=question,
+            context=context,
+            db=self.db
+        )
+
+        return response.to_dict()
+
+    async def explain_topic(
+        self,
+        topic: str,
+        context: Optional[str] = None,
+        complexity_level: str = "intermediate",
+        include_examples: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Explain a topic at requested complexity level.
+
+        Args:
+            topic: Topic to explain
+            context: Optional content context
+            complexity_level: beginner/intermediate/advanced
+            include_examples: Whether to include examples
+
+        Returns:
+            Dict with explanation, examples, analogies, key_points
+        """
+        llm_client = get_llm_client()
+        if not llm_client:
+            raise MentorServiceError("Phase 2 LLM features are not enabled")
+
+        try:
+            # Build context from course content if available
+            context_text = f"\n\nCourse Context:\n{context}" if context else ""
+
+            system_prompt = f"""You are an expert AI tutor explaining concepts about AI agents, MCP, and ChatGPT app development.
+
+Topic: {topic}
+Complexity Level: {complexity_level}
+
+Provide a clear explanation with:
+1. Main explanation ({complexity_level} level)
+2. Real-world examples (if applicable)
+3. Helpful analogies
+4. Key points to remember
+
+Respond in JSON format:
+{{
+    "explanation": "Clear explanation...",
+    "examples": ["example1", "example2"],
+    "analogies": ["analogy1", "analogy2"],
+    "key_points": ["point1", "point2", "point3"]
+}}"""
+
+            user_prompt = f"""Explain '{topic}' at {complexity_level} level.{context_text}
+
+{"Include practical examples" if include_examples else "Focus on concise explanation"}"""
+
+            response = await llm_client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                temperature=0.7,
+                response_format={"type": "json_object"}
+            )
+
+            import json
+            result = json.loads(response)
+
+            return result
+
+        except LLMClientError as e:
+            logger.error(f"LLM error in topic explanation: {e}")
+            raise MentorServiceError(f"Failed to explain topic: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error in topic explanation: {e}")
+            raise MentorServiceError(f"Explanation generation failed: {e}")
+
+    async def get_study_guidance(self, user_id: str) -> StudyGuidance:
+        """
+        Get personalized study recommendations.
+
+        Args:
+            user_id: User UUID
+
+        Returns:
+            StudyGuidance with recommendations
+        """
+        return await provide_study_guidance(user_id, self.db)
+
+    async def generate_problems(
+        self,
+        topic: str,
+        difficulty: str = "intermediate",
+        count: int = 3
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate practice problems.
+
+        Args:
+            topic: Topic for problems
+            difficulty: beginner/intermediate/advanced
+            count: Number of problems
+
+        Returns:
+            List of practice problems
+        """
+        return await generate_practice_problems(topic, difficulty, count)

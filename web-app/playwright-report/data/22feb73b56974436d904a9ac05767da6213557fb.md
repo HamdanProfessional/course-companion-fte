@@ -1,0 +1,124 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - navigation "Global" [ref=e4]:
+      - link "C Course Companion" [ref=e5]:
+        - /url: /dashboard
+        - generic [ref=e7]: C
+        - generic [ref=e8]: Course Companion
+      - generic [ref=e9]:
+        - link "Dashboard" [ref=e10]:
+          - /url: /dashboard
+        - link "Chapters" [ref=e11]:
+          - /url: /chapters
+        - link "Quizzes" [ref=e12]:
+          - /url: /quizzes
+        - link "Progress" [ref=e13]:
+          - /url: /progress
+        - link "Adaptive Learning AI" [ref=e15]:
+          - /url: /adaptive-learning
+          - text: Adaptive Learning
+          - generic [ref=e16]: AI
+        - link "AI Mentor AI" [ref=e17]:
+          - /url: /ai-mentor
+          - text: AI Mentor
+          - generic [ref=e18]: AI
+        - generic [ref=e22]:
+          - textbox "Search..." [ref=e23]
+          - img [ref=e24]
+      - link [ref=e27]:
+        - /url: /profile
+        - button [ref=e28] [cursor=pointer]:
+          - img [ref=e29]
+  - main [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e35]:
+        - heading "Your Progress" [level=1] [ref=e36]
+        - paragraph [ref=e37]: Track your learning journey and achievements
+      - generic [ref=e38]:
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - paragraph [ref=e43]: Completion
+              - paragraph [ref=e44]: 0%
+            - generic [ref=e45]:
+              - img [ref=e46]
+              - generic [ref=e49]: 0%
+          - progressbar [ref=e50]
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - paragraph [ref=e55]: Chapters Done
+            - paragraph [ref=e56]: 0/4
+            - paragraph [ref=e57]: chapters completed
+          - generic [ref=e58]: ✅
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - paragraph [ref=e63]: Current Streak
+            - generic [ref=e64]:
+              - generic [ref=e65]: "0"
+              - generic [ref=e66]: days
+            - paragraph [ref=e67]: keep it up!
+          - generic [ref=e68]: 🔥
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: Best Streak
+            - generic [ref=e74]:
+              - generic [ref=e75]: "0"
+              - generic [ref=e76]: days
+            - paragraph [ref=e77]: personal best
+          - generic [ref=e78]: 🏆
+      - generic [ref=e79]:
+        - generic [ref=e80]:
+          - heading "🎯 Milestones" [level=3] [ref=e81]:
+            - generic [ref=e82]: 🎯
+            - text: Milestones
+          - paragraph [ref=e83]: Your learning achievements
+        - generic [ref=e85]:
+          - generic [ref=e86]:
+            - generic [ref=e89]: 🚀
+            - generic [ref=e90]:
+              - heading "Started Learning" [level=4] [ref=e91]
+              - paragraph [ref=e92]: Began your journey
+            - generic [ref=e94]: ✓
+          - generic [ref=e95]:
+            - generic [ref=e98]: 📖
+            - generic [ref=e99]:
+              - heading "First Chapter" [level=4] [ref=e100]
+              - paragraph [ref=e101]: Completed first chapter
+          - generic [ref=e102]:
+            - generic [ref=e105]: 🔥
+            - generic [ref=e106]:
+              - heading "3-Day Streak" [level=4] [ref=e107]
+              - paragraph [ref=e108]: 3 consecutive days
+          - generic [ref=e109]:
+            - generic [ref=e112]: ⭐
+            - generic [ref=e113]:
+              - heading "Week Streak" [level=4] [ref=e114]
+              - paragraph [ref=e115]: 7 consecutive days
+          - generic [ref=e116]:
+            - generic [ref=e119]: 🎯
+            - generic [ref=e120]:
+              - heading "Halfway There" [level=4] [ref=e121]
+              - paragraph [ref=e122]: 50% complete
+          - generic [ref=e123]:
+            - generic [ref=e125]: 🎓
+            - generic [ref=e126]:
+              - heading "Course Complete" [level=4] [ref=e127]
+              - paragraph [ref=e128]: 100% complete
+      - generic [ref=e129]:
+        - generic [ref=e130]:
+          - heading "📚 Completed Chapters" [level=3] [ref=e131]:
+            - generic [ref=e132]: 📚
+            - text: Completed Chapters
+          - paragraph [ref=e133]: Your learning history
+        - generic [ref=e135]:
+          - generic [ref=e136]: 📖
+          - paragraph [ref=e137]: No chapters completed yet. Start learning to track your progress!
+  - contentinfo [ref=e138]:
+    - paragraph [ref=e140]: © 2026 Course Companion FTE. Built with ❤️ for Panaversity Hackathon IV.
+  - alert [ref=e141]
+```
