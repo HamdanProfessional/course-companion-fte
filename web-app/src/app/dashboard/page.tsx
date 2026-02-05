@@ -13,6 +13,8 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useProgress, useStreak, useChapters } from '@/hooks';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Code split Phase 2 AI Recommendations component
 // Only loads when Phase 2 is enabled, reducing initial bundle size
@@ -29,9 +31,6 @@ const AIRecommendations = dynamic(
     ssr: false, // Phase 2 features are client-side only
   }
 );
-
-// Default user ID (from database)
-const DEFAULT_USER_ID = '82b8b862-059a-416a-9ef4-e582a4870efa';
 
 // StatCard component for dashboard metrics
 function StatCard({
@@ -90,11 +89,25 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { data: progress, isLoading: progressLoading } = useProgress(DEFAULT_USER_ID);
-  const { data: streak, isLoading: streakLoading } = useStreak(DEFAULT_USER_ID);
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get the logged-in user's ID from localStorage
+    const storedUserId = localStorage.getItem('user_id');
+    if (!storedUserId) {
+      // Not logged in, redirect to login
+      router.push('/login');
+      return;
+    }
+    setUserId(storedUserId);
+  }, [router]);
+
+  const { data: progress, isLoading: progressLoading } = useProgress(userId || '');
+  const { data: streak, isLoading: streakLoading } = useStreak(userId || '');
   const { data: chapters, isLoading: chaptersLoading } = useChapters();
 
-  if (progressLoading || streakLoading || chaptersLoading) {
+  if (!userId || progressLoading || streakLoading || chaptersLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
@@ -126,7 +139,7 @@ export default function DashboardPage() {
       />
 
       {/* Phase 2: AI Recommendations */}
-      <AIRecommendations userId={DEFAULT_USER_ID} />
+      <AIRecommendations userId={userId} />
 
       {/* Phase 3: AI Features Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
