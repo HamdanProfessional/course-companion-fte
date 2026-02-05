@@ -25,13 +25,19 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/api/v1/auth/login`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      console.log('Attempting login to:', backendUrl);
+
+      const response = await fetch(`${backendUrl}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('Response status:', response.status);
+
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.detail || 'Login failed');
@@ -44,9 +50,12 @@ export default function LoginPage() {
       localStorage.setItem('user_role', data.role);
       localStorage.setItem('user_tier', data.tier);
 
+      console.log('Login successful, redirecting to dashboard...');
+
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (err) {
+      console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsLoading(false);
