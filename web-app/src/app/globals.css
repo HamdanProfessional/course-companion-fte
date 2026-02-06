@@ -1,8 +1,8 @@
 /**
- * Professional/Modern SaaS Theme for Course Companion FTE
+ * Nebula/Cosmic Theme for Course Companion FTE
  *
- * A clean, content-focused dark theme optimized for educational platforms.
- * Minimal cognitive load, maximum readability.
+ * An immersive space-themed dark theme with cosmic colors, animations, and glass-morphism.
+ * Deep space environment with nebula purples, blues, and glowing accents.
  */
 
 @tailwind base;
@@ -11,27 +11,28 @@
 
 @layer base {
   :root {
-    /* Background Colors */
-    --bg-primary: #0F172A; /* Deep charcoal */
-    --bg-secondary: #1E293B; /* Slate gray for cards */
-    --bg-elevated: #334155; /* Higher elevation */
+    /* Background Colors - Cosmic Theme */
+    --bg-primary: #0f111a; /* Deep space dark */
+    --bg-secondary: #1e2133; /* Dark space blue */
+    --bg-elevated: #252942; /* Higher elevation */
 
     /* Text Colors */
-    --text-primary: #F8FAFC; /* Off-white */
-    --text-secondary: #94A3B8; /* Light gray */
-    --text-muted: #64748B; /* Medium gray */
+    --text-primary: #f1f3f7; /* Starlight white */
+    --text-secondary: #94a3b8; /* Light gray */
+    --text-muted: #64748b; /* Medium gray */
 
-    /* Accent Colors */
-    --accent-primary: #3B82F6; /* Electric blue */
-    --accent-secondary: #8B5CF6; /* Purple for AI features */
-    --accent-success: #10B981; /* Emerald green */
-    --accent-warning: #F59E0B; /* Amber */
-    --accent-danger: #EF4444; /* Red */
-    --accent-premium: #8B5CF6; /* Purple for premium */
+    /* Accent Colors - Nebula Theme */
+    --accent-primary: #8b5cf6; /* Nebula violet HSL(265 85% 65%) */
+    --accent-secondary: #a855f7; /* Cosmic purple HSL(280 75% 60%) */
+    --accent-success: #22c55e; /* Green star */
+    --accent-warning: #f59e0b; /* Orange star */
+    --accent-danger: #ef4444; /* Red nebula */
+    --accent-premium: #8b5cf6; /* Purple for premium */
+    --accent-info: #0ea5e9; /* Blue nebula */
 
     /* Border Colors */
-    --border-default: #334155;
-    --border-focus: #3B82F6;
+    --border-default: #1e2133;
+    --border-focus: #8b5cf6;
 
     /* Spacing Scale */
     --spacing-xs: 0.25rem;
@@ -62,90 +63,151 @@
     @apply border-border-default;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-bg-primary text-text-primary;
+    @apply bg-cosmic-bg text-text-primary;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
     line-height: 1.6;
+    background: linear-gradient(135deg, #0f111a 0%, #1a1d2e 50%, #0f111a 100%);
+    background-attachment: fixed;
   }
 
   /* Focus visible styles for accessibility */
   *:focus-visible {
-    @apply outline-none ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-primary;
+    @apply outline-none ring-2 ring-cosmic-primary ring-offset-2 ring-offset-cosmic-bg;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background: rgba(139, 92, 246, 0.3);
+    color: white;
   }
 
   /* Skip link for accessibility */
   .skip-link {
     @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4;
-    @apply bg-accent-primary text-white px-4 py-2 rounded-lg z-50;
+    @apply bg-cosmic-primary text-white px-4 py-2 rounded-lg z-50;
+  }
+
+  /* Custom scrollbar - Nebula Theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0f111a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #8b5cf6, #0ea5e9);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #7c3aed, #0284c7);
   }
 }
 
 @layer components {
-  /* Professional Card Styles */
+  /* Professional Card Styles with Glass-morphism */
   .card {
-    @apply bg-bg-secondary border border-border-default rounded-xl;
+    @apply bg-glass-surface border border-glass-border rounded-xl;
     @apply shadow-sm hover:shadow-md;
     @apply transition-all duration-200;
+    backdrop-filter: blur(10px);
   }
 
   .card-elevated {
-    @apply bg-bg-secondary border border-border-default rounded-xl;
+    @apply bg-glass-surface border border-glass-border rounded-xl;
     @apply shadow-md hover:shadow-lg;
     @apply transition-all duration-200;
+    backdrop-filter: blur(10px);
   }
 
   .card-borderless {
-    @apply bg-bg-secondary rounded-xl;
+    @apply bg-glass-surface rounded-xl;
     @apply transition-all duration-200;
+    backdrop-filter: blur(10px);
   }
 
-  /* Professional Button Styles */
+  /* Glass-morphism utility */
+  .glass {
+    background: rgba(24, 21, 41, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glow effect */
+  .glow {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 40px rgba(34, 197, 94, 0.3);
+  }
+
+  .glow-danger {
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+  }
+
+  /* Professional Button Styles - Nebula Theme */
   .btn-primary {
-    @apply bg-accent-primary text-white font-semibold;
-    @apply hover:bg-blue-600 active:bg-blue-700;
-    @apply shadow-sm hover:shadow;
+    @apply bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white font-semibold;
+    @apply hover:shadow-glow-purple active:scale-95;
     @apply transition-all duration-200;
   }
 
   .btn-secondary {
-    @apply bg-bg-elevated text-text-primary;
-    @apply hover:bg-slate-600;
+    @apply bg-glass-surface border border-glass-border text-text-primary;
+    @apply hover:bg-cosmic-secondary;
     @apply transition-all duration-200;
   }
 
   .btn-ghost {
-    @apply text-text-secondary hover:text-text-primary hover:bg-bg-secondary;
+    @apply text-text-secondary hover:text-text-primary hover:bg-glass-surface;
     @apply transition-all duration-200;
   }
 
   .btn-danger {
-    @apply bg-accent-danger text-white;
-    @apply hover:bg-red-600 active:bg-red-700;
+    @apply bg-gradient-to-r from-red-500 to-rose-600 text-white;
+    @apply hover:shadow-glow-red active:scale-95;
     @apply transition-all duration-200;
   }
 
   .btn-success {
-    @apply bg-accent-success text-white;
-    @apply hover:bg-emerald-600 active:bg-emerald-700;
+    @apply bg-gradient-to-r from-emerald-400 to-teal-500 text-white;
+    @apply hover:shadow-glow-green active:scale-95;
     @apply transition-all duration-200;
   }
 
   /* Input Styles */
   .input {
-    @apply bg-bg-primary border border-border-default rounded-lg;
+    @apply bg-glass-surface border border-glass-border rounded-lg;
     @apply text-text-primary placeholder-text-muted;
-    @apply focus:border-accent-primary focus:ring-1 focus:ring-accent-primary;
+    @apply focus:border-cosmic-primary focus:ring-1 focus:ring-cosmic-primary;
     @apply transition-all duration-200;
   }
 
   /* Progress Bar */
   .progress {
-    @apply bg-bg-elevated rounded-full overflow-hidden;
+    @apply bg-cosmic-secondary rounded-full overflow-hidden;
   }
 
   .progress-bar {
-    @apply bg-accent-primary h-full transition-all duration-300 ease-out;
+    @apply bg-gradient-to-r from-cosmic-primary to-cosmic-blue h-full transition-all duration-300 ease-out;
   }
 
   /* Badge Styles */
@@ -154,7 +216,7 @@
   }
 
   .badge-default {
-    @apply bg-bg-elevated text-text-secondary;
+    @apply bg-cosmic-secondary text-text-secondary;
   }
 
   .badge-success {
@@ -177,7 +239,7 @@
     @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
   }
 
-  /* Difficulty Badges */
+  /* Difficulty Badges - Cosmic Theme */
   .badge-beginner {
     @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
   }
@@ -223,21 +285,31 @@
     text-wrap: balance;
   }
 
-  /* Custom scrollbar */
+  /* Custom scrollbar class */
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-bg-primary;
+    background: #0f111a;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-bg-elevated rounded-full;
+    background: linear-gradient(180deg, #8b5cf6, #0ea5e9);
+    border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-600;
+    background: linear-gradient(180deg, #7c3aed, #0284c7);
+  }
+
+  /* Cosmic glow utilities */
+  .cosmic-glow-purple {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
+  }
+
+  .cosmic-glow-blue {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.5), 0 0 40px rgba(14, 165, 233, 0.3);
   }
 }

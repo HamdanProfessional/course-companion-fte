@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { Header } from '@/components/layout/Header';
+import { StarfieldBackground } from '@/components/background/StarfieldBackground';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,6 +24,9 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className={inter.className}>
         <Providers>
+          {/* Starfield Background - Cosmic Theme */}
+          <StarfieldBackground />
+
           {/* Skip link for accessibility */}
           <a href="#main-content" className="skip-link">
             Skip to main content
@@ -32,12 +36,12 @@ export default function RootLayout({
           <Header />
 
           {/* Main Content */}
-          <main id="main-content" className="min-h-screen">
+          <main id="main-content" className="min-h-screen relative z-10">
             {children}
           </main>
 
           {/* Footer */}
-          <footer className="border-t border-border-default bg-bg-secondary mt-auto">
+          <footer className="border-t border-glass-border bg-glass-surface mt-auto backdrop-blur-xl">
             <div className="container py-6 text-center text-sm text-text-secondary">
               <p>© 2026 Course Companion FTE. Built with ❤️ for Panaversity Hackathon IV.</p>
             </div>
