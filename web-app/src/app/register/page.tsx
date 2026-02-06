@@ -129,7 +129,7 @@ export default function RegisterPage() {
         <Card variant="cosmic" glow className="border-l-4 border-l-cosmic-success">
           <CardHeader className="text-center">
             <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
+              animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
               className="flex justify-center mb-4"
             >

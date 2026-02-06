@@ -93,8 +93,8 @@ export const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
         <div className="relative">
           <motion.div
-            whileHover={{ rotate: 360, scale: 1.2 }}
-            transition={{ duration: 0.6, type: 'spring' }}
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.2, type: 'spring' }}
             className="mb-4"
           >
             {icon && (

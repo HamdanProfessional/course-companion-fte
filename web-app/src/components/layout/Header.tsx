@@ -50,16 +50,16 @@ export function Header() {
     >
       <nav className="container flex items-center justify-between h-16" aria-label="Global">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-3 group">
+        <Link href="/dashboard" className="flex items-center gap-2 md:gap-3 group">
           <motion.div
-            whileHover={{ rotate: 360, scale: 1.1 }}
-            transition={{ duration: 0.6 }}
-            className="w-10 h-10 bg-gradient-to-br from-cosmic-primary to-cosmic-blue rounded-xl flex items-center justify-center shadow-glow-purple"
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.2 }}
+            className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-cosmic-primary to-cosmic-blue rounded-xl flex items-center justify-center shadow-glow-purple flex-shrink-0"
           >
-            <BookOpen className="w-5 h-5 text-white" />
+            <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-white" />
           </motion.div>
           <div className="hidden sm:block">
-            <h1 className="text-lg font-bold text-gradient">Course Companion</h1>
+            <h1 className="text-base md:text-lg font-bold text-gradient whitespace-nowrap">Course Companion</h1>
           </div>
         </Link>
 
@@ -162,9 +162,9 @@ export function Header() {
               {mobileMenuOpen ? (
                 <motion.div
                   key="close"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.2 }}
                 >
                   <X className="w-6 h-6" />
@@ -172,9 +172,9 @@ export function Header() {
               ) : (
                 <motion.div
                   key="menu"
-                  initial={{ rotate: 90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -90, opacity: 0 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.2 }}
                 >
                   <Menu className="w-6 h-6" />

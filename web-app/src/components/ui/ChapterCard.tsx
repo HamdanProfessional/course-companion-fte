@@ -139,8 +139,8 @@ export const ChapterCard = React.forwardRef<HTMLDivElement, ChapterCardProps>(
               </div>
               {isComplete && (
                 <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 200, damping: 15 }}
                   className="flex items-center gap-1 text-emerald-400"
                 >
