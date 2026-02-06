@@ -434,7 +434,6 @@ export default function InfiniteQuizPage() {
                           ? 'border-cosmic-primary bg-cosmic-primary/10'
                           : 'border-border-default hover:border-cosmic-primary/50 hover:bg-bg-elevated'
                       }`}
-                      disabled={!!answered}
                     >
                       <div className="flex items-start gap-3">
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
