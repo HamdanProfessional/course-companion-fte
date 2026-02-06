@@ -15,6 +15,7 @@ import { EmptyStates } from '@/components/ui/EmptyState';
 import { useChapters, useProgress, useUserTier } from '@/hooks';
 import Link from 'next/link';
 import * as React from 'react';
+import { Sprout, Rocket, Trophy, Lock, BookOpen, CheckCircle, Play, Target, Star } from 'lucide-react';
 
 type FilterType = 'all' | 'completed' | 'in-progress' | 'locked';
 
@@ -75,9 +76,9 @@ export default function ChaptersPage() {
 
   const getDifficultyBadge = (level: string) => {
     const badges = {
-      beginner: { variant: 'beginner' as const, label: 'Beginner', icon: '🌱' },
-      intermediate: { variant: 'intermediate' as const, label: 'Intermediate', icon: '🚀' },
-      advanced: { variant: 'advanced' as const, label: 'Advanced', icon: '🏆' },
+      beginner: { variant: 'beginner' as const, label: 'Beginner', icon: Sprout },
+      intermediate: { variant: 'intermediate' as const, label: 'Intermediate', icon: Rocket },
+      advanced: { variant: 'advanced' as const, label: 'Advanced', icon: Trophy },
     };
     return badges[level.toLowerCase() as keyof typeof badges] || badges.beginner;
   };
@@ -160,17 +161,18 @@ export default function ChaptersPage() {
                       {chapter.title}
                     </CardTitle>
                   </div>
-                  <div className="text-3xl transform group-hover:scale-110 transition-transform">
-                    {isLocked ? '🔒' : isCompleted ? '🎉' : '📖'}
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                    {isLocked ? <Lock className="w-6 h-6 text-text-muted" /> : isCompleted ? <CheckCircle className="w-6 h-6 text-accent-success" /> : <BookOpen className="w-6 h-6 text-cosmic-primary" />}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={difficultyBadge.variant}>
-                    {difficultyBadge.icon} {difficultyBadge.label}
+                  <Badge variant={difficultyBadge.variant} className="gap-1">
+                    <difficultyBadge.icon className="w-3 h-3" />
+                    {difficultyBadge.label}
                   </Badge>
-                  <span className="inline-flex items-center text-xs text-text-muted bg-bg-elevated px-2 py-1 rounded-md">
-                    ⏱️ {chapter.estimated_time} min
+                  <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-bg-elevated px-2 py-1 rounded-md">
+                    <span className="text-xs">⏱</span> {chapter.estimated_time} min
                   </span>
                 </div>
               </CardHeader>
@@ -179,8 +181,9 @@ export default function ChaptersPage() {
                 <div className="space-y-3">
                   {isLocked ? (
                     <div className="bg-accent-warning/10 border border-accent-warning/30 rounded-lg p-4 text-center">
-                      <p className="text-sm text-accent-warning font-medium mb-1">
-                        🔒 Premium Content
+                      <p className="text-sm text-accent-warning font-medium mb-1 flex items-center justify-center gap-2">
+                        <Lock className="w-4 h-4" />
+                        Premium Content
                       </p>
                       <p className="text-xs text-text-muted">
                         Upgrade to PRO to unlock this chapter
@@ -196,9 +199,9 @@ export default function ChaptersPage() {
                       <Link href={`/chapters/${chapter.id}`}>
                         <Button
                           variant={isCompleted ? 'outline' : 'primary'}
-                          className="w-full"
+                          className="w-full gap-2"
                         >
-                          {isCompleted ? '📚 Review Chapter' : '🚀 Start Chapter'}
+                          {isCompleted ? <><BookOpen className="w-4 h-4" /> Review Chapter</> : <><Play className="w-4 h-4" /> Start Chapter</>}
                         </Button>
                       </Link>
 
@@ -206,9 +209,10 @@ export default function ChaptersPage() {
                         <Link href={`/quizzes/${chapter.quiz_id}`}>
                           <Button
                             variant="secondary"
-                            className="w-full"
+                            className="w-full gap-2"
                           >
-                            🎯 Take Quiz →
+                            <Target className="w-4 h-4" />
+                            Take Quiz →
                           </Button>
                         </Link>
                       )}
@@ -225,14 +229,15 @@ export default function ChaptersPage() {
       {/* Motivational footer */}
       {chapters && completedChapters.size < chapters.length ? (
         <div className="text-center py-8 mt-8 border-t border-border-default">
-          <p className="text-text-secondary text-sm">
-            Keep learning! You're making great progress. 🌟
+          <p className="text-text-secondary text-sm flex items-center justify-center gap-2">
+            Keep learning! You're making great progress. <Star className="w-4 h-4 text-accent-warning fill-accent-warning" />
           </p>
         </div>
       ) : chapters && completedChapters.size === chapters.length ? (
         <div className="text-center py-8 mt-8 border-t border-border-default">
-          <p className="text-accent-success font-semibold">
-            🎉 Congratulations! You've completed the course!
+          <p className="text-accent-success font-semibold flex items-center justify-center gap-2">
+            <Trophy className="w-5 h-5" />
+            Congratulations! You've completed the course!
           </p>
         </div>
       ) : null}

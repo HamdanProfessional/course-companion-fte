@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { BookOpen } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -104,9 +105,11 @@ export default function LoginPage() {
             <motion.div
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
-              className="text-5xl mb-4"
+              className="flex justify-center mb-4"
             >
-              📚
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cosmic-primary to-cosmic-blue flex items-center justify-center shadow-glow-purple">
+                <BookOpen className="w-8 h-8 text-white" />
+              </div>
             </motion.div>
             <CardTitle className="text-3xl font-bold text-gradient">Welcome Back</CardTitle>
             <CardDescription className="text-text-secondary">

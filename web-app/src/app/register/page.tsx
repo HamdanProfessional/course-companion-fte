@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { GraduationCap, User, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -130,9 +131,11 @@ export default function RegisterPage() {
             <motion.div
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
-              className="text-5xl mb-4"
+              className="flex justify-center mb-4"
             >
-              🎓
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cosmic-primary to-cosmic-blue flex items-center justify-center shadow-glow-purple">
+                <GraduationCap className="w-8 h-8 text-white" />
+              </div>
             </motion.div>
             <CardTitle className="text-3xl font-bold text-gradient">Create Account</CardTitle>
             <CardDescription className="text-text-secondary">
@@ -173,7 +176,9 @@ export default function RegisterPage() {
                         : 'border-glass-border hover:border-cosmic-primary/50 hover:bg-cosmic-primary/10 bg-glass-surface'
                     }`}
                   >
-                    <div className="text-3xl mb-2">👨‍🎓</div>
+                    <div className="flex justify-center mb-2">
+                      <User className={`w-8 h-8 ${formData.role === 'student' ? 'text-cosmic-primary' : 'text-text-primary'}`} />
+                    </div>
                     <div className={`font-semibold ${formData.role === 'student' ? 'text-cosmic-primary' : 'text-text-primary'}`}>
                       Student
                     </div>
@@ -194,7 +199,9 @@ export default function RegisterPage() {
                         : 'border-glass-border hover:border-cosmic-purple/50 hover:bg-cosmic-purple/10 bg-glass-surface'
                     }`}
                   >
-                    <div className="text-3xl mb-2">👨‍🏫</div>
+                    <div className="flex justify-center mb-2">
+                      <Users className={`w-8 h-8 ${formData.role === 'teacher' ? 'text-cosmic-purple' : 'text-text-primary'}`} />
+                    </div>
                     <div className={`font-semibold ${formData.role === 'teacher' ? 'text-cosmic-purple' : 'text-text-primary'}`}>
                       Teacher
                     </div>

@@ -18,7 +18,7 @@ import { pageVariants, staggerContainer } from '@/lib/animations';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Trophy, TrendingUp, Zap } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Zap, FileText, Target, BarChart3 } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -280,18 +280,21 @@ export default function DashboardPage() {
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8"
         >
           <Link href="/chapters">
-            <Button variant="primary" className="w-full" size="lg">
-              📚 Browse Chapters
+            <Button variant="primary" className="w-full gap-2" size="lg">
+              <FileText className="w-5 h-5" />
+              Browse Chapters
             </Button>
           </Link>
           <Link href="/quizzes">
-            <Button variant="secondary" className="w-full" size="lg">
-              🎯 Take a Quiz
+            <Button variant="secondary" className="w-full gap-2" size="lg">
+              <Target className="w-5 h-5" />
+              Take a Quiz
             </Button>
           </Link>
           <Link href="/progress">
-            <Button variant="outline" className="w-full" size="lg">
-              📊 View Progress
+            <Button variant="outline" className="w-full gap-2" size="lg">
+              <BarChart3 className="w-5 h-5" />
+              View Progress
             </Button>
           </Link>
         </motion.div>

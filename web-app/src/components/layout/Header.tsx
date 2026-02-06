@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
+import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
@@ -15,58 +16,71 @@ const SearchBar = dynamic(() => import('@/components/SearchBar').then(mod => ({ 
 });
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Chapters', href: '/chapters' },
-  { name: 'Quizzes', href: '/quizzes' },
-  { name: 'Progress', href: '/progress' },
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Chapters', href: '/chapters', icon: FileText },
+  { name: 'Quizzes', href: '/quizzes', icon: ClipboardList },
+  { name: 'Progress', href: '/progress', icon: BarChart3 },
 ];
 
 // Phase 3 AI Features (shown separately)
 const aiFeatures = [
-  { name: 'Adaptive Learning', href: '/adaptive-learning', badge: 'AI' },
-  { name: 'AI Mentor', href: '/ai-mentor', badge: 'AI' },
+  { name: 'Adaptive Learning', href: '/adaptive-learning', icon: Brain, badge: 'AI' },
+  { name: 'AI Mentor', href: '/ai-mentor', icon: Sparkles, badge: 'AI' },
 ];
 
 export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_tier');
+    window.location.href = '/login';
+  };
+
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className="sticky top-0 z-40 w-full border-b border-glass-border bg-glass-surface/80 backdrop-blur-xl"
+      className="sticky top-0 z-40 w-full border-b border-glass-border bg-glass-surface/90 backdrop-blur-xl"
     >
       <nav className="container flex items-center justify-between h-16" aria-label="Global">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 group">
+        <Link href="/dashboard" className="flex items-center gap-3 group">
           <motion.div
             whileHover={{ rotate: 360, scale: 1.1 }}
             transition={{ duration: 0.6 }}
             className="w-10 h-10 bg-gradient-to-br from-cosmic-primary to-cosmic-blue rounded-xl flex items-center justify-center shadow-glow-purple"
           >
-            <span className="text-white font-bold text-lg">C</span>
+            <BookOpen className="w-5 h-5 text-white" />
           </motion.div>
-          <span className="text-xl font-bold text-gradient">Course Companion</span>
+          <div className="hidden sm:block">
+            <h1 className="text-lg font-bold text-gradient">Course Companion</h1>
+          </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex md:items-center md:gap-1">
+        <div className="hidden lg:flex lg:items-center lg:gap-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
+            const Icon = item.icon;
             return (
-              <motion.div key={item.name} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div key={item.name} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   href={item.href}
                   className={cn(
-                    'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200',
+                    'px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2',
                     isActive
-                      ? 'bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white shadow-glow-purple'
+                      ? 'bg-gradient-to-r from-cosmic-primary/20 to-cosmic-purple/20 text-cosmic-primary border border-cosmic-primary/30'
                       : 'text-text-secondary hover:text-cosmic-primary hover:bg-cosmic-primary/10'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
+                  <Icon className="w-4 h-4" />
                   {item.name}
                 </Link>
               </motion.div>
@@ -79,18 +93,20 @@ export function Header() {
           {/* AI Features */}
           {aiFeatures.map((item) => {
             const isActive = pathname === item.href;
+            const Icon = item.icon;
             return (
-              <motion.div key={item.name} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div key={item.name} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   href={item.href}
                   className={cn(
-                    'px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2',
+                    'px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2',
                     isActive
-                      ? 'bg-gradient-to-r from-cosmic-pink to-cosmic-purple text-white shadow-nebula'
+                      ? 'bg-gradient-to-r from-cosmic-pink/20 to-cosmic-purple/20 text-cosmic-purple border border-cosmic-purple/30'
                       : 'text-text-secondary hover:text-cosmic-purple hover:bg-cosmic-purple/10'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
+                  <Icon className="w-4 h-4" />
                   {item.name}
                   <motion.span
                     whileHover={{ scale: 1.1 }}
@@ -104,41 +120,36 @@ export function Header() {
           })}
 
           {/* Search Bar */}
-          <div className="w-64 ml-4">
+          <div className="w-56 ml-2">
             <SearchBar placeholder="Search..." />
           </div>
         </div>
 
         {/* User menu - desktop */}
-        <div className="hidden md:flex md:items-center md:gap-4">
+        <div className="hidden lg:flex lg:items-center lg:gap-2">
           <Link href="/profile">
-            <Button variant="ghost" size="sm">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+            <Button variant="ghost" size="sm" className="gap-2">
+              <User className="w-4 h-4" />
+              <span className="hidden xl:inline">Profile</span>
             </Button>
           </Link>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              localStorage.removeItem('token');
-              localStorage.removeItem('user_id');
-              localStorage.removeItem('user_email');
-              localStorage.removeItem('user_role');
-              localStorage.removeItem('user_tier');
-              window.location.href = '/login';
-            }}
+            onClick={handleLogout}
             title="Logout"
+            className="gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
+            <LogOut className="w-4 h-4" />
+            <span className="hidden xl:inline">Logout</span>
           </Button>
         </div>
 
         {/* Mobile menu button */}
-        <div className="md:hidden">
+        <div className="flex lg:hidden items-center gap-2">
+          <Link href="/profile" className="p-2">
+            <User className="w-5 h-5 text-text-secondary hover:text-cosmic-primary" />
+          </Link>
           <Button
             variant="ghost"
             size="sm"
@@ -149,33 +160,25 @@ export function Header() {
             <span className="sr-only">Open main menu</span>
             <AnimatePresence mode="wait">
               {mobileMenuOpen ? (
-                <motion.svg
+                <motion.div
                   key="close"
                   initial={{ rotate: -90, opacity: 0 }}
                   animate={{ rotate: 0, opacity: 1 }}
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </motion.svg>
+                  <X className="w-6 h-6" />
+                </motion.div>
               ) : (
-                <motion.svg
+                <motion.div
                   key="menu"
                   initial={{ rotate: 90, opacity: 0 }}
                   animate={{ rotate: 0, opacity: 1 }}
                   exit={{ rotate: -90, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </motion.svg>
+                  <Menu className="w-6 h-6" />
+                </motion.div>
               )}
             </AnimatePresence>
           </Button>
@@ -190,11 +193,12 @@ export function Header() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden border-t border-glass-border bg-glass-surface backdrop-blur-xl overflow-hidden"
+            className="lg:hidden border-t border-glass-border bg-glass-surface backdrop-blur-xl overflow-hidden"
           >
             <div className="container px-2 py-3 space-y-1">
               {navigation.map((item, index) => {
                 const isActive = pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <motion.div
                     key={item.name}
@@ -205,14 +209,15 @@ export function Header() {
                     <Link
                       href={item.href}
                       className={cn(
-                        'block px-4 py-2 rounded-xl text-base font-semibold transition-all duration-200',
+                        'flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200',
                         isActive
-                          ? 'bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white'
+                          ? 'bg-gradient-to-r from-cosmic-primary/20 to-cosmic-purple/20 text-cosmic-primary border border-cosmic-primary/30'
                           : 'text-text-secondary hover:text-cosmic-primary hover:bg-cosmic-primary/10'
                       )}
                       aria-current={isActive ? 'page' : undefined}
                       onClick={() => setMobileMenuOpen(false)}
                     >
+                      <Icon className="w-5 h-5" />
                       {item.name}
                     </Link>
                   </motion.div>
@@ -227,6 +232,7 @@ export function Header() {
               </div>
               {aiFeatures.map((item, index) => {
                 const isActive = pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <motion.div
                     key={item.name}
@@ -237,15 +243,18 @@ export function Header() {
                     <Link
                       href={item.href}
                       className={cn(
-                        'block px-4 py-2 rounded-xl text-base font-semibold transition-all duration-200 flex items-center justify-between',
+                        'flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200',
                         isActive
-                          ? 'bg-gradient-to-r from-cosmic-pink to-cosmic-purple text-white'
+                          ? 'bg-gradient-to-r from-cosmic-pink/20 to-cosmic-purple/20 text-cosmic-purple border border-cosmic-purple/30'
                           : 'text-text-secondary hover:text-cosmic-purple hover:bg-cosmic-purple/10'
                       )}
                       aria-current={isActive ? 'page' : undefined}
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      {item.name}
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5" />
+                        {item.name}
+                      </div>
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white">
                         {item.badge}
                       </span>
@@ -254,37 +263,22 @@ export function Header() {
                 );
               })}
 
-              <motion.div
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Link
-                  href="/profile"
-                  className="block px-4 py-2 rounded-xl text-base font-semibold text-text-secondary hover:text-cosmic-primary hover:bg-cosmic-primary/10 transition-all duration-200"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Profile
-                </Link>
-              </motion.div>
+              {/* Search bar for mobile */}
+              <div className="px-2 py-3">
+                <SearchBar placeholder="Search..." />
+              </div>
 
               {/* Logout Button */}
               <motion.div
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.35 }}
+                transition={{ delay: 0.3 }}
               >
                 <button
-                  onClick={() => {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user_id');
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_role');
-                    localStorage.removeItem('user_tier');
-                    window.location.href = '/login';
-                  }}
-                  className="w-full text-left px-4 py-2 rounded-xl text-base font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
                 >
+                  <LogOut className="w-5 h-5" />
                   Logout
                 </button>
               </motion.div>

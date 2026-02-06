@@ -33,13 +33,6 @@ export function StarfieldBackground() {
     color: ['#8b5cf6', '#0ea5e9', '#06b6d4'][i % 3],
   }));
 
-  const shootingStars = Array.from({ length: 3 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 50,
-    delay: i * 10,
-  }));
-
   if (!mounted) return null;
 
   return (
@@ -129,30 +122,6 @@ export function StarfieldBackground() {
             delay: star.delay,
             repeat: Infinity,
             ease: 'easeInOut',
-          }}
-        />
-      ))}
-
-      {/* Shooting stars */}
-      {shootingStars.map((star) => (
-        <motion.div
-          key={`shooting-${star.id}`}
-          className="absolute w-20 h-0.5"
-          style={{
-            left: `${star.x}%`,
-            top: `${star.y}%`,
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-          animate={{
-            x: [0, 300],
-            y: [0, 300],
-            opacity: [0, 1, 0],
-          }}
-          transition={{
-            duration: 3,
-            delay: star.delay,
-            repeat: Infinity,
-            ease: 'linear',
           }}
         />
       ))}
