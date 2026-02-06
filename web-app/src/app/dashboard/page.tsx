@@ -201,13 +201,13 @@ export default function DashboardPage() {
           <GlassCard>
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-white">
-                <motion.span
-                  animate={{ rotate: [0, 10, -10, 0] }}
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                  className="text-2xl"
+                  className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center"
                 >
-                  📖
-                </motion.span>
+                  <BookOpen className="w-5 h-5 text-cosmic-primary" />
+                </motion.div>
                 Course Outline
               </CardTitle>
             </CardHeader>

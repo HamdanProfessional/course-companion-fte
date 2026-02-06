@@ -28,6 +28,7 @@ import {
   useV3Chapters,
 } from '@/hooks/useV3';
 import type { AchievementItem, ChapterProgress, ScoreHistoryItem } from '@/lib/api-v3';
+import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3 } from 'lucide-react';
 
 export default function ProgressPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -80,11 +81,11 @@ export default function ProgressPage() {
 
   const milestones = [
     { milestone: 'Started Learning', completed: true, icon: '🚀', description: 'Began your journey' },
-    { milestone: 'First Chapter', completed: completedChapters.length >= 1, icon: '📖', description: 'Completed first chapter' },
-    { milestone: '3-Day Streak', completed: longestStreak >= 3, icon: '🔥', description: '3 consecutive days' },
-    { milestone: 'Week Streak', completed: longestStreak >= 7, icon: '⭐', description: '7 consecutive days' },
-    { milestone: 'Halfway There', completed: completedChapters.length >= totalChapters / 2, icon: '🎯', description: '50% complete' },
-    { milestone: 'Course Complete', completed: completedChapters.length >= totalChapters, icon: '🎓', description: '100% complete' },
+    { milestone: 'First Chapter', completed: completedChapters.length >= 1, icon: '📖', Icon: BookOpen, description: 'Completed first chapter' },
+    { milestone: '3-Day Streak', completed: longestStreak >= 3, icon: '🔥', Icon: Flame, description: '3 consecutive days' },
+    { milestone: 'Week Streak', completed: longestStreak >= 7, icon: '⭐', Icon: Star, description: '7 consecutive days' },
+    { milestone: 'Halfway There', completed: completedChapters.length >= totalChapters / 2, icon: '🎯', Icon: Target, description: '50% complete' },
+    { milestone: 'Course Complete', completed: completedChapters.length >= totalChapters, icon: '🎓', Icon: GraduationCap, description: '100% complete' },
   ];
 
   const handleCheckin = async () => {
@@ -144,8 +145,8 @@ export default function ProgressPage() {
                 </p>
                 <p className="text-sm text-text-muted mt-2">chapters completed</p>
               </div>
-              <div className="w-16 h-16 rounded-xl bg-bg-elevated flex items-center justify-center text-3xl">
-                ✅
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-accent-success" />
               </div>
             </div>
           </CardContent>
@@ -163,8 +164,8 @@ export default function ProgressPage() {
                 </div>
                 <p className="text-sm text-text-muted mt-2">keep it up!</p>
               </div>
-              <div className="w-16 h-16 rounded-xl bg-bg-elevated flex items-center justify-center text-3xl">
-                🔥
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                <Flame className="w-8 h-8 text-accent-warning" />
               </div>
             </div>
           </CardContent>
@@ -182,8 +183,8 @@ export default function ProgressPage() {
                 </div>
                 <p className="text-sm text-text-muted mt-2">personal best</p>
               </div>
-              <div className="w-16 h-16 rounded-xl bg-bg-elevated flex items-center justify-center text-3xl">
-                🏆
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+                <Trophy className="w-8 h-8 text-accent-premium" />
               </div>
             </div>
           </CardContent>
@@ -200,8 +201,8 @@ export default function ProgressPage() {
                 </p>
                 <p className="text-sm text-text-muted mt-2">avg: {averageScore.toFixed(1)}%</p>
               </div>
-              <div className="w-16 h-16 rounded-xl bg-bg-elevated flex items-center justify-center text-3xl">
-                ✏️
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent-secondary/20 to-accent-secondary/10 flex items-center justify-center">
+                <FileEdit className="w-8 h-8 text-accent-secondary" />
               </div>
             </div>
           </CardContent>
@@ -287,7 +288,9 @@ export default function ProgressPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-accent-info" />
+            </div>
             Quiz Performance
           </CardTitle>
           <CardDescription>Your recent quiz scores</CardDescription>
@@ -314,7 +317,9 @@ export default function ProgressPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-4xl mb-3">📊</div>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-accent-info" />
+              </div>
               <p className="text-text-secondary">No quiz history yet. Take a quiz to see your performance!</p>
             </div>
           )}
@@ -325,7 +330,9 @@ export default function ProgressPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-xl">🏆</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+              <Trophy className="w-5 h-5 text-accent-premium" />
+            </div>
             Achievements
           </CardTitle>
           <CardDescription>
@@ -341,7 +348,9 @@ export default function ProgressPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-4xl mb-3">🏆</div>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+                <Trophy className="w-8 h-8 text-accent-premium" />
+              </div>
               <p className="text-text-secondary">No achievements available yet.</p>
             </div>
           )}
@@ -352,7 +361,9 @@ export default function ProgressPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-xl">📚</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-cosmic-primary" />
+            </div>
             Chapter Progress
           </CardTitle>
           <CardDescription>Detailed progress for each chapter</CardDescription>
@@ -366,7 +377,9 @@ export default function ProgressPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-4xl mb-3">📖</div>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-cosmic-primary" />
+              </div>
               <p className="text-text-secondary">No chapter progress data available.</p>
             </div>
           )}
@@ -377,7 +390,9 @@ export default function ProgressPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-xl">🎯</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+              <Target className="w-5 h-5 text-accent-primary" />
+            </div>
             Milestones
           </CardTitle>
           <CardDescription>Your learning achievements</CardDescription>
@@ -397,10 +412,10 @@ export default function ProgressPage() {
                   {index < milestones.length - 1 && (
                     <div className="absolute top-8 left-4 w-0.5 h-12 bg-border-default -z-10" />
                   )}
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                     item.completed ? 'bg-accent-success/20' : 'bg-bg-elevated'
                   }`}>
-                    {item.icon}
+                    {item.Icon ? <item.Icon className={`w-6 h-6 ${item.completed ? 'text-accent-success' : 'text-text-muted'}`} /> : <span className="text-2xl">{item.icon}</span>}
                   </div>
                 </div>
                 <div className="flex-1">

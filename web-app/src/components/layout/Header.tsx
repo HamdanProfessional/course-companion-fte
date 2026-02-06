@@ -73,14 +73,14 @@ export function Header() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2',
+                    'px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 whitespace-nowrap',
                     isActive
                       ? 'bg-gradient-to-r from-cosmic-primary/20 to-cosmic-purple/20 text-cosmic-primary border border-cosmic-primary/30'
                       : 'text-text-secondary hover:text-cosmic-primary hover:bg-cosmic-primary/10'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 flex-shrink-0" />
                   {item.name}
                 </Link>
               </motion.div>
@@ -99,18 +99,18 @@ export function Header() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2',
+                    'px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap',
                     isActive
                       ? 'bg-gradient-to-r from-cosmic-pink/20 to-cosmic-purple/20 text-cosmic-purple border border-cosmic-purple/30'
                       : 'text-text-secondary hover:text-cosmic-purple hover:bg-cosmic-purple/10'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-4 h-4" />
-                  {item.name}
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden xl:inline">{item.name}</span>
                   <motion.span
                     whileHover={{ scale: 1.1 }}
-                    className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white"
+                    className="px-1 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white flex-shrink-0"
                   >
                     {item.badge}
                   </motion.span>
