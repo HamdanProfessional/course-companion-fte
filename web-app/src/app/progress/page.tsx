@@ -11,6 +11,7 @@
  * - Milestones timeline
  */
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Progress, CircularProgress } from '@/components/ui/Progress';
 import { LoadingSpinner } from '@/components/ui/Loading';
@@ -28,9 +29,10 @@ import {
   useV3Chapters,
 } from '@/hooks/useV3';
 import type { AchievementItem, ChapterProgress, ScoreHistoryItem } from '@/lib/api-v3';
-import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3, Rocket, Calendar } from 'lucide-react';
+import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3, Rocket, Calendar, Clock } from 'lucide-react';
 
 export default function ProgressPage() {
+  const router = useRouter();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   // Fetch all progress data
@@ -115,6 +117,34 @@ export default function ProgressPage() {
         title="Your Progress"
         description="Track your learning journey and achievements"
       />
+
+      {/* Time Machine CTA */}
+      <Card className="mb-8 bg-gradient-to-r from-cosmic-primary/10 to-cosmic-purple/10 border-cosmic-primary/30">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-text-primary mb-2 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-primary to-cosmic-purple flex items-center justify-center">
+                  <Clock className="w-7 h-7 text-white" />
+                </div>
+                Time Machine: See How You've Grown
+              </h3>
+              <p className="text-text-secondary">
+                View the evolution of your questions and understanding throughout the semester
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => router.push('/time-machine')}
+              className="gap-2"
+            >
+              <Clock className="w-5 h-5" />
+              View Time Machine
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
