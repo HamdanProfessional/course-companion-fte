@@ -8,6 +8,7 @@
  * - Get detailed explanations
  * - Receive follow-up questions
  * - Explore related topics
+ * - Voice Mode: Two-way voice conversations
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -19,7 +20,7 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useV3MentorChat, useV3AIStatus } from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
 import type { MentorMessage } from '@/lib/api-v3';
-import { Bot, User as UserIcon, Sparkles, Lightbulb, Zap, AlertTriangle } from 'lucide-react';
+import { Bot, User as UserIcon, Sparkles, Lightbulb, Zap, AlertTriangle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
 // Suggested questions to help users get started
 const SUGGESTED_QUESTIONS = [
@@ -35,6 +36,14 @@ export default function AIMentorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Voice Mode State
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const recognitionRef = useRef<any>(null);
+  const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Get user tier
   const { data: tier, isLoading: tierLoading } = useUserTier();
@@ -116,6 +125,163 @@ export default function AIMentorPage() {
     setMessages([]);
   };
 
+  // Voice Mode Functions
+  const toggleVoiceMode = () => {
+    if (!isVoiceMode && !voiceEnabled) {
+      // Check for browser support
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+        return;
+      }
+      if (!('speechSynthesis' in window)) {
+        alert('Text-to-speech is not supported in your browser.');
+        return;
+      }
+    }
+    setIsVoiceMode(!isVoiceMode);
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in your browser.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      setInputValue(finalTranscript || interimTranscript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      if (event.error === 'not-allowed') {
+        alert('Microphone permission denied. Please allow microphone access to use voice mode.');
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript) {
+        setInputValue(finalTranscript);
+        // Auto-send after listening completes
+        setTimeout(() => {
+          handleSendMessage();
+        }, 500);
+      }
+    };
+
+    recognition.start();
+    setIsListening(true);
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const speakText = (text: string) => {
+    if (!voiceEnabled || !('speechSynthesis' in window)) return;
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    synthesisRef.current = utterance;
+
+    // Select a natural sounding voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice =>
+      voice.lang.startsWith('en') && voice.name.includes('Google') || voice.name.includes('Natural')
+    ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.rate = 0.9; // Slightly slower for better comprehension
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
+  const toggleSpeechEnabled = () => {
+    setVoiceEnabled(!voiceEnabled);
+    if (isSpeaking) {
+      stopSpeaking();
+    }
+  };
+
+  // Auto-speak AI responses when voice mode is enabled
+  useEffect(() => {
+    if (isVoiceMode && voiceEnabled && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'assistant' && !isSpeaking) {
+        speakText(lastMessage.content);
+      }
+    }
+  }, [messages, isVoiceMode, voiceEnabled]);
+
+  // Load voices when component mounts
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const handleVoicesChanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
   if (!canAccessAI && aiStatus) {
     return (
       <PageContainer>
@@ -155,13 +321,122 @@ export default function AIMentorPage() {
                     <Bot className="w-6 h-6 text-cosmic-purple" />
                   </div>
                   AI Tutor
+                  {isVoiceMode && (
+                    <Badge variant="premium" className="ml-2">
+                      Voice Mode Active
+                    </Badge>
+                  )}
                 </CardTitle>
-                {messages.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={handleClearChat}>
-                    Clear Chat
+                <div className="flex items-center gap-2">
+                  {/* Voice Mode Controls */}
+                  <Button
+                    variant={isVoiceMode ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={toggleVoiceMode}
+                    className="flex items-center gap-2"
+                  >
+                    {isVoiceMode ? (
+                      <>
+                        <Mic className="w-4 h-4" />
+                        Voice On
+                      </>
+                    ) : (
+                      <>
+                        <MicOff className="w-4 h-4" />
+                        Voice Off
+                      </>
+                    )}
                   </Button>
-                )}
+
+                  {isVoiceMode && (
+                    <>
+                      {/* Mic Button */}
+                      <Button
+                        variant={isListening ? 'danger' : 'outline'}
+                        size="sm"
+                        onClick={toggleListening}
+                        className="relative"
+                        disabled={isLoading}
+                      >
+                        {isListening ? (
+                          <>
+                            <div className="absolute inset-0 bg-red-500/20 rounded-md animate-pulse" />
+                            <Mic className="w-4 h-4" />
+                            Stop
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="w-4 h-4" />
+                            Speak
+                          </>
+                        )}
+                      </Button>
+
+                      {/* Volume Toggle */}
+                      <Button
+                        variant={voiceEnabled ? 'outline' : 'ghost'}
+                        size="sm"
+                        onClick={toggleSpeechEnabled}
+                        title={voiceEnabled ? 'Sound On' : 'Muted'}
+                      >
+                        {voiceEnabled ? (
+                          <Volume2 className="w-4 h-4" />
+                        ) : (
+                          <VolumeX className="w-4 h-4" />
+                        )}
+                      </Button>
+
+                      {/* Stop Speaking if active */}
+                      {isSpeaking && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={stopSpeaking}
+                        >
+                          Stop Speaking
+                        </Button>
+                      )}
+                    </>
+                  )}
+
+                  {messages.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={handleClearChat}>
+                      Clear Chat
+                    </Button>
+                  )}
+                </div>
               </div>
+
+              {/* Voice Mode Status Bar */}
+              {isVoiceMode && (
+                <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-cosmic-primary/10 to-cosmic-purple/10 border border-cosmic-primary/30">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      {isListening ? (
+                        <>
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                          <span className="text-text-primary font-medium">Listening...</span>
+                        </>
+                      ) : isSpeaking ? (
+                        <>
+                          <div className="w-2 h-2 bg-accent-primary rounded-full animate-pulse" />
+                          <span className="text-text-primary font-medium">Speaking...</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2 h-2 bg-accent-success rounded-full" />
+                          <span className="text-text-secondary">
+                            {voiceEnabled ? 'Ready to speak & listen' : 'Ready to listen only'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <span className="text-xs text-text-muted">
+                      Click Speak button or type your question
+                    </span>
+                  </div>
+                </div>
+              )}
             </CardHeader>
 
             <CardContent className="flex-1 flex flex-col p-0">
@@ -306,7 +581,9 @@ export default function AIMentorPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <span>💡</span>
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                  <Lightbulb className="w-4 h-4 text-accent-warning" />
+                </div>
                 Tips
               </CardTitle>
             </CardHeader>
@@ -315,6 +592,53 @@ export default function AIMentorPage() {
               <p>• Reference chapters when relevant</p>
               <p>• Ask follow-up questions</p>
               <p>• Use examples for clarity</p>
+            </CardContent>
+          </Card>
+
+          {/* Voice Mode Info */}
+          <Card className={isVoiceMode ? 'border-accent-primary' : ''}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                  <Mic className="w-4 h-4 text-cosmic-primary" />
+                </div>
+                Voice Mode
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {isVoiceMode ? (
+                <>
+                  <div className="p-3 rounded-lg bg-accent-success/10 border border-accent-success/30">
+                    <p className="text-text-primary font-medium mb-1">Active</p>
+                    <p className="text-text-secondary text-xs">
+                      Tap Speak to ask questions verbally. AI responses will be spoken aloud.
+                    </p>
+                  </div>
+                  <div className="space-y-2 text-text-secondary">
+                    <p className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-accent-primary" />
+                      <span>Perfect for commuting or hands-free learning</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-accent-primary" />
+                      <span>Practice oral exams and language skills</span>
+                    </p>
+                    <p className="text-xs text-text-muted mt-3">
+                      Requires microphone permission
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center">
+                  <p className="text-text-secondary mb-3">
+                    Enable voice mode for hands-free conversations
+                  </p>
+                  <Button variant="outline" size="sm" onClick={toggleVoiceMode} className="w-full">
+                    <Mic className="w-4 h-4 mr-2" />
+                    Enable Voice
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
