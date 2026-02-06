@@ -274,7 +274,7 @@ async def check_and_unlock_achievements(
 
 @router.get("/summary", response_model=ProgressSummary)
 async def get_progress_summary(
-    user_id: UUID = Query(description="User UUID"),
+    user_id: str = Query(description="User UUID (as string)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -290,6 +290,14 @@ async def get_progress_summary(
     **Phase 3 Enhancement**: Comprehensive progress dashboard.
     """
     try:
+        # Convert string to UUID
+        try:
+            user_uuid = UUID(user_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid user_id format: {user_id}"
+            )
         # Get user progress
         result = await db.execute(
             select(UserProgress).where(UserProgress.user_id == user_id)

@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * Login page - Professional/Modern SaaS theme.
+ * Login page - Nebula/Cosmic theme with glass-morphism and animations.
  */
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -21,7 +22,6 @@ export default function LoginPage() {
 
   // Clear any existing auth data when login page is visited
   useEffect(() => {
-    // Clear all authentication data
     localStorage.removeItem('token');
     localStorage.removeItem('user_id');
     localStorage.removeItem('user_email');
@@ -36,7 +36,6 @@ export default function LoginPage() {
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      console.log('Attempting login to:', backendUrl);
 
       const response = await fetch(`${backendUrl}/api/v1/auth/login`, {
         method: 'POST',
@@ -44,28 +43,24 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log('Response status:', response.status);
-
       const data = await response.json();
-      console.log('Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.detail || 'Login failed');
       }
 
-      // Store auth token and user info
+      // Store in localStorage for client-side access
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user_id', data.user_id);
       localStorage.setItem('user_email', data.email);
       localStorage.setItem('user_role', data.role);
       localStorage.setItem('user_tier', data.tier);
 
-      console.log('Login successful, redirecting to dashboard...');
+      // Set cookie for middleware
+      document.cookie = `token=${data.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
-      // Redirect to dashboard using window.location for reliable navigation
       window.location.href = '/dashboard';
     } catch (err) {
-      console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsLoading(false);
@@ -73,26 +68,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-primary px-4">
-      <div className="w-full max-w-md">
-        <Card variant="elevated" className="border-l-4 border-l-accent-primary">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 -z-10">
+        <motion.div
+          animate={{
+            backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.2) 0%, transparent 50%)
+            `,
+            backgroundSize: '200% 200%',
+          }}
+        />
+      </div>
+
+      {/* Login Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, type: 'spring' }}
+        className="w-full max-w-md"
+      >
+        <Card variant="cosmic" glow className="border-l-4 border-l-cosmic-primary">
           <CardHeader className="text-center">
-            <div className="text-4xl mb-2">📚</div>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
-            <CardDescription>
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
+              className="text-5xl mb-4"
+            >
+              📚
+            </motion.div>
+            <CardTitle className="text-3xl font-bold text-gradient">Welcome Back</CardTitle>
+            <CardDescription className="text-text-secondary">
               Sign in to continue your learning journey
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="p-3 rounded-lg bg-accent-danger/10 border border-accent-danger/30 text-accent-danger text-sm">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-sm"
+                >
                   {error}
-                </div>
+                </motion.div>
               )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1.5">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <label htmlFor="email" className="block text-sm font-semibold text-text-secondary mb-2">
                   Email
                 </label>
                 <Input
@@ -105,11 +143,16 @@ export default function LoginPage() {
                   required
                   disabled={isLoading}
                   autoComplete="email"
+                  className="bg-glass-surface border-glass-border"
                 />
-              </div>
+              </motion.div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1.5">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <label htmlFor="password" className="block text-sm font-semibold text-text-secondary mb-2">
                   Password
                 </label>
                 <Input
@@ -122,33 +165,50 @@ export default function LoginPage() {
                   required
                   disabled={isLoading}
                   autoComplete="current-password"
+                  className="bg-glass-surface border-glass-border"
                 />
-              </div>
+              </motion.div>
 
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="w-full"
-                disabled={isLoading}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
               >
-                {isLoading ? <LoadingSpinner size="sm" /> : 'Sign In'}
-              </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? <LoadingSpinner size="sm" /> : 'Sign In'}
+                </Button>
+              </motion.div>
             </form>
 
-            <div className="mt-6 text-center text-sm text-text-secondary">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-6 text-center text-sm text-text-secondary"
+            >
               Don't have an account?{' '}
-              <Link href="/register" className="text-accent-primary hover:text-accent-primary/80 font-medium">
+              <Link href="/register" className="text-cosmic-primary hover:text-cosmic-purple font-semibold hover:underline transition-colors">
                 Sign up
               </Link>
-            </div>
+            </motion.div>
           </CardContent>
         </Card>
 
-        <div className="mt-4 text-center text-xs text-text-muted">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-4 text-center text-xs text-text-muted p-3 rounded-xl bg-glass-surface border border-glass-border backdrop-blur-sm"
+        >
           Demo credentials: demo@example.com / password123
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

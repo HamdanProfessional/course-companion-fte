@@ -1,4 +1,7 @@
+'use client';
+
 import * as React from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export interface PageContainerProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -38,16 +41,44 @@ export interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   return (
-    <div className={cn('mb-8', className)}>
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className={cn('mb-8', className)}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">{title}</h1>
+          <motion.h1
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-4xl font-bold text-gradient tracking-tight"
+          >
+            {title}
+          </motion.h1>
           {description && (
-            <p className="mt-2 text-lg text-text-secondary leading-relaxed">{description}</p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-2 text-lg text-text-secondary leading-relaxed"
+            >
+              {description}
+            </motion.p>
           )}
         </div>
-        {actions && <div className="ml-4">{actions}</div>}
+        {actions && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="ml-4"
+          >
+            {actions}
+          </motion.div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 }

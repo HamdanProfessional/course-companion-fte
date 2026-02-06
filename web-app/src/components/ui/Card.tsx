@@ -1,22 +1,30 @@
+'use client';
+
 import * as React from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'elevated' | 'borderless';
+  variant?: 'default' | 'elevated' | 'borderless' | 'cosmic' | 'glass';
+  glow?: boolean;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = 'default', ...props }, ref) => {
+  ({ className, variant = 'cosmic', glow = false, ...props }, ref) => {
     const variants = {
       default: 'card',
       elevated: 'card-elevated',
       borderless: 'card-borderless',
+      cosmic: 'bg-glass-surface border border-glass-border backdrop-blur-xl hover:shadow-glow-purple',
+      glass: 'bg-glass-surface border border-glass-border backdrop-blur-xl',
     };
 
     return (
-      <div
+      <motion.div
         ref={ref}
-        className={cn('rounded-lg relative', variants[variant], className)}
+        whileHover={glow ? { scale: 1.01, boxShadow: '0 0 40px rgba(139, 92, 246, 0.3)' } : {}}
+        transition={{ duration: 0.2 }}
+        className={cn('rounded-2xl relative overflow-hidden', variants[variant], className)}
         {...props}
       />
     );

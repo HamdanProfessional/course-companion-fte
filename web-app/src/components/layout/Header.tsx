@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -31,14 +32,23 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border-default bg-bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-bg-primary/60">
+    <motion.header
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="sticky top-0 z-40 w-full border-b border-glass-border bg-glass-surface/80 backdrop-blur-xl"
+    >
       <nav className="container flex items-center justify-between h-16" aria-label="Global">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-accent-primary rounded-lg flex items-center justify-center">
+        <Link href="/dashboard" className="flex items-center gap-2 group">
+          <motion.div
+            whileHover={{ rotate: 360, scale: 1.1 }}
+            transition={{ duration: 0.6 }}
+            className="w-10 h-10 bg-gradient-to-br from-cosmic-primary to-cosmic-blue rounded-xl flex items-center justify-center shadow-glow-purple"
+          >
             <span className="text-white font-bold text-lg">C</span>
-          </div>
-          <span className="text-xl font-bold text-text-primary">Course Companion</span>
+          </motion.div>
+          <span className="text-xl font-bold text-gradient">Course Companion</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -46,45 +56,50 @@ export function Header() {
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent-primary text-white'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
-                )}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {item.name}
-              </Link>
+              <motion.div key={item.name} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200',
+                    isActive
+                      ? 'bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white shadow-glow-purple'
+                      : 'text-text-secondary hover:text-cosmic-primary hover:bg-cosmic-primary/10'
+                  )}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {item.name}
+                </Link>
+              </motion.div>
             );
           })}
 
           {/* Divider */}
-          <div className="w-px h-6 bg-border-default mx-2" />
+          <div className="w-px h-6 bg-glass-border mx-2" />
 
           {/* AI Features */}
           {aiFeatures.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2',
-                  isActive
-                    ? 'bg-accent-secondary text-white'
-                    : 'text-text-secondary hover:text-accent-secondary hover:bg-accent-secondary/10'
-                )}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {item.name}
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-accent-secondary text-white">
-                  {item.badge}
-                </span>
-              </Link>
+              <motion.div key={item.name} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2',
+                    isActive
+                      ? 'bg-gradient-to-r from-cosmic-pink to-cosmic-purple text-white shadow-nebula'
+                      : 'text-text-secondary hover:text-cosmic-purple hover:bg-cosmic-purple/10'
+                  )}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {item.name}
+                  <motion.span
+                    whileHover={{ scale: 1.1 }}
+                    className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white"
+                  >
+                    {item.badge}
+                  </motion.span>
+                </Link>
+              </motion.div>
             );
           })}
 
@@ -107,13 +122,11 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={() => {
-              // Clear all auth data
               localStorage.removeItem('token');
               localStorage.removeItem('user_id');
               localStorage.removeItem('user_email');
               localStorage.removeItem('user_role');
               localStorage.removeItem('user_tier');
-              // Redirect to login
               window.location.href = '/login';
             }}
             title="Logout"
@@ -134,99 +147,151 @@ export function Header() {
             aria-label="Toggle menu"
           >
             <span className="sr-only">Open main menu</span>
-            {mobileMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
+            <AnimatePresence mode="wait">
+              {mobileMenuOpen ? (
+                <motion.svg
+                  key="close"
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </motion.svg>
+              ) : (
+                <motion.svg
+                  key="menu"
+                  initial={{ rotate: 90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: -90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </motion.svg>
+              )}
+            </AnimatePresence>
           </Button>
         </div>
       </nav>
 
       {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border-default bg-bg-secondary">
-          <div className="container px-2 py-3 space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'block px-4 py-2 rounded-lg text-base font-medium transition-colors',
-                    isActive
-                      ? 'bg-accent-primary text-white'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
-                  )}
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              );
-            })}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="md:hidden border-t border-glass-border bg-glass-surface backdrop-blur-xl overflow-hidden"
+          >
+            <div className="container px-2 py-3 space-y-1">
+              {navigation.map((item, index) => {
+                const isActive = pathname === item.href;
+                return (
+                  <motion.div
+                    key={item.name}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'block px-4 py-2 rounded-xl text-base font-semibold transition-all duration-200',
+                        isActive
+                          ? 'bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white'
+                          : 'text-text-secondary hover:text-cosmic-primary hover:bg-cosmic-primary/10'
+                      )}
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  </motion.div>
+                );
+              })}
 
-            {/* AI Features Section */}
-            <div className="pt-4 pb-2">
-              <div className="px-4 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                AI Features
+              {/* AI Features Section */}
+              <div className="pt-4 pb-2">
+                <div className="px-4 py-2 text-xs font-bold text-cosmic-primary uppercase tracking-wider">
+                  AI Features
+                </div>
               </div>
-            </div>
-            {aiFeatures.map((item) => {
-              const isActive = pathname === item.href;
-              return (
+              {aiFeatures.map((item, index) => {
+                const isActive = pathname === item.href;
+                return (
+                  <motion.div
+                    key={item.name}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
+                  >
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'block px-4 py-2 rounded-xl text-base font-semibold transition-all duration-200 flex items-center justify-between',
+                        isActive
+                          ? 'bg-gradient-to-r from-cosmic-pink to-cosmic-purple text-white'
+                          : 'text-text-secondary hover:text-cosmic-purple hover:bg-cosmic-purple/10'
+                      )}
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.name}
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white">
+                        {item.badge}
+                      </span>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
                 <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'block px-4 py-2 rounded-lg text-base font-medium transition-colors flex items-center justify-between',
-                    isActive
-                      ? 'bg-accent-secondary text-white'
-                      : 'text-text-secondary hover:text-accent-secondary hover:bg-accent-secondary/10'
-                  )}
-                  aria-current={isActive ? 'page' : undefined}
+                  href="/profile"
+                  className="block px-4 py-2 rounded-xl text-base font-semibold text-text-secondary hover:text-cosmic-primary hover:bg-cosmic-primary/10 transition-all duration-200"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item.name}
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-accent-secondary text-white">
-                    {item.badge}
-                  </span>
+                  Profile
                 </Link>
-              );
-            })}
+              </motion.div>
 
-            <Link
-              href="/profile"
-              className="block px-4 py-2 rounded-lg text-base font-medium text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Profile
-            </Link>
-
-            {/* Logout Button */}
-            <button
-              onClick={() => {
-                // Clear all auth data
-                localStorage.removeItem('token');
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('user_email');
-                localStorage.removeItem('user_role');
-                localStorage.removeItem('user_tier');
-                // Redirect to login
-                window.location.href = '/login';
-              }}
-              className="w-full text-left px-4 py-2 rounded-lg text-base font-medium text-accent-danger hover:text-accent-danger hover:bg-accent-danger/10 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      )}
-    </header>
+              {/* Logout Button */}
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}
+              >
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user_id');
+                    localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_role');
+                    localStorage.removeItem('user_tier');
+                    window.location.href = '/login';
+                  }}
+                  className="w-full text-left px-4 py-2 rounded-xl text-base font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
+                >
+                  Logout
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
   );
 }

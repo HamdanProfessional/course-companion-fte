@@ -1,4 +1,7 @@
+'use client';
+
 import * as React from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export interface TabsProps {
@@ -43,7 +46,7 @@ export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       <div
         ref={ref}
         className={cn(
-          'inline-flex items-center gap-2 rounded-lg bg-bg-secondary p-1',
+          'inline-flex items-center gap-2 rounded-xl bg-glass-surface border border-glass-border p-1.5 backdrop-blur-xl',
           className
         )}
         {...props}
@@ -71,16 +74,18 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
     const isActive = context.value === value;
 
     return (
-      <button
+      <motion.button
         ref={ref}
         type="button"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         className={cn(
-          'inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
+          'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-primary',
           'disabled:pointer-events-none disabled:opacity-50',
           isActive
-            ? 'bg-accent-primary text-white shadow-sm'
-            : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
+            ? 'bg-gradient-to-r from-cosmic-primary to-cosmic-purple text-white shadow-glow-purple'
+            : 'text-text-secondary hover:text-text-primary hover:bg-cosmic-secondary',
           className
         )}
         onClick={() => context.onValueChange(value)}
@@ -89,7 +94,7 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
         {...props}
       >
         {children}
-      </button>
+      </motion.button>
     );
   }
 );
@@ -113,14 +118,17 @@ export const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
     }
 
     return (
-      <div
+      <motion.div
         ref={ref}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
         className={cn('mt-4 focus-visible:outline-none', className)}
         role="tabpanel"
         {...props}
       >
         {children}
-      </div>
+      </motion.div>
     );
   }
 );

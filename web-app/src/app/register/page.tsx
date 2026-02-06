@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * Registration page - Professional/Modern SaaS theme.
+ * Registration page - Nebula/Cosmic theme with glass-morphism.
  */
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -27,7 +28,6 @@ export default function RegisterPage() {
 
   // Clear any existing auth data when register page is visited
   useEffect(() => {
-    // Clear all authentication data
     localStorage.removeItem('token');
     localStorage.removeItem('user_id');
     localStorage.removeItem('user_email');
@@ -47,13 +47,11 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // Validate password length
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
@@ -78,14 +76,16 @@ export default function RegisterPage() {
         throw new Error(data.detail || 'Registration failed');
       }
 
-      // Store auth token and user info
+      // Store in localStorage for client-side access
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user_id', data.user_id);
       localStorage.setItem('user_email', data.email);
       localStorage.setItem('user_role', data.role);
       localStorage.setItem('user_tier', data.tier);
 
-      // Redirect to dashboard using window.location for reliable navigation
+      // Set cookie for middleware
+      document.cookie = `token=${data.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+
       window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -95,72 +95,122 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-primary px-4">
-      <div className="w-full max-w-md">
-        <Card variant="elevated" className="border-l-4 border-l-accent-success">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 -z-10">
+        <motion.div
+          animate={{
+            backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.2) 0%, transparent 50%)
+            `,
+            backgroundSize: '200% 200%',
+          }}
+        />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, type: 'spring' }}
+        className="w-full max-w-md"
+      >
+        <Card variant="cosmic" glow className="border-l-4 border-l-cosmic-success">
           <CardHeader className="text-center">
-            <div className="text-4xl mb-2">🎓</div>
-            <CardTitle className="text-2xl">Create Account</CardTitle>
-            <CardDescription>
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
+              className="text-5xl mb-4"
+            >
+              🎓
+            </motion.div>
+            <CardTitle className="text-3xl font-bold text-gradient">Create Account</CardTitle>
+            <CardDescription className="text-text-secondary">
               Join as a student or teacher
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="p-3 rounded-lg bg-accent-danger/10 border border-accent-danger/30 text-accent-danger text-sm">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-sm"
+                >
                   {error}
-                </div>
+                </motion.div>
               )}
 
               {/* Role Selection */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <label className="block text-sm font-semibold text-text-secondary mb-3">
                   I am a...
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {/* Student Option */}
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleRoleSelect('student')}
-                    className={`p-4 rounded-lg border-2 text-center transition-all ${
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
                       formData.role === 'student'
-                        ? 'border-accent-primary bg-accent-primary/10 shadow-md'
-                        : 'border-border-default hover:border-accent-primary/50 hover:bg-bg-elevated'
+                        ? 'border-cosmic-primary bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 shadow-glow-purple'
+                        : 'border-glass-border hover:border-cosmic-primary/50 hover:bg-cosmic-primary/10 bg-glass-surface'
                     }`}
                   >
                     <div className="text-3xl mb-2">👨‍🎓</div>
-                    <div className={`font-semibold ${formData.role === 'student' ? 'text-accent-primary' : 'text-text-primary'}`}>
+                    <div className={`font-semibold ${formData.role === 'student' ? 'text-cosmic-primary' : 'text-text-primary'}`}>
                       Student
                     </div>
-                    <div className="text-xs text-text-muted mt-1">
+                    <div className="text-xs text-text-secondary mt-1">
                       Learn & grow
                     </div>
-                  </button>
+                  </motion.button>
 
                   {/* Teacher Option */}
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleRoleSelect('teacher')}
-                    className={`p-4 rounded-lg border-2 text-center transition-all ${
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
                       formData.role === 'teacher'
-                        ? 'border-accent-secondary bg-accent-secondary/10 shadow-md'
-                        : 'border-border-default hover:border-accent-secondary/50 hover:bg-bg-elevated'
+                        ? 'border-cosmic-purple bg-gradient-to-br from-cosmic-purple/20 to-cosmic-pink/20 shadow-glow-purple'
+                        : 'border-glass-border hover:border-cosmic-purple/50 hover:bg-cosmic-purple/10 bg-glass-surface'
                     }`}
                   >
                     <div className="text-3xl mb-2">👨‍🏫</div>
-                    <div className={`font-semibold ${formData.role === 'teacher' ? 'text-accent-secondary' : 'text-text-primary'}`}>
+                    <div className={`font-semibold ${formData.role === 'teacher' ? 'text-cosmic-purple' : 'text-text-primary'}`}>
                       Teacher
                     </div>
-                    <div className="text-xs text-text-muted mt-1">
+                    <div className="text-xs text-text-secondary mt-1">
                       Create & manage
                     </div>
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1.5">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <label htmlFor="email" className="block text-sm font-semibold text-text-secondary mb-2">
                   Email
                 </label>
                 <Input
@@ -173,11 +223,16 @@ export default function RegisterPage() {
                   required
                   disabled={isLoading}
                   autoComplete="email"
+                  className="bg-glass-surface border-glass-border"
                 />
-              </div>
+              </motion.div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1.5">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <label htmlFor="password" className="block text-sm font-semibold text-text-secondary mb-2">
                   Password
                 </label>
                 <Input
@@ -191,12 +246,17 @@ export default function RegisterPage() {
                   disabled={isLoading}
                   minLength={6}
                   autoComplete="new-password"
+                  className="bg-glass-surface border-glass-border"
                 />
-                <p className="text-xs text-text-muted mt-1">Minimum 6 characters</p>
-              </div>
+                <p className="text-xs text-text-secondary mt-1">Minimum 6 characters</p>
+              </motion.div>
 
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-secondary mb-1.5">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-text-secondary mb-2">
                   Confirm Password
                 </label>
                 <Input
@@ -210,47 +270,64 @@ export default function RegisterPage() {
                   disabled={isLoading}
                   minLength={6}
                   autoComplete="new-password"
+                  className="bg-glass-surface border-glass-border"
                 />
-              </div>
+              </motion.div>
 
-              <Button
-                type="submit"
-                variant={formData.role === 'teacher' ? 'secondary' : 'primary'}
-                size="lg"
-                className="w-full"
-                disabled={isLoading}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
               >
-                {isLoading ? <LoadingSpinner size="sm" /> : `Create ${formData.role === 'teacher' ? 'Teacher' : 'Student'} Account`}
-              </Button>
+                <Button
+                  type="submit"
+                  variant={formData.role === 'teacher' ? 'secondary' : 'primary'}
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? <LoadingSpinner size="sm" /> : `Create ${formData.role === 'teacher' ? 'Teacher' : 'Student'} Account`}
+                </Button>
+              </motion.div>
             </form>
 
-            <div className="mt-6 text-center text-sm text-text-secondary">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-6 text-center text-sm text-text-secondary"
+            >
               Already have an account?{' '}
-              <Link href="/login" className="text-accent-primary hover:text-accent-primary/80 font-medium">
+              <Link href="/login" className="text-cosmic-primary hover:text-cosmic-purple font-semibold hover:underline transition-colors">
                 Sign in
               </Link>
-            </div>
+            </motion.div>
           </CardContent>
         </Card>
 
-        <div className="mt-4 p-4 rounded-lg bg-bg-elevated border border-border-default">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-4 p-4 rounded-xl bg-glass-surface border border-glass-border backdrop-blur-sm"
+        >
           <p className="text-xs text-text-secondary text-center">
             {formData.role === 'teacher' ? (
               <>
                 Teachers can create courses, manage students, and track progress.
-                Start with <span className="font-medium">Free</span> tier (up to 20 students).
+                Start with <span className="font-semibold text-cosmic-primary">Free</span> tier (up to 20 students).
                 Upgrade for unlimited students and advanced analytics.
               </>
             ) : (
               <>
                 By signing up as a student, you'll start with our{' '}
-                <span className="font-medium">Free</span> tier (access to first 3 chapters).
-                Upgrade to <span className="font-medium">Premium</span> or <span className="font-medium">Pro</span> for full access.
+                <span className="font-semibold text-cosmic-primary">Free</span> tier (access to first 3 chapters).
+                Upgrade to <span className="font-semibold text-cosmic-purple">Premium</span> or <span className="font-semibold text-cosmic-blue">Pro</span> for full access.
               </>
             )}
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

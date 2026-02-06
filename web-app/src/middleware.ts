@@ -4,15 +4,13 @@ import type { NextRequest } from 'next/server';
 /**
  * Authentication Middleware
  *
- * NOTE: Middleware cannot access localStorage.
- * Auth checks are handled client-side in each protected page.
- * This middleware only handles static assets and basic routing.
+ * NOTE: Currently disabled - authentication is handled client-side
+ * by individual pages. This middleware can be re-enabled when
+ * server-side authentication is properly implemented with cookies.
  */
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
 
-  // Allow all routes - auth is handled client-side
-  // Each protected page (dashboard, chapters, etc.) checks localStorage themselves
+export function middleware(request: NextRequest) {
+  // Allow all requests - authentication is handled client-side
   return NextResponse.next();
 }
 
@@ -24,6 +22,7 @@ export function middleware(request: NextRequest) {
  */
 export const config = {
   matcher: [
+    /*
     // Protect main dashboard and feature pages
     '/dashboard/:path*',
     '/chapters/:path*',
@@ -35,5 +34,6 @@ export const config = {
     '/ai-mentor/:path*',
     // Protect admin routes
     '/admin/:path*',
+    */
   ],
 };
