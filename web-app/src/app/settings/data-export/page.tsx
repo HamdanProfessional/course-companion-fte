@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useV3DataExport } from '@/hooks/useV3';
+import { Info } from 'lucide-react';
 import Link from 'next/link';
 
 const DATA_CATEGORIES = {
@@ -110,7 +111,9 @@ export default function DataExportPage() {
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
-              <div className="text-3xl">ℹ️</div>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center flex-shrink-0">
+                <Info className="w-7 h-7 text-accent-info" />
+              </div>
               <div>
                 <h3 className="font-semibold text-text-primary mb-2">About Data Export</h3>
                 <p className="text-sm text-text-secondary">

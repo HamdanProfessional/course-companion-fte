@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { BookOpen, FileEdit, BarChart3, AlertTriangle, Info, Hourglass } from 'lucide-react';
 
 /**
  * EmptyState component for consistent empty state UI across the app.
@@ -118,7 +119,9 @@ export function EmptyState({
 export const EmptyStates = {
   NoChapters: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="📚"
+      icon={<div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+        <BookOpen className="w-10 h-10 text-cosmic-primary" />
+      </div>}
       title="No chapters available"
       description="Check back later for new course content."
       {...props}
@@ -127,7 +130,9 @@ export const EmptyStates = {
 
   NoQuizzes: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="📝"
+      icon={<div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+        <FileEdit className="w-10 h-10 text-cosmic-primary" />
+      </div>}
       title="No quizzes available"
       description="Quizzes will appear here as you progress through chapters."
       {...props}
@@ -136,7 +141,9 @@ export const EmptyStates = {
 
   NoProgress: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="📊"
+      icon={<div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+        <BarChart3 className="w-10 h-10 text-cosmic-primary" />
+      </div>}
       title="No progress yet"
       description="Start learning to track your progress."
       actionLabel="Browse Chapters"
@@ -178,7 +185,9 @@ export const EmptyStates = {
 
   Loading: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="⏳"
+      icon={<div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+        <Hourglass className="w-8 h-8 text-cosmic-primary" />
+      </div>}
       title="Loading..."
       description="Please wait while we fetch your data."
       size="sm"
@@ -189,7 +198,9 @@ export const EmptyStates = {
 
   Error: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="⚠️"
+      icon={<div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+        <AlertTriangle className="w-10 h-10 text-accent-warning" />
+      </div>}
       title="Something went wrong"
       description="Unable to load data. Please try again later."
       actionLabel="Retry"

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { AlertTriangle } from 'lucide-react';
 import {
   useV3SubscriptionInfo,
   useV3SubscriptionPlans,
@@ -106,7 +107,9 @@ export default function SubscriptionPage() {
           <Card variant="elevated" className="max-w-md">
             <CardContent className="p-6">
               <div className="text-center">
-                <div className="text-4xl mb-4">⚠️</div>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                  <AlertTriangle className="w-10 h-10 text-accent-warning" />
+                </div>
                 <h3 className="text-xl font-bold text-text-primary mb-2">
                   Failed to load subscription data
                 </h3>

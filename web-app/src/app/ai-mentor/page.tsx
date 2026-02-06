@@ -19,7 +19,7 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useV3MentorChat, useV3AIStatus } from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
 import type { MentorMessage } from '@/lib/api-v3';
-import { Bot, User as UserIcon, Sparkles, Lightbulb, Zap } from 'lucide-react';
+import { Bot, User as UserIcon, Sparkles, Lightbulb, Zap, AlertTriangle } from 'lucide-react';
 
 // Suggested questions to help users get started
 const SUGGESTED_QUESTIONS = [
@@ -247,8 +247,9 @@ export default function AIMentorPage() {
               <div className="border-t border-border-default p-4">
                 {authError && (
                   <div className="mb-4 p-3 rounded-lg bg-accent-warning/10 border border-accent-warning/30">
-                    <p className="text-sm text-accent-warning">
-                      ⚠️ You need to be logged in to use AI Mentor. Redirecting to login...
+                    <p className="text-sm text-accent-warning flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      You need to be logged in to use AI Mentor. Redirecting to login...
                     </p>
                   </div>
                 )}

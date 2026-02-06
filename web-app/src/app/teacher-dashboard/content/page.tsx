@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { BookOpen, RotateCcw, BarChart3, Upload } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TeacherContentPage() {
@@ -50,7 +51,9 @@ export default function TeacherContentPage() {
         <Card className="border-l-4 border-l-accent-primary">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">📚</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-cosmic-primary" />
+              </div>
               Chapters
             </CardTitle>
             <p className="text-sm text-text-muted">Manage course content</p>
@@ -111,15 +114,15 @@ export default function TeacherContentPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button variant="outline" className="h-20 flex-col">
-              <span className="text-2xl mb-2">📤</span>
+              <Upload className="w-8 h-8 mb-2 text-cosmic-primary" />
               <span>Import Content</span>
             </Button>
             <Button variant="outline" className="h-20 flex-col">
-              <span className="text-2xl mb-2">📊</span>
+              <BarChart3 className="w-8 h-8 mb-2 text-cosmic-primary" />
               <span>Export Content</span>
             </Button>
             <Button variant="outline" className="h-20 flex-col">
-              <span className="text-2xl mb-2">🔄</span>
+              <RotateCcw className="w-8 h-8 mb-2 text-cosmic-primary" />
               <span>Sync with Backend</span>
             </Button>
           </div>

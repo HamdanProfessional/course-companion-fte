@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useAuth } from '@/hooks';
 import Link from 'next/link';
-import { User } from 'lucide-react';
+import { User, AlertTriangle } from 'lucide-react';
 
 export default function ProfilePage() {
   const { data: user } = useAuth();
@@ -194,7 +194,7 @@ export default function ProfilePage() {
       <Card className="mt-6 border-accent-danger/30">
         <CardHeader>
           <CardTitle className="text-accent-danger flex items-center gap-2">
-            <span>⚠️</span>
+            <AlertTriangle className="w-5 h-5" />
             Danger Zone
           </CardTitle>
           <CardDescription>Irreversible actions</CardDescription>

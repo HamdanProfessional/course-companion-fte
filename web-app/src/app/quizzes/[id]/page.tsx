@@ -16,7 +16,7 @@ import { useQuiz, useCanAccessPhase2 } from '@/hooks';
 import { useV3QuizSubmit } from '@/hooks/useV3';
 import type { QuizSubmission, QuizGradingResult } from '@/lib/api-v3';
 import { tutorApi } from '@/lib/api-v3';
-import { Bot } from 'lucide-react';
+import { Bot, Trophy, BookOpen, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 type GradingMode = 'auto' | 'llm' | 'hybrid';
@@ -123,7 +123,17 @@ export default function QuizPage({ params }: { params: { id: string } }) {
         <div className="max-w-3xl mx-auto">
           {/* Results Header */}
           <div className="text-center mb-8">
-            <div className="text-6xl mb-4">{result.passed ? '🎉' : '📚'}</div>
+            <div className="mb-4 flex justify-center">
+              {result.passed ? (
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center">
+                  <Trophy className="w-12 h-12 text-accent-success" />
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                  <BookOpen className="w-12 h-12 text-cosmic-primary" />
+                </div>
+              )}
+            </div>
             <h1 className="text-3xl font-bold text-text-primary mb-2">
               {result.passed ? 'Congratulations!' : 'Keep Learning!'}
             </h1>
@@ -369,8 +379,9 @@ export default function QuizPage({ params }: { params: { id: string } }) {
 
           {authError && (
             <div className="mx-6 -mt-2 p-3 rounded-lg bg-accent-warning/10 border border-accent-warning/30">
-              <p className="text-sm text-accent-warning">
-                ⚠️ You need to be logged in to submit this quiz. Redirecting to login...
+              <p className="text-sm text-accent-warning flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                You need to be logged in to submit this quiz. Redirecting to login...
               </p>
             </div>
           )}

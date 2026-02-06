@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
-import { Bot } from 'lucide-react';
+import { Bot, AlertTriangle, Target, BookOpen, Zap } from 'lucide-react';
 import {
   useChapterRecommendations,
   useKnowledgeAnalysis,
@@ -107,7 +107,7 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
       <Card variant="default">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-accent-warning">
-            <span className="text-2xl">⚠️</span>
+            <AlertTriangle className="w-6 h-6" />
             AI Recommendations Unavailable
           </CardTitle>
         </CardHeader>
@@ -141,7 +141,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
         {recommendations.next_chapter_id && (
           <div className="bg-accent-primary/10 rounded-lg p-4 border border-accent-primary/30">
             <div className="flex items-start gap-3">
-              <div className="text-3xl">📚</div>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-7 h-7 text-cosmic-primary" />
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-text-primary mb-1">Recommended Next Chapter</h4>
                 <p className="text-lg font-bold text-accent-primary mb-2">
@@ -179,7 +181,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
         {analysis && analysis.weak_topics && analysis.weak_topics.length > 0 && (
           <div className="bg-accent-warning/10 rounded-lg p-4 border border-accent-warning/30">
             <div className="flex items-start gap-3">
-              <div className="text-2xl">🎯</div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center flex-shrink-0">
+                <Target className="w-6 h-6 text-accent-warning" />
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-text-primary mb-2">Focus Areas</h4>
                 <p className="text-sm text-text-secondary mb-3">
@@ -206,7 +210,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
         {analysis && analysis.strong_topics && analysis.strong_topics.length > 0 && (
           <div className="bg-accent-success/10 rounded-lg p-4 border border-accent-success/30">
             <div className="flex items-start gap-3">
-              <div className="text-2xl">💪</div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center flex-shrink-0">
+                <Zap className="w-6 h-6 text-accent-success" />
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-text-primary mb-2">Your Strengths</h4>
                 <div className="flex flex-wrap gap-2">
