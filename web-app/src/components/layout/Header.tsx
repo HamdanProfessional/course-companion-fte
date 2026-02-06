@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search, Users, MessageSquare, GraduationCap, Target, Settings } from 'lucide-react';
+import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search, Users, MessageSquare, GraduationCap, Target, Settings, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Chapters', href: '/chapters', icon: FileText },
   { name: 'Quizzes', href: '/quizzes', icon: ClipboardList },
   { name: 'Progress', href: '/progress', icon: BarChart3 },
+  { name: 'Mistake Bank', href: '/mistake-bank', icon: AlertCircle },
 ];
 
 // Phase 3 AI Features (shown separately)

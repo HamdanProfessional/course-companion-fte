@@ -15,14 +15,16 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useProgress, useStreak, useChapters } from '@/hooks';
 import { pageVariants, staggerContainer } from '@/lib/animations';
+import { getMistakeStats } from '@/lib/mistakeBank';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Trophy, TrendingUp, Zap, FileText, Target, BarChart3, Brain, Bot, Clock } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Zap, FileText, Target, BarChart3, Brain, Bot, Clock, AlertCircle } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const [mistakeStats, setMistakeStats] = useState(getMistakeStats());
 
   useEffect(() => {
     // Get the logged-in user's ID from localStorage
@@ -47,6 +49,11 @@ export default function DashboardPage() {
   const { data: progress, isLoading: progressLoading } = useProgress(userId || '');
   const { data: streak, isLoading: streakLoading } = useStreak(userId || '');
   const { data: chapters, isLoading: chaptersLoading } = useChapters();
+
+  // Refresh mistake stats when page loads
+  useEffect(() => {
+    setMistakeStats(getMistakeStats());
+  }, [progress, streak]);
 
   if (!userId || progressLoading || streakLoading || chaptersLoading) {
     return (
@@ -160,7 +167,7 @@ export default function DashboardPage() {
           variants={staggerContainer}
           initial="initial"
           animate="animate"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8"
         >
           <StatCard
             title="Course Progress"
@@ -183,6 +190,14 @@ export default function DashboardPage() {
             value={completedCount}
             icon={<Trophy className="h-6 w-6" />}
             variant="success"
+          />
+          <StatCard
+            title="Mistakes"
+            value={mistakeStats.remaining}
+            change={mistakeStats.total > 0 ? Math.round((mistakeStats.mastered / mistakeStats.total) * 100) : 0}
+            icon={<AlertCircle className="h-6 w-6" />}
+            trend={mistakeStats.remaining === 0 ? 'up' : 'neutral'}
+            variant="warning"
           />
           <StatCard
             title="Remaining"

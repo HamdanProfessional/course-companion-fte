@@ -16,6 +16,7 @@ import { useQuiz, useCanAccessPhase2 } from '@/hooks';
 import { useV3QuizSubmit } from '@/hooks/useV3';
 import type { QuizSubmission, QuizGradingResult } from '@/lib/api-v3';
 import { tutorApi } from '@/lib/api-v3';
+import { addMistakesFromQuiz } from '@/lib/mistakeBank';
 import { Bot, Trophy, BookOpen, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -73,6 +74,21 @@ export default function QuizPage({ params }: { params: { id: string } }) {
       const data = await submitMutation.mutateAsync({ quizId: params.id, submission });
       setResult(data as QuizGradingResult);
       setShowResults(true);
+
+      // Add wrong answers to Mistake Bank
+      try {
+        addMistakesFromQuiz(
+          params.id,
+          quiz.title,
+          data.results,
+          quiz.difficulty,
+          quiz.category
+        );
+        console.log('Wrong answers added to Mistake Bank');
+      } catch (mistakeError) {
+        console.error('Failed to add mistakes to bank:', mistakeError);
+        // Don't fail the quiz submission if mistake bank fails
+      }
 
       // If quiz is passed, update progress to mark chapter as complete
       if (data.passed && quiz?.chapter_id) {
@@ -254,6 +270,9 @@ export default function QuizPage({ params }: { params: { id: string } }) {
             </Link>
             <Link href={`/quizzes/${params.id}/insights`}>
               <Button variant="secondary">View Insights</Button>
+            </Link>
+            <Link href="/mistake-bank">
+              <Button variant="warning">View Mistake Bank</Button>
             </Link>
           </div>
         </div>
