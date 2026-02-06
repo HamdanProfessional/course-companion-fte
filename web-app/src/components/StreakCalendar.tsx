@@ -7,11 +7,12 @@
  * Helps users track their learning consistency over time.
  */
 
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Badge } from './uiBadge';
 import { LoadingSpinner } from './ui/Loading';
 import { useV3StreakCalendar } from '@/hooks/useV3';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Flame } from 'lucide-react';
 import { useState } from 'react';
 
 interface StreakCalendarProps {
@@ -93,18 +94,23 @@ export function StreakCalendar({ className }: StreakCalendarProps) {
         gridCells.push(
           <div
             key={day}
-            className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
+            className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all relative overflow-hidden ${
               isActive
-                ? 'bg-accent-primary text-white shadow-lg'
-                : 'bg-bg-elevated text-text-secondary hover:bg-bg-hover'
+                ? 'bg-gradient-to-br from-cosmic-primary to-cosmic-purple text-white shadow-glow-purple'
+                : 'bg-glass-surface border border-glass-border text-text-secondary hover:border-cosmic-primary/50 hover:bg-cosmic-primary/10'
             }`}
             title={isActive ? `Day ${streakDay} of your streak!` : 'No activity'}
           >
             {day}
             {isActive && streakDay && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent-warning rounded-full text-[8px] flex items-center justify-center">
-                🔥
-              </span>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="absolute -top-1 -right-1 w-6 h-6 bg-accent-warning/30 rounded-full flex items-center justify-center"
+              >
+                <Flame className="w-3.5 h-3.5 text-accent-warning fill-current" />
+              </motion.div>
             )}
           </div>
         );
@@ -133,11 +139,13 @@ export function StreakCalendar({ className }: StreakCalendarProps) {
   }
 
   return (
-    <Card className={className}>
+    <Card className={className} variant="cosmic">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl">📅</span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-cosmic-primary" />
+            </div>
             Streak Calendar
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -164,40 +172,44 @@ export function StreakCalendar({ className }: StreakCalendarProps) {
           <div className="space-y-6">
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 rounded-lg bg-bg-elevated">
-                <div className="text-2xl font-bold text-accent-primary">
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 border border-cosmic-primary/30">
+                <div className="text-2xl font-bold text-cosmic-primary">
                   {calendarData.current_streak}
                 </div>
-                <div className="text-xs text-text-muted">Current Streak</div>
+                <div className="text-xs text-text-secondary">Current Streak</div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-bg-elevated">
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 border border-accent-warning/30">
                 <div className="text-2xl font-bold text-accent-warning">
                   {calendarData.longest_streak}
                 </div>
-                <div className="text-xs text-text-muted">Longest Streak</div>
+                <div className="text-xs text-text-secondary">Longest Streak</div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-bg-elevated">
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 border border-accent-success/30">
                 <div className="text-2xl font-bold text-accent-success">
                   {calendarData.total_active_days}
                 </div>
-                <div className="text-xs text-text-muted">Active Days</div>
+                <div className="text-xs text-text-secondary">Active Days</div>
               </div>
             </div>
 
             {/* Calendar */}
-            <div className="p-4 rounded-lg bg-bg-secondary">
+            <div className="p-4 rounded-xl bg-glass-surface border border-glass-border backdrop-blur-sm">
               {renderCalendar()}
             </div>
 
             {/* Legend */}
-            <div className="flex items-center justify-center gap-6 text-xs text-text-muted">
+            <div className="flex items-center justify-center gap-8 text-xs text-text-secondary">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-accent-primary"></div>
+                <div className="w-4 h-4 rounded bg-gradient-to-br from-cosmic-primary to-cosmic-purple"></div>
                 <span>Active day</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-bg-elevated"></div>
+                <div className="w-4 h-4 rounded bg-glass-surface border border-glass-border"></div>
                 <span>No activity</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Flame className="w-4 h-4 text-accent-warning" />
+                <span>Streak day</span>
               </div>
             </div>
           </div>

@@ -28,7 +28,7 @@ import {
   useV3Chapters,
 } from '@/hooks/useV3';
 import type { AchievementItem, ChapterProgress, ScoreHistoryItem } from '@/lib/api-v3';
-import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3 } from 'lucide-react';
+import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3, Rocket, Calendar } from 'lucide-react';
 
 export default function ProgressPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -80,7 +80,7 @@ export default function ProgressPage() {
   const totalAchievementsCount = achievements?.length || 0;
 
   const milestones = [
-    { milestone: 'Started Learning', completed: true, icon: '🚀', description: 'Began your journey' },
+    { milestone: 'Started Learning', completed: true, icon: '🚀', Icon: Rocket, description: 'Began your journey' },
     { milestone: 'First Chapter', completed: completedChapters.length >= 1, icon: '📖', Icon: BookOpen, description: 'Completed first chapter' },
     { milestone: '3-Day Streak', completed: longestStreak >= 3, icon: '🔥', Icon: Flame, description: '3 consecutive days' },
     { milestone: 'Week Streak', completed: longestStreak >= 7, icon: '⭐', Icon: Star, description: '7 consecutive days' },
@@ -215,7 +215,9 @@ export default function ProgressPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">📅</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-cosmic-primary" />
+                </div>
                 Streak Calendar
               </CardTitle>
               <CardDescription>Your learning activity this month</CardDescription>
@@ -278,7 +280,12 @@ export default function ProgressPage() {
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={handleCheckin} disabled={checkinMutation.isPending}>
-              {checkinMutation.isPending ? 'Recording...' : '📝 Daily Check-in'}
+              {checkinMutation.isPending ? 'Recording...' : (
+                <span className="flex items-center gap-1">
+                  <FileEdit className="w-4 h-4" />
+                  Daily Check-in
+                </span>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -439,7 +446,9 @@ export default function ProgressPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-xl">✅</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-accent-success" />
+            </div>
             Completed Chapters
           </CardTitle>
           <CardDescription>Your learning history</CardDescription>
@@ -447,7 +456,9 @@ export default function ProgressPage() {
         <CardContent>
           {completedChapters.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-4xl mb-3">📖</div>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-cosmic-primary" />
+              </div>
               <p className="text-text-secondary">
                 No chapters completed yet. Start learning to track your progress!
               </p>
