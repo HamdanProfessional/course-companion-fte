@@ -35,6 +35,10 @@ import {
   Hash,
   Braces,
   Globe,
+  Package,
+  Activity,
+  Flask,
+  Box,
 } from 'lucide-react';
 import {
   getTopics,
@@ -91,6 +95,14 @@ export default function InfiniteQuizPage() {
       '🐍': <Braces className="w-6 h-6" />,
       '⚛️': <Sparkles className="w-6 h-6" />,
       '🔌': <Globe className="w-6 h-6" />,
+      '🗃️': <Target className="w-6 h-6" />,
+      '📦': <Package className="w-6 h-6" />,
+      '🐳': <Zap className="w-6 h-6" />,
+      '📘': <FileText className="w-6 h-6" />,
+      '💚': <Activity className="w-6 h-6" />,
+      '🧪': <Flask className="w-6 h-6" />,
+      '🏗️': <Box className="w-6 h-6" />,
+      '⚡': <Zap className="w-6 h-6" />,
     };
     return icons[icon] || <BookOpen className="w-6 h-6" />;
   };

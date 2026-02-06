@@ -549,6 +549,781 @@ const apiBasicsTemplates: QuestionTemplate[] = [
 ];
 
 // ============================================================================
+// TOPIC: SQL/Database
+// ============================================================================
+
+const sqlBasicsTemplates: QuestionTemplate[] = [
+  // SELECT queries
+  {
+    pattern: 'select_queries',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const questions = [
+        {
+          q: 'Which SQL statement is used to retrieve data from a database?',
+          correct: 'SELECT',
+          wrong: ['GET', 'FETCH', 'RETRIEVE'],
+        },
+        {
+          q: 'Which clause is used to filter results in SQL?',
+          correct: 'WHERE',
+          wrong: ['FILTER', 'HAVING', 'THAT'],
+        },
+        {
+          q: 'How do you select all columns from a table?',
+          correct: 'SELECT *',
+          wrong: ['SELECT ALL', 'SELECT @', 'GET *'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `sql-select-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: `${selected.correct} is the correct SQL statement for this operation.`,
+        difficulty: 'beginner',
+        topic: 'SQL',
+        subtopic: 'Queries',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // JOINs
+  {
+    pattern: 'joins',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const joins = [
+        {
+          type: 'INNER JOIN',
+          description: 'returns records that have matching values in both tables',
+        },
+        {
+          type: 'LEFT JOIN',
+          description: 'returns all records from the left table, and matched records from the right',
+        },
+        {
+          type: 'RIGHT JOIN',
+          description: 'returns all records from the right table, and matched records from the left',
+        },
+        {
+          type: 'FULL OUTER JOIN',
+          description: 'returns all records when there is a match in either table',
+        },
+      ];
+      const selected = randomItem(joins);
+
+      const question = `Which JOIN type ${selected.description}?`;
+
+      const wrongOptions = joins.filter(j => j.type !== selected.type).map(j => j.type);
+      const options = {
+        A: selected.type,
+        B: randomItem(wrongOptions),
+        C: wrongOptions.find((_, i) => i !== wrongOptions.indexOf(randomItem(wrongOptions))) || wrongOptions[0],
+        D: 'CROSS JOIN',
+      };
+
+      return {
+        id: `sql-join-${Date.now()}`,
+        question,
+        options,
+        correctAnswer: 'A',
+        explanation: `${selected.type}: ${selected.description}`,
+        difficulty: 'intermediate',
+        topic: 'SQL',
+        subtopic: 'JOINs',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
+// TOPIC: Git/Version Control
+// ============================================================================
+
+const gitBasicsTemplates: QuestionTemplate[] = [
+  // Basic commands
+  {
+    pattern: 'git_commands',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const commands = [
+        {
+          cmd: 'git init',
+          description: 'initialize a new Git repository',
+        },
+        {
+          cmd: 'git clone',
+          description: 'copy a repository from a remote source',
+        },
+        {
+          cmd: 'git add',
+          description: 'stage files for commit',
+        },
+        {
+          cmd: 'git commit',
+          description: 'save changes to the repository',
+        },
+        {
+          cmd: 'git push',
+          description: 'upload local commits to remote repository',
+        },
+        {
+          cmd: 'git pull',
+          description: 'fetch and merge changes from remote repository',
+        },
+      ];
+      const selected = randomItem(commands);
+
+      const question = `What does the command "${selected.cmd}" do?`;
+
+      const wrongOptions = commands.filter(c => c.cmd !== selected.cmd).map(c => c.description).slice(0, 3);
+      const options = {
+        A: selected.description,
+        B: wrongOptions[0],
+        C: wrongOptions[1],
+        D: wrongOptions[2],
+      };
+
+      return {
+        id: `git-cmd-${Date.now()}`,
+        question,
+        options,
+        correctAnswer: 'A',
+        explanation: `${selected.cmd}: ${selected.description}`,
+        difficulty: 'beginner',
+        topic: 'Git',
+        subtopic: 'Commands',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // Branching
+  {
+    pattern: 'branching',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const questions = [
+        {
+          q: 'What command creates a new branch?',
+          correct: 'git branch <branch-name>',
+          wrong: ['git new <branch-name>', 'git create <branch-name>', 'git make-branch <branch-name>'],
+        },
+        {
+          q: 'What command switches to a different branch?',
+          correct: 'git checkout <branch-name>',
+          wrong: ['git switch <branch-name>', 'git go <branch-name>', 'git move <branch-name>'],
+        },
+        {
+          q: 'What command merges branches?',
+          correct: 'git merge <branch-name>',
+          wrong: ['git combine <branch-name>', 'git join <branch-name>', 'git blend <branch-name>'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `git-branch-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: selected.correct,
+        difficulty: 'intermediate',
+        topic: 'Git',
+        subtopic: 'Branching',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
+// TOPIC: Docker
+// ============================================================================
+
+const dockerBasicsTemplates: QuestionTemplate[] = [
+  // Docker concepts
+  {
+    pattern: 'docker_concepts',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const questions = [
+        {
+          q: 'What is a Docker container?',
+          correct: 'A lightweight, standalone package of software',
+          wrong: ['A virtual machine', 'A physical server', 'A programming language'],
+        },
+        {
+          q: 'What is a Docker image?',
+          correct: 'A read-only template for creating containers',
+          wrong: ['A running container', 'A Docker file', 'A network configuration'],
+        },
+        {
+          q: 'What command builds a Docker image?',
+          correct: 'docker build',
+          wrong: ['docker create', 'docker make', 'docker compile'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `docker-concept-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: selected.correct,
+        difficulty: 'beginner',
+        topic: 'Docker',
+        subtopic: 'Concepts',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // Docker commands
+  {
+    pattern: 'docker_commands',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const commands = [
+        {
+          cmd: 'docker run',
+          description: 'create and start a new container',
+        },
+        {
+          cmd: 'docker ps',
+          description: 'list running containers',
+        },
+        {
+          cmd: 'docker stop',
+          description: 'stop a running container',
+        },
+        {
+          cmd: 'docker rm',
+          description: 'remove a container',
+        },
+      ];
+      const selected = randomItem(commands);
+
+      const question = `What does "docker ${selected.cmd.split(' ')[1]}" do?`;
+
+      const wrongOptions = commands.filter(c => c.cmd !== selected.cmd).map(c => c.description).slice(0, 3);
+      const options = {
+        A: selected.description,
+        B: wrongOptions[0],
+        C: wrongOptions[1],
+        D: wrongOptions[2],
+      };
+
+      return {
+        id: `docker-cmd-${Date.now()}`,
+        question,
+        options,
+        correctAnswer: 'A',
+        explanation: `${selected.cmd}: ${selected.description}`,
+        difficulty: 'intermediate',
+        topic: 'Docker',
+        subtopic: 'Commands',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
+// TOPIC: TypeScript
+// ============================================================================
+
+const typescriptBasicsTemplates: QuestionTemplate[] = [
+  // Types
+  {
+    pattern: 'typescript_types',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const types = [
+        { name: 'string', example: 'let name: string = "John";' },
+        { name: 'number', example: 'let age: number = 25;' },
+        { name: 'boolean', example: 'let isActive: boolean = true;' },
+        { name: 'array', example: 'let items: number[] = [1, 2, 3];' },
+        { name: 'any', example: 'let data: any = "could be anything";' },
+      ];
+      const selected = randomItem(types);
+
+      const question = `Which TypeScript type is shown in: ${selected.example}`;
+
+      const wrongOptions = types.filter(t => t.name !== selected.name).map(t => t.name).slice(0, 3);
+      const options = {
+        A: selected.name,
+        B: wrongOptions[0],
+        C: wrongOptions[1],
+        D: wrongOptions[2] || 'unknown',
+      };
+
+      return {
+        id: `ts-type-${Date.now()}`,
+        question,
+        options,
+        correctAnswer: 'A',
+        explanation: `${selected.name} is a basic TypeScript type.`,
+        difficulty: 'beginner',
+        topic: 'TypeScript',
+        subtopic: 'Types',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // Interfaces
+  {
+    pattern: 'interfaces',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const questions = [
+        {
+          q: 'What keyword defines an interface in TypeScript?',
+          correct: 'interface',
+          wrong: ['type', 'class', 'schema'],
+        },
+        {
+          q: 'Can optional properties be defined in TypeScript interfaces?',
+          correct: 'Yes, using the ? operator',
+          wrong: ['No', 'Yes, using the * operator', 'Only in classes'],
+        },
+        {
+          q: 'How do you make interface properties readonly?',
+          correct: 'Use the readonly keyword',
+          wrong: ['Use const', 'Use final', 'Use static'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `ts-interface-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: selected.correct,
+        difficulty: 'intermediate',
+        topic: 'TypeScript',
+        subtopic: 'Interfaces',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
+// TOPIC: Node.js
+// ============================================================================
+
+const nodejsBasicsTemplates: QuestionTemplate[] = [
+  // Core concepts
+  {
+    pattern: 'nodejs_concepts',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const questions = [
+        {
+          q: 'What is Node.js built on?',
+          correct: 'V8 JavaScript engine',
+          wrong: ['SpiderMonkey', 'JavaScriptCore', 'Chakra'],
+        },
+        {
+          q: 'What is npm?',
+          correct: 'Node Package Manager',
+          wrong: ['Node Process Manager', 'New Project Mode', 'Node Program Module'],
+        },
+        {
+          q: 'What is the entry point file in a Node.js application?',
+          correct: 'index.js (or configured in package.json)',
+          wrong: ['main.js', 'app.js', 'start.js'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `nodejs-concept-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: selected.correct,
+        difficulty: 'beginner',
+        topic: 'Node.js',
+        subtopic: 'Core Concepts',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // Modules
+  {
+    pattern: 'modules',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const questions = [
+        {
+          q: 'How do you export a function in Node.js?',
+          correct: 'module.exports = function',
+          wrong: ['export function', 'exports.default function', 'module.function'],
+        },
+        {
+          q: 'How do you import a module in Node.js?',
+          correct: 'require("./module")',
+          wrong: ['import "./module"', 'include "./module"', 'using "./module"'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `nodejs-module-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: selected.correct,
+        difficulty: 'intermediate',
+        topic: 'Node.js',
+        subtopic: 'Modules',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
+// TOPIC: Testing
+// ============================================================================
+
+const testingBasicsTemplates: QuestionTemplate[] = [
+  // Testing concepts
+  {
+    pattern: 'testing_concepts',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const testingTypes = [
+        {
+          type: 'Unit Testing',
+          description: 'testing individual units of code in isolation',
+        },
+        {
+          type: 'Integration Testing',
+          description: 'testing how different parts work together',
+        },
+        {
+          type: 'End-to-End Testing',
+          description: 'testing the entire application flow',
+        },
+      ];
+      const selected = randomItem(testingTypes);
+
+      const question = `What is ${selected.type}?`;
+
+      const wrongOptions = testingTypes.filter(t => t.type !== selected.type).map(t => t.description);
+      const options = {
+        A: selected.description,
+        B: wrongOptions[0],
+        C: wrongOptions[1],
+        D: 'testing without errors',
+      };
+
+      return {
+        id: `test-concept-${Date.now()}`,
+        question,
+        options,
+        correctAnswer: 'A',
+        explanation: `${selected.type}: ${selected.description}`,
+        difficulty: 'beginner',
+        topic: 'Testing',
+        subtopic: 'Concepts',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // Jest/Testing frameworks
+  {
+    pattern: 'jest',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const questions = [
+        {
+          q: 'What does describe() do in Jest?',
+          correct: 'Groups related tests',
+          wrong: ['Runs a test', 'Tests async code', 'Mocks functions'],
+        },
+        {
+          q: 'What assertion does Jest use?',
+          correct: 'expect()',
+          wrong: ['assert()', 'should()', 'check()'],
+        },
+        {
+          q: 'How do you test for equality in Jest?',
+          correct: 'expect(value).toBe(expected)',
+          wrong: ['assert(value === expected)', 'check(value, expected)', 'verify(value).is(expected)'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `test-jest-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: selected.correct,
+        difficulty: 'intermediate',
+        topic: 'Testing',
+        subtopic: 'Jest',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
+// TOPIC: Data Structures
+// ============================================================================
+
+const dataStructuresTemplates: QuestionTemplate[] = [
+  // Arrays vs Linked Lists
+  {
+    pattern: 'arrays_vs_linkedlists',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const questions = [
+        {
+          q: 'What is the main advantage of arrays over linked lists?',
+          correct: 'O(1) random access by index',
+          wrong: ['Dynamic size', 'Easy insertion/deletion', 'Less memory'],
+        },
+        {
+          q: 'What is the main advantage of linked lists over arrays?',
+          correct: 'Efficient insertion/deletion',
+          wrong: ['Random access', 'Less memory', 'Better cache locality'],
+        },
+        {
+          q: 'What data type uses nodes with pointers?',
+          correct: 'Linked List',
+          wrong: ['Array', 'Stack', 'Queue'],
+        },
+      ];
+
+      const selected = randomItem(questions);
+      const wrongOptions = shuffleArray(selected.wrong);
+
+      return {
+        id: `ds-basic-${Date.now()}`,
+        question: selected.q,
+        options: {
+          A: selected.correct,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: selected.correct,
+        difficulty: 'beginner',
+        topic: 'Data Structures',
+        subtopic: 'Basics',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // Stacks and Queues
+  {
+    pattern: 'stacks_queues',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const structures = [
+        {
+          name: 'Stack',
+          principle: 'LIFO (Last In, First Out)',
+          example: 'Browser history back button',
+        },
+        {
+          name: 'Queue',
+          principle: 'FIFO (First In, First Out)',
+          example: 'Print job spooler',
+        },
+      ];
+      const selected = randomItem(structures);
+
+      const question = `Which data structure follows ${selected.principle}?`;
+
+      const wrongOptions = structures.filter(s => s.name !== selected.name).map(s => s.principle);
+      const options = {
+        A: selected.name,
+        B: wrongOptions[0],
+        C: wrongOptions[1],
+        D: 'LILO (Last In, Last Out)',
+      };
+
+      return {
+        id: `ds-stackqueue-${Date.now()}`,
+        question,
+        options,
+        correctAnswer: 'A',
+        explanation: `${selected.name} follows ${selected.principle}. Example: ${selected.example}`,
+        difficulty: 'intermediate',
+        topic: 'Data Structures',
+        subtopic: 'Stacks/Queues',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
+// TOPIC: Algorithms
+// ============================================================================
+
+const algorithmsTemplates: QuestionTemplate[] = [
+  // Sorting algorithms
+  {
+    pattern: 'sorting',
+    type: 'multiple-choice',
+    difficulty: 'intermediate',
+    generate: () => {
+      const algorithms = [
+        {
+          name: 'Bubble Sort',
+          complexity: 'O(n²)',
+          description: 'repeatedly swaps adjacent elements',
+        },
+        {
+          name: 'Quick Sort',
+          complexity: 'O(n log n) average',
+          description: 'uses divide and conquer with pivot',
+        },
+        {
+          name: 'Merge Sort',
+          complexity: 'O(n log n)',
+          description: 'divides array and merges sorted halves',
+        },
+      ];
+      const selected = randomItem(algorithms);
+
+      const question = `Which sorting algorithm has time complexity of ${selected.complexity} and ${selected.description}?`;
+
+      const wrongOptions = algorithms.filter(a => a.name !== selected.name).map(a => a.name);
+      const options = {
+        A: selected.name,
+        B: randomItem(wrongOptions),
+        C: wrongOptions.find((_, i) => i !== wrongOptions.indexOf(randomItem(wrongOptions))) || wrongOptions[0],
+        D: 'Selection Sort',
+      };
+
+      return {
+        id: `algo-sort-${Date.now()}`,
+        question,
+        options,
+        correctAnswer: 'A',
+        explanation: `${selected.name}: ${selected.complexity}, ${selected.description}`,
+        difficulty: 'intermediate',
+        topic: 'Algorithms',
+        subtopic: 'Sorting',
+        type: 'multiple-choice',
+      };
+    },
+  },
+  // Searching algorithms
+  {
+    pattern: 'searching',
+    type: 'multiple-choice',
+    difficulty: 'beginner',
+    generate: () => {
+      const num = randomInt(50, 100);
+
+      const question = `In a sorted array of ${num} elements, what is the maximum number of comparisons needed for binary search?`;
+
+      const comparisons = Math.ceil(Math.log2(num)) + 1;
+      const wrongOptions = [
+        num.toString(),
+        Math.ceil(num / 2).toString(),
+        Math.ceil(Math.sqrt(num)).toString(),
+      ];
+
+      return {
+        id: `algo-search-${Date.now()}`,
+        question,
+        options: {
+          A: `${comparisons}`,
+          B: wrongOptions[0],
+          C: wrongOptions[1],
+          D: wrongOptions[2],
+        },
+        correctAnswer: 'A',
+        explanation: `Binary search has O(log n) complexity. For ${num} elements: ⌈log₂(${num})⌉ + 1 = ${comparisons} comparisons maximum.`,
+        difficulty: 'beginner',
+        topic: 'Algorithms',
+        subtopic: 'Searching',
+        type: 'multiple-choice',
+      };
+    },
+  },
+];
+
+// ============================================================================
 // TOPICS CONFIGURATION
 // ============================================================================
 
@@ -603,6 +1378,102 @@ export const topics: Topic[] = [
         id: 'api-basics',
         name: 'HTTP Methods',
         templates: apiBasicsTemplates,
+      },
+    ],
+  },
+  {
+    id: 'sql',
+    name: 'SQL',
+    icon: '🗃️',
+    subtopics: [
+      {
+        id: 'sql-queries',
+        name: 'Queries',
+        templates: sqlBasicsTemplates,
+      },
+    ],
+  },
+  {
+    id: 'git',
+    name: 'Git',
+    icon: '📦',
+    subtopics: [
+      {
+        id: 'git-commands',
+        name: 'Commands',
+        templates: gitBasicsTemplates,
+      },
+    ],
+  },
+  {
+    id: 'docker',
+    name: 'Docker',
+    icon: '🐳',
+    subtopics: [
+      {
+        id: 'docker-concepts',
+        name: 'Concepts',
+        templates: dockerBasicsTemplates,
+      },
+    ],
+  },
+  {
+    id: 'typescript',
+    name: 'TypeScript',
+    icon: '📘',
+    subtopics: [
+      {
+        id: 'ts-types',
+        name: 'Types',
+        templates: typescriptBasicsTemplates,
+      },
+    ],
+  },
+  {
+    id: 'nodejs',
+    name: 'Node.js',
+    icon: '💚',
+    subtopics: [
+      {
+        id: 'nodejs-concepts',
+        name: 'Core Concepts',
+        templates: nodejsBasicsTemplates,
+      },
+    ],
+  },
+  {
+    id: 'testing',
+    name: 'Testing',
+    icon: '🧪',
+    subtopics: [
+      {
+        id: 'test-concepts',
+        name: 'Concepts',
+        templates: testingBasicsTemplates,
+      },
+    ],
+  },
+  {
+    id: 'data-structures',
+    name: 'Data Structures',
+    icon: '🏗️',
+    subtopics: [
+      {
+        id: 'ds-basics',
+        name: 'Basics',
+        templates: dataStructuresTemplates,
+      },
+    ],
+  },
+  {
+    id: 'algorithms',
+    name: 'Algorithms',
+    icon: '⚡',
+    subtopics: [
+      {
+        id: 'algo-sorting',
+        name: 'Sorting & Searching',
+        templates: algorithmsTemplates,
       },
     ],
   },
