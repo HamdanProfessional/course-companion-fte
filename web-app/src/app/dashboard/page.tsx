@@ -18,7 +18,7 @@ import { pageVariants, staggerContainer } from '@/lib/animations';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Trophy, TrendingUp, Zap, FileText, Target, BarChart3 } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Zap, FileText, Target, BarChart3, Brain, Bot, Clock } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -102,11 +102,11 @@ export default function DashboardPage() {
             <GlassCard hover glow>
               <div className="flex items-center gap-4">
                 <motion.div
-                  whileHover={{ rotate: 360, scale: 1.2 }}
+                  whileHover={{ scale: 1.2 }}
                   transition={{ duration: 0.6 }}
-                  className="w-12 h-12 rounded-xl bg-cosmic-primary/20 flex items-center justify-center text-2xl group-hover:bg-cosmic-primary/30 transition-all"
+                  className="w-12 h-12 rounded-xl bg-cosmic-primary/20 flex items-center justify-center group-hover:bg-cosmic-primary/30 transition-all"
                 >
-                  🧠
+                  <Brain className="w-6 h-6 text-cosmic-primary" />
                 </motion.div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-text-primary group-hover:text-cosmic-primary transition-colors">
@@ -130,11 +130,11 @@ export default function DashboardPage() {
             <GlassCard hover glow>
               <div className="flex items-center gap-4">
                 <motion.div
-                  whileHover={{ rotate: 360, scale: 1.2 }}
+                  whileHover={{ scale: 1.2 }}
                   transition={{ duration: 0.6 }}
-                  className="w-12 h-12 rounded-xl bg-cosmic-primary/20 flex items-center justify-center text-2xl group-hover:bg-cosmic-primary/30 transition-all"
+                  className="w-12 h-12 rounded-xl bg-cosmic-primary/20 flex items-center justify-center group-hover:bg-cosmic-primary/30 transition-all"
                 >
-                  🤖
+                  <Bot className="w-6 h-6 text-cosmic-primary" />
                 </motion.div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-text-primary group-hover:text-cosmic-primary transition-colors">
@@ -241,8 +241,9 @@ export default function DashboardPage() {
                                 <Badge variant={difficultyBadge.variant}>
                                   {difficultyBadge.label}
                                 </Badge>
-                                <span className="text-sm text-text-secondary">
-                                  ⏱️ {chapter.estimated_time} min
+                                <span className="text-sm text-text-secondary flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {chapter.estimated_time} min
                                 </span>
                               </div>
                             </div>

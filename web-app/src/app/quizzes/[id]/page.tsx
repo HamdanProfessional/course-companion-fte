@@ -16,6 +16,7 @@ import { useQuiz, useCanAccessPhase2 } from '@/hooks';
 import { useV3QuizSubmit } from '@/hooks/useV3';
 import type { QuizSubmission, QuizGradingResult } from '@/lib/api-v3';
 import { tutorApi } from '@/lib/api-v3';
+import { Bot } from 'lucide-react';
 import Link from 'next/link';
 
 type GradingMode = 'auto' | 'llm' | 'hybrid';
@@ -162,7 +163,9 @@ export default function QuizPage({ params }: { params: { id: string } }) {
             <Card className="mb-6 bg-accent-primary/5">
               <CardContent className="p-6">
                 <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                  <span className="text-xl">🤖</span>
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-cosmic-primary" />
+                  </div>
                   AI Feedback Summary
                 </h3>
                 <p className="text-text-secondary">{result.summary}</p>
@@ -322,13 +325,14 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                       </button>
                       <button
                         onClick={() => setGradingMode('llm')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                           gradingMode === 'llm'
                             ? 'bg-accent-secondary text-white'
                             : 'bg-bg-elevated text-text-secondary hover:bg-bg-hover'
                         }`}
                       >
-                        AI Only 🤖
+                        <Bot className="w-4 h-4" />
+                        AI Only
                       </button>
                     </>
                   )}

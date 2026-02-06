@@ -22,6 +22,7 @@ import {
   useV3AIStatus,
 } from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
+import { Target, Armchair, RotateCcw, Compass, Clock, Map, BookOpen, Zap } from 'lucide-react';
 import Link from 'next/link';
 
 // Learning goals for path generation
@@ -103,7 +104,9 @@ export default function AdaptiveLearningPage() {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
-                <span className="text-2xl">🎯</span>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-cosmic-primary" />
+                </div>
                 Knowledge Gap Analysis
               </CardTitle>
             </CardHeader>
@@ -114,7 +117,7 @@ export default function AdaptiveLearningPage() {
                   {analysis.weak_topics && analysis.weak_topics.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <span className="text-lg">📚</span>
+                        <BookOpen className="w-5 h-5 text-accent-warning" />
                         Areas to Improve
                       </h4>
                       <div className="flex flex-wrap gap-2">
@@ -131,7 +134,7 @@ export default function AdaptiveLearningPage() {
                   {analysis.strong_topics && analysis.strong_topics.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <span className="text-lg">💪</span>
+                        <Zap className="w-5 h-5 text-accent-success" />
                         Your Strengths
                       </h4>
                       <div className="flex flex-wrap gap-2">
@@ -148,7 +151,7 @@ export default function AdaptiveLearningPage() {
                   {analysis.recommended_review && analysis.recommended_review.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <span className="text-lg">🔄</span>
+                        <RotateCcw className="w-5 h-5 text-accent-warning" />
                         Recommended Review
                       </h4>
                       <div className="flex flex-wrap gap-2">
@@ -188,7 +191,9 @@ export default function AdaptiveLearningPage() {
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
-                  <span className="text-2xl">🧭</span>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                    <Compass className="w-6 h-6 text-cosmic-primary" />
+                  </div>
                   Recommended Next Chapter
                 </CardTitle>
               </CardHeader>
@@ -201,8 +206,9 @@ export default function AdaptiveLearningPage() {
                       </h3>
                       <p className="text-text-secondary mb-4">{recommendation.reason}</p>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="text-text-muted">
-                          ⏱️ {recommendation.estimated_completion_minutes} min
+                        <span className="text-text-muted flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {recommendation.estimated_completion_minutes} min
                         </span>
                         <Badge variant="info">{recommendation.difficulty_match}</Badge>
                       </div>
@@ -241,7 +247,9 @@ export default function AdaptiveLearningPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
-                <span className="text-2xl">🗺️</span>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                  <Map className="w-6 h-6 text-cosmic-primary" />
+                </div>
                 Personalized Learning Path
               </CardTitle>
             </CardHeader>

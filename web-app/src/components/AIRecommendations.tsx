@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
+import { Bot } from 'lucide-react';
 import {
   useChapterRecommendations,
   useKnowledgeAnalysis,
@@ -86,7 +87,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
       <Card variant="elevated">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-2xl">🤖</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-cosmic-primary" />
+            </div>
             AI-Powered Recommendations
           </CardTitle>
         </CardHeader>
@@ -126,7 +129,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
     <Card variant="elevated" className="border-l-4 border-l-accent-primary">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-2xl">🤖</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+            <Bot className="w-5 h-5 text-cosmic-primary" />
+          </div>
           AI-Powered Recommendations
           <Badge variant="premium">Phase 2</Badge>
         </CardTitle>
