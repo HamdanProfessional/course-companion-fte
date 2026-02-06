@@ -48,7 +48,7 @@ export function Header() {
       transition={{ duration: 0.5 }}
       className="sticky top-0 z-40 w-full border-b border-glass-border bg-glass-surface/90 backdrop-blur-xl"
     >
-      <nav className="container flex items-center justify-between h-16" aria-label="Global">
+      <nav className="container flex items-center justify-between h-16 px-4" aria-label="Global">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2 md:gap-3 group">
           <motion.div
@@ -64,7 +64,7 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex lg:items-center lg:gap-1">
+        <div className="hidden lg:flex lg:items-center lg:gap-1.5 ml-4">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;

@@ -13,6 +13,7 @@ import { QuizCard } from '@/components/ui/QuizCard';
 import { EmptyStates } from '@/components/ui/EmptyState';
 import { useQuizzes, useChapters, useProgress } from '@/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { FileEdit, Sprout, Rocket, BookOpen, BarChart3 } from 'lucide-react';
 
 export default function QuizzesPage() {
   const { data: quizzes, isLoading: quizzesLoading } = useQuizzes();
@@ -88,8 +89,8 @@ export default function QuizzesPage() {
                   {quizzes?.length || 0}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-bg-elevated flex items-center justify-center text-2xl">
-                📝
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+                <FileEdit className="w-6 h-6 text-accent-primary" />
               </div>
             </div>
           </CardContent>
@@ -104,8 +105,8 @@ export default function QuizzesPage() {
                   {beginnerQuizzes.length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-bg-elevated flex items-center justify-center text-2xl">
-                🌱
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center">
+                <Sprout className="w-6 h-6 text-accent-success" />
               </div>
             </div>
           </CardContent>
@@ -120,8 +121,8 @@ export default function QuizzesPage() {
                   {intermediateQuizzes.length + advancedQuizzes.length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-bg-elevated flex items-center justify-center text-2xl">
-                🚀
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                <Rocket className="w-6 h-6 text-accent-warning" />
               </div>
             </div>
           </CardContent>
@@ -141,7 +142,9 @@ export default function QuizzesPage() {
           {allQuizCards.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
-                <div className="text-4xl mb-3">📝</div>
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+                  <FileEdit className="w-8 h-8 text-accent-primary" />
+                </div>
                 <p className="text-text-secondary">No quizzes available yet.</p>
               </CardContent>
             </Card>
@@ -154,7 +157,9 @@ export default function QuizzesPage() {
           {beginnerQuizzes.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
-                <div className="text-4xl mb-3">🌱</div>
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center">
+                  <Sprout className="w-8 h-8 text-accent-success" />
+                </div>
                 <p className="text-text-secondary">No beginner quizzes yet.</p>
               </CardContent>
             </Card>
@@ -206,7 +211,9 @@ export default function QuizzesPage() {
           {advancedQuizzes.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
-                <div className="text-4xl mb-3">🚀</div>
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                  <Rocket className="w-8 h-8 text-accent-warning" />
+                </div>
                 <p className="text-text-secondary">No advanced quizzes yet.</p>
               </CardContent>
             </Card>
@@ -235,7 +242,9 @@ export default function QuizzesPage() {
           <Card className="hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-accent-primary">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="text-3xl">📚</div>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-6 h-6 text-accent-primary" />
+                </div>
                 <div>
                   <h4 className="font-semibold text-text-primary">Browse Chapters</h4>
                   <p className="text-sm text-text-secondary">Review content before quizzes</p>
@@ -249,7 +258,9 @@ export default function QuizzesPage() {
           <Card className="hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-accent-success">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="text-3xl">📊</div>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="w-6 h-6 text-accent-success" />
+                </div>
                 <div>
                   <h4 className="font-semibold text-text-primary">View Progress</h4>
                   <p className="text-sm text-text-secondary">Track your learning journey</p>

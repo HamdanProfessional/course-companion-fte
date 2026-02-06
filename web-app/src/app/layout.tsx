@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { Header } from '@/components/layout/Header';
 import { StarfieldBackground } from '@/components/background/StarfieldBackground';
+import { Heart } from 'lucide-react';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -43,7 +44,9 @@ export default function RootLayout({
           {/* Footer */}
           <footer className="border-t border-glass-border bg-glass-surface mt-auto backdrop-blur-xl">
             <div className="container py-6 text-center text-sm text-text-secondary">
-              <p>© 2026 Course Companion FTE. Built with ❤️ for Panaversity Hackathon IV.</p>
+              <p className="flex items-center justify-center gap-1">
+                © 2026 Course Companion FTE. Built with <Heart className="w-4 h-4 text-red-400 fill-red-400 inline" /> for Panaversity Hackathon IV.
+              </p>
             </div>
           </footer>
         </Providers>
