@@ -19,6 +19,7 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useV3MentorChat, useV3AIStatus } from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
 import type { MentorMessage } from '@/lib/api-v3';
+import { Bot, User as UserIcon, Sparkles, Lightbulb, Zap } from 'lucide-react';
 
 // Suggested questions to help users get started
 const SUGGESTED_QUESTIONS = [
@@ -120,7 +121,9 @@ export default function AIMentorPage() {
       <PageContainer>
         <Card>
           <CardContent className="p-8 text-center">
-            <div className="text-5xl mb-4">🤖</div>
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cosmic-pink/20 to-cosmic-purple/20 flex items-center justify-center">
+              <Bot className="w-12 h-12 text-cosmic-purple" />
+            </div>
             <h2 className="text-2xl font-bold mb-2">Premium Feature</h2>
             <p className="text-text-secondary mb-6 max-w-md mx-auto">
               Unlock AI-powered mentoring with 24/7 access to personalized tutoring and
@@ -148,7 +151,9 @@ export default function AIMentorPage() {
             <CardHeader className="border-b border-border-default">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-3">
-                  <span className="text-2xl">🤖</span>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-pink/20 to-cosmic-purple/20 flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-cosmic-purple" />
+                  </div>
                   AI Tutor
                 </CardTitle>
                 {messages.length > 0 && (
@@ -165,7 +170,9 @@ export default function AIMentorPage() {
                 {messages.length === 0 ? (
                   /* Welcome State */
                   <div className="h-full flex flex-col items-center justify-center text-center">
-                    <div className="text-6xl mb-4">👋</div>
+                    <div className="w-20 h-20 mb-4 rounded-2xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                      <Sparkles className="w-12 h-12 text-cosmic-purple" />
+                    </div>
                     <h3 className="text-xl font-semibold text-text-primary mb-2">
                       Welcome to AI Mentor!
                     </h3>
@@ -196,7 +203,9 @@ export default function AIMentorPage() {
                         >
                           <div className="flex items-start gap-2">
                             {message.role === 'assistant' && (
-                              <span className="text-lg">🤖</span>
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-purple/20 to-cosmic-pink/20 flex items-center justify-center flex-shrink-0 mt-1">
+                                <Bot className="w-5 h-5 text-cosmic-purple" />
+                              </div>
                             )}
                             <div className="flex-1">
                               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -213,7 +222,9 @@ export default function AIMentorPage() {
                               )}
                             </div>
                             {message.role === 'user' && (
-                              <span className="text-lg">👤</span>
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-blue/20 flex items-center justify-center flex-shrink-0 mt-1">
+                                <UserIcon className="w-5 h-5 text-cosmic-primary" />
+                              </div>
                             )}
                           </div>
                         </div>

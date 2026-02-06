@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useAuth } from '@/hooks';
 import Link from 'next/link';
+import { User } from 'lucide-react';
 
 export default function ProfilePage() {
   const { data: user } = useAuth();
@@ -31,7 +32,9 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">👤</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                  <User className="w-5 h-5 text-cosmic-primary" />
+                </div>
                 Account Information
               </CardTitle>
               <CardDescription>Your account details</CardDescription>
