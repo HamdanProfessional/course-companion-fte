@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Chapters', href: '/chapters', icon: FileText },
   { name: 'Quizzes', href: '/quizzes', icon: ClipboardList },
   { name: 'Progress', href: '/progress', icon: BarChart3 },
+  { name: 'Time Machine', href: '/time-machine', icon: Clock },
   { name: 'Mistake Bank', href: '/mistake-bank', icon: AlertCircle },
 ];
 
