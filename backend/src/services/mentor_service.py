@@ -113,22 +113,29 @@ async def answer_concept_question(
         )
         progress = result.scalar_one_or_none()
 
-        # Get all chapters for references
+        # Get all chapters with their content for references
         result = await db.execute(
             select(Chapter)
             .order_by(Chapter.order)
-            .limit(5)  # Last 5 chapters for context
         )
-        recent_chapters = result.scalars().all()
+        all_chapters = result.scalars().all()
 
-        # Build context for LLM
+        # Build context for LLM with full content
         chapters_info = []
-        for ch in recent_chapters:
+        for ch in all_chapters:
+            # Include chapter content (truncated if too long)
+            content_preview = ""
+            if ch.content:
+                # Take first 500 chars as preview to stay within token limits
+                content_preview = ch.content[:500] + "..." if len(ch.content) > 500 else ch.content
+
             chapters_info.append({
                 "id": str(ch.id),
                 "title": ch.title,
                 "order": ch.order,
-                "difficulty": ch.difficulty_level
+                "difficulty": ch.difficulty_level,
+                "summary": ch.summary if ch.summary else "",
+                "content_preview": content_preview
             })
 
         context_str = ""
@@ -142,18 +149,23 @@ async def answer_concept_question(
 
         system_prompt = """You are an AI tutor helping students learn about AI agents, MCP, and building agents with ChatGPT.
 
+IMPORTANT: You have access to the actual course content below. Use this content to provide accurate answers that match what students are learning in the course.
+
 Your role:
-- Answer questions clearly at the appropriate level
-- Provide practical examples when possible
-- Relate concepts to course content
-- Suggest related topics for further learning
+- Answer questions using the course content provided below
+- Reference specific chapters when relevant
+- Provide practical examples from the course material
+- Explain concepts at the appropriate level
 - Generate 2-3 follow-up questions to deepen understanding
 
-Be encouraging and supportive. If you're not confident about an answer, acknowledge it.
+COURSE CONTENT (use this for your answers):
+{chapters_content}
+
+Be encouraging and supportive. Always base your answers on the course content above.
 
 Respond in JSON format:
 {
-    "answer": "Your comprehensive answer...",
+    "answer": "Your comprehensive answer based on course content...",
     "related_chapters": [
         {"id": "chapter-id", "title": "Chapter Title", "reason": "Relevance explanation"}
     ],
@@ -171,14 +183,15 @@ Respond in JSON format:
 
 {context_str}
 
-Available Chapters (for reference):
-{format_chapters_for_mentor(chapters_info)}
+Provide a helpful answer based on the course content in JSON format."""
 
-Provide a helpful answer in JSON format."""
+        # Format course content for system prompt
+        chapters_content = format_chapters_for_mentor(chapters_info)
+        system_prompt_with_content = system_prompt.format(chapters_content=chapters_content)
 
         response = await llm_client.generate(
             prompt=user_prompt,
-            system_prompt=system_prompt,
+            system_prompt=system_prompt_with_content,
             temperature=0.6,  # Balanced creativity
             response_format={"type": "json_object"}
         )
@@ -423,10 +436,16 @@ Generate practical, hands-on problems in JSON format."""
 # Helper functions
 
 def format_chapters_for_mentor(chapters: List[Dict[str, Any]]) -> str:
-    """Format chapters for mentor prompt."""
+    """Format chapters for mentor prompt with content."""
     lines = []
     for ch in chapters:
-        lines.append(f"- {ch['title']} (Order: {ch['order']}, Difficulty: {ch['difficulty']})")
+        lines.append(f"""
+Chapter {ch['order']}: {ch['title']}
+Difficulty: {ch['difficulty']}
+{f"Summary: {ch['summary']}" if ch.get('summary') else ""}
+{f"Content: {ch['content_preview']}" if ch.get('content_preview') else ""}
+---
+""")
     return "\n".join(lines)
 
 

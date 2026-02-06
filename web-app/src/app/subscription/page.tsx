@@ -11,7 +11,7 @@
  * - Billing history
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -32,22 +32,47 @@ export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<keyof typeof BILLING_CYCLES>('monthly');
   const [selectedTier, setSelectedTier] = useState<'PREMIUM' | 'PRO' | null>(null);
 
-  const { data: subscription, isLoading: subLoading } = useV3SubscriptionInfo();
-  const { data: plans, isLoading: plansLoading } = useV3SubscriptionPlans();
+  const { data: subscription, isLoading: subLoading, error: subError } = useV3SubscriptionInfo();
+  const { data: plans, isLoading: plansLoading, error: plansError } = useV3SubscriptionPlans();
   const upgradeTier = useV3UpgradeTier();
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Subscription page - subscription data:', subscription);
+    console.log('Subscription page - plans data:', plans);
+    console.log('Subscription page - subLoading:', subLoading);
+    console.log('Subscription page - plansLoading:', plansLoading);
+    if (subError) console.error('Subscription error:', subError);
+    if (plansError) console.error('Plans error:', plansError);
+  }, [subscription, plans, subLoading, plansLoading, subError, plansError]);
+
   const handleUpgrade = async (tier: 'PREMIUM' | 'PRO') => {
+    console.log('Upgrade button clicked for tier:', tier);
+    console.log('Current billing cycle:', billingCycle);
+
     try {
-      await upgradeTier.mutateAsync({
+      console.log('Calling upgradeTier mutation...');
+      const result = await upgradeTier.mutateAsync({
         newTier: tier,
         billingCycle,
       });
+
+      console.log('Upgrade result:', result);
+
+      // Update localStorage with new tier for immediate UI update
+      localStorage.setItem('user_tier', result.new_tier);
+      console.log('Updated localStorage with tier:', result.new_tier);
+
       setSelectedTier(null);
+
+      // Show success message
+      alert(`Successfully upgraded to ${tier}!`);
+
       // Refresh page data
       window.location.reload();
     } catch (error) {
       console.error('Upgrade failed:', error);
-      alert('Upgrade failed. Please try again.');
+      alert(`Upgrade failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -68,6 +93,35 @@ export default function SubscriptionPage() {
       <PageContainer>
         <div className="flex items-center justify-center min-h-[50vh]">
           <LoadingSpinner size="lg" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // Show errors if any
+  if (subError || plansError) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Card variant="elevated" className="max-w-md">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="text-4xl mb-4">⚠️</div>
+                <h3 className="text-xl font-bold text-text-primary mb-2">
+                  Failed to load subscription data
+                </h3>
+                <p className="text-text-secondary mb-4">
+                  {subError ? 'Subscription data error' : 'Plans data error'}
+                </p>
+                <Button
+                  variant="primary"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </PageContainer>
     );
@@ -200,10 +254,20 @@ export default function SubscriptionPage() {
                   <Button
                     variant={isPopular ? 'primary' : 'outline'}
                     className="w-full"
-                    onClick={() => handleUpgrade(plan.tier as 'PREMIUM' | 'PRO')}
+                    onClick={() => {
+                      console.log('Button clicked, plan tier:', plan.tier);
+                      handleUpgrade(plan.tier as 'PREMIUM' | 'PRO');
+                    }}
                     disabled={upgradeTier.isPending}
                   >
-                    {upgradeTier.isPending ? 'Processing...' : `Upgrade to ${plan.name}`}
+                    {upgradeTier.isPending ? (
+                      <span className="flex items-center gap-2">
+                        <span className="animate-spin">⏳</span>
+                        Processing...
+                      </span>
+                    ) : (
+                      `Upgrade to ${plan.name}`
+                    )}
                   </Button>
                 )}
 

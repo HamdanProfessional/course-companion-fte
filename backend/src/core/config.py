@@ -51,7 +51,13 @@ class Settings(BaseSettings):
 
     # CORS configuration
     cors_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8000"],
+        default=[
+            "http://localhost:3000",
+            "http://localhost:8000",
+            "http://92.113.147.250:3225",
+            "http://92.113.147.250:3000",
+            "http://92.113.147.250:3505",
+        ],
         description="Allowed CORS origins"
     )
 
@@ -97,8 +103,8 @@ class Settings(BaseSettings):
         description="GLM API key (required if llm_provider=glm)"
     )
     glm_model: str = Field(
-        default="glm-4-plus",
-        description="GLM model to use (glm-4-plus recommended)"
+        default="glm-4.7",
+        description="GLM model to use (glm-4.7 recommended, also supports glm-4.6, glm-4-plus)"
     )
     glm_base_url: str = Field(
         default="https://open.bigmodel.cn/api/paas/v4",

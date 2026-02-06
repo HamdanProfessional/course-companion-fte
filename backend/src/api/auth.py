@@ -8,12 +8,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 import uuid
 import bcrypt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import JWTError, jwt
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 
 from src.core.database import get_db
 from src.core.config import settings
@@ -32,6 +33,7 @@ class LoginRequest(BaseModel):
     password: str
 
 router = APIRouter()
+
 
 # JWT Configuration
 SECRET_KEY = settings.jwt_secret if hasattr(settings, 'jwt_secret') else "your-secret-key-change-in-production"

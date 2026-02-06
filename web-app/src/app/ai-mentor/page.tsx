@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useV3MentorChat, useV3AIStatus } from '@/hooks/useV3';
+import { useUserTier } from '@/hooks';
 import type { MentorMessage } from '@/lib/api-v3';
 
 // Suggested questions to help users get started
@@ -31,12 +32,17 @@ export default function AIMentorPage() {
   const [messages, setMessages] = useState<MentorMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Get user tier
+  const { data: tier, isLoading: tierLoading } = useUserTier();
   const { data: aiStatus } = useV3AIStatus();
   const mentorChat = useV3MentorChat();
 
-  const canAccessAI = aiStatus?.llm_enabled;
+  // Check if user can access AI features (PREMIUM or PRO tier)
+  // Default to allow if tier is still loading (FREE tier doesn't block anymore since we have LLM)
+  const canAccessAI = (!tierLoading && tier && tier === 'FREE') ? false : true;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -45,6 +51,17 @@ export default function AIMentorPage() {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
+
+    // Check if user is logged in
+    const userId = localStorage.getItem('user_id');
+    if (!userId) {
+      setAuthError(true);
+      // Auto-redirect to login after showing error
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
+      return;
+    }
 
     const userMessage: MentorMessage = {
       role: 'user',
@@ -55,6 +72,7 @@ export default function AIMentorPage() {
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
+    setAuthError(false);
 
     try {
       const response = await mentorChat.mutateAsync({
@@ -70,6 +88,7 @@ export default function AIMentorPage() {
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
+      console.error('AI Mentor error:', error);
       const errorMessage: MentorMessage = {
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again or contact support if the issue persists.',
@@ -215,6 +234,13 @@ export default function AIMentorPage() {
 
               {/* Input Area */}
               <div className="border-t border-border-default p-4">
+                {authError && (
+                  <div className="mb-4 p-3 rounded-lg bg-accent-warning/10 border border-accent-warning/30">
+                    <p className="text-sm text-accent-warning">
+                      ⚠️ You need to be logged in to use AI Mentor. Redirecting to login...
+                    </p>
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <textarea
                     value={inputValue}

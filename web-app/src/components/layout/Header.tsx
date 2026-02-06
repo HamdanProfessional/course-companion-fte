@@ -103,6 +103,25 @@ export function Header() {
               </svg>
             </Button>
           </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              // Clear all auth data
+              localStorage.removeItem('token');
+              localStorage.removeItem('user_id');
+              localStorage.removeItem('user_email');
+              localStorage.removeItem('user_role');
+              localStorage.removeItem('user_tier');
+              // Redirect to login
+              window.location.href = '/login';
+            }}
+            title="Logout"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </Button>
         </div>
 
         {/* Mobile menu button */}
@@ -188,6 +207,23 @@ export function Header() {
             >
               Profile
             </Link>
+
+            {/* Logout Button */}
+            <button
+              onClick={() => {
+                // Clear all auth data
+                localStorage.removeItem('token');
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_role');
+                localStorage.removeItem('user_tier');
+                // Redirect to login
+                window.location.href = '/login';
+              }}
+              className="w-full text-left px-4 py-2 rounded-lg text-base font-medium text-accent-danger hover:text-accent-danger hover:bg-accent-danger/10 transition-colors"
+            >
+              Logout
+            </button>
           </div>
         </div>
       )}

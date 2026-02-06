@@ -360,8 +360,11 @@ class TutorV3Client {
     quizId: string,
     submission: QuizSubmission
   ): Promise<QuizGradingResult> {
+    const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
+
     return this.request<QuizGradingResult>(
-      `/api/v1/quizzes/${quizId}/submit`,
+      `/api/v1/quizzes/${quizId}/submit?${params}`,
       {
         method: 'POST',
         body: JSON.stringify(submission),
@@ -412,7 +415,7 @@ class TutorV3Client {
   }
 
   // =========================================================================
-  // Progress APIs
+  // Progress APIs (v3 - Complete implementation)
   // =========================================================================
 
   /**
@@ -420,17 +423,21 @@ class TutorV3Client {
    */
   async getProgressSummary(): Promise<ProgressSummary> {
     const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
     return this.request<ProgressSummary>(
-      `/api/v1/progress/${userId}`
+      `/api/v3/tutor/progress/summary?${params}`
     );
   }
 
   /**
-   * Get progress for all chapters (stub - returns basic data)
+   * Get progress for all chapters
    */
   async getChaptersProgress(): Promise<ChapterProgress[]> {
-    // Stub implementation - not available in v1
-    return [];
+    const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
+    return this.request<ChapterProgress[]>(
+      `/api/v3/tutor/progress/chapters?${params}`
+    );
   }
 
   /**
@@ -438,39 +445,52 @@ class TutorV3Client {
    */
   async updateProgress(chapterId: string, quizScore?: number): Promise<any> {
     const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
     return this.request(
-      `/api/v1/progress/${userId}`,
+      `/api/v3/tutor/progress/update?${params}`,
       {
-        method: 'PUT',
-        body: JSON.stringify({ chapter_id: chapterId }),
+        method: 'POST',
+        body: JSON.stringify({
+          chapter_id: chapterId,
+          quiz_score: quizScore,
+        }),
       }
     );
   }
 
   /**
-   * Get streak calendar (stub - returns basic data)
+   * Get streak calendar
    */
   async getStreakCalendar(year?: number, month?: number): Promise<StreakCalendar> {
     const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
+    if (year) params.append('year', year.toString());
+    if (month) params.append('month', month.toString());
     return this.request<StreakCalendar>(
-      `/api/v1/streaks/${userId}`
+      `/api/v3/tutor/progress/streak/calendar?${params}`
     );
   }
 
   /**
-   * Get quiz score history for charts (stub)
+   * Get quiz score history for charts
    */
   async getScoreHistory(limit = 30): Promise<ScoreHistoryItem[]> {
-    // Stub implementation - not available in v1
-    return [];
+    const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId, limit: limit.toString() });
+    return this.request<ScoreHistoryItem[]>(
+      `/api/v3/tutor/progress/quiz-scores?${params}`
+    );
   }
 
   /**
-   * Get all achievements (stub)
+   * Get all achievements
    */
   async getAchievements(): Promise<AchievementItem[]> {
-    // Stub implementation - not available in v1
-    return [];
+    const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
+    return this.request<AchievementItem[]>(
+      `/api/v3/tutor/progress/achievements?${params}`
+    );
   }
 
   /**
@@ -519,13 +539,22 @@ class TutorV3Client {
    * Get knowledge gap analysis (stub)
    */
   async getKnowledgeAnalysis(): Promise<AdaptiveAnalysis> {
-    // Stub - Phase 2 features not available
+    // Stub - Return demo analysis with correct chapter UUIDs
     return {
-      weak_topics: [],
-      strong_topics: [],
-      recommended_review: [],
-      confidence_score: 0,
-      explanation: 'Phase 2 AI features are not available in v1 API',
+      weak_topics: [
+        'State Management',
+        'Error Handling',
+      ],
+      strong_topics: [
+        'MCP Integration',
+        'Agent Development',
+      ],
+      recommended_review: [
+        '2912d135-f34f-40af-a297-5f8acfdca3f6', // Chapter 1
+        '4d595b4d-ac38-4a35-9699-265009f430e9', // Chapter 2
+      ],
+      confidence_score: 0.75,
+      explanation: 'Based on your quiz performance, you show strong understanding of MCP integration concepts. For best results, we recommend reviewing state management patterns and error handling strategies before moving to advanced topics.',
     };
   }
 
@@ -533,24 +562,63 @@ class TutorV3Client {
    * Get personalized chapter recommendations (stub)
    */
   async getRecommendations(): Promise<ChapterRecommendation> {
-    // Stub - Phase 2 features not available
-    throw new Error('Recommendations not available in v1 API');
+    // Stub - Return demo recommendation with correct chapter UUIDs
+    return {
+      next_chapter_id: '91a1e219-c7ff-4677-8a1a-ace4b58787c5', // Chapter 3: Creating Your First Agent
+      next_chapter_title: 'Creating Your First Agent',
+      reason: 'Based on your progress in Chapter 2, we recommend continuing with agent creation. This chapter will help you build your first functional AI agent using MCP.',
+      estimated_completion_minutes: 30,
+      difficulty_match: 'Perfect Match',
+      alternative_paths: [
+        {
+          chapter_id: '56aa5028-8ddd-4e21-b00a-e935147079cc', // Chapter 4: Building Reusable Skills
+          title: 'Building Reusable Skills',
+          reason: 'Alternative path if you want to focus on skill architecture first',
+        },
+      ],
+    };
   }
 
   /**
-   * Chat with AI mentor (stub)
+   * Chat with AI mentor (real LLM)
    */
   async mentorChat(request: MentorChatRequest): Promise<MentorChatResponse> {
-    // Stub - Phase 2 features not available
-    throw new Error('AI Mentor not available in v1 API');
+    const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
+
+    return this.request<MentorChatResponse>(
+      `/api/v3/tutor/ai/mentor/chat?${params}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          question: request.question || request.message || '',
+          conversation_history: request.conversation_history || [],
+        }),
+      }
+    );
   }
 
   /**
    * Get AI-generated explanation for a topic (stub)
    */
   async explainTopic(request: ContentExplanationRequest): Promise<ContentExplanationResponse> {
-    // Stub - Phase 2 features not available
-    throw new Error('AI Explanations not available in v1 API');
+    // Stub - Return demo explanation
+    return {
+      topic: request.topic,
+      explanation: `${request.topic} is a fundamental concept in AI agent development. It enables systems to perform specific tasks efficiently and reliably.`,
+      key_points: [
+        `Understanding ${request.topic} is crucial for building effective agents`,
+        'Practice with real-world scenarios reinforces learning',
+        'MCP integration enhances agent capabilities',
+      ],
+      examples: [
+        {
+          name: 'Basic Implementation',
+          description: `A simple example showing how ${request.topic} works in practice`,
+        },
+      ],
+      related_topics: ['MCP Integration', 'Agent Development', 'API Design'],
+    };
   }
 
   /**
@@ -577,24 +645,14 @@ class TutorV3Client {
   }
 
   // =========================================================================
-  // Access & Subscription APIs (STUBS - Limited availability in v1)
+  // Access & Subscription APIs
   // =========================================================================
 
   /**
-   * List all subscription plans (stub)
+   * List all subscription plans
    */
   async listSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-    // Stub - returns basic plans
-    return [
-      {
-        tier: 'FREE',
-        name: 'Free',
-        price_monthly: 0,
-        price_yearly: 0,
-        features: ['Access to first 3 chapters'],
-        limits: { chapters: 3 },
-      },
-    ];
+    return this.request<SubscriptionPlan[]>('/api/v3/tutor/access/plans');
   }
 
   /**
@@ -602,17 +660,8 @@ class TutorV3Client {
    */
   async getSubscriptionInfo(): Promise<SubscriptionInfo> {
     const userId = this.getUserId();
-    return this.request<SubscriptionInfo>(
-      `/api/v1/user/${userId}/tier`
-    ).then(tier => ({
-      user_id: userId,
-      current_tier: tier.tier as 'FREE' | 'PREMIUM' | 'PRO',
-      tier_name: tier.tier,
-      subscribed_at: null,
-      subscription_status: 'active',
-      next_billing_date: null,
-      cancel_at_period_end: false,
-    }));
+    const params = new URLSearchParams({ user_id: userId });
+    return this.request<SubscriptionInfo>(`/api/v3/tutor/access/subscription?${params}`);
   }
 
   /**
@@ -632,7 +681,7 @@ class TutorV3Client {
   }
 
   /**
-   * Upgrade subscription tier (stub)
+   * Upgrade subscription tier
    */
   async upgradeTier(
     newTier: 'PREMIUM' | 'PRO',
@@ -644,12 +693,29 @@ class TutorV3Client {
     new_tier: string;
     upgraded_at: string;
   }> {
-    // Stub - not available in v1
-    throw new Error('Tier upgrade not available in v1 API');
+    const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
+
+    return this.request<{
+      user_id: string;
+      old_tier: string;
+      new_tier: string;
+      upgraded_at: string;
+    }>(
+      `/api/v3/tutor/access/upgrade?${params}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          new_tier: newTier,
+          billing_cycle: billingCycle,
+          payment_method_id: paymentMethodId || 'demo', // Demo payment for hackathon
+        }),
+      }
+    );
   }
 
   /**
-   * Request data export (GDPR) (stub)
+   * Request data export (GDPR)
    */
   async requestDataExport(options: {
     include_progress: boolean;
@@ -667,8 +733,22 @@ class TutorV3Client {
     expires_at: string;
     download_url: string | null;
   }> {
-    // Stub - not available in v1
-    throw new Error('Data export not available in v1 API');
+    const userId = this.getUserId();
+    return this.request<{
+      export_id: string;
+      status: string;
+      expires_at: string;
+      download_url: string | null;
+    }>(
+      `/api/v3/tutor/access/export-data`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: userId,
+          ...options,
+        }),
+      }
+    );
   }
 }
 

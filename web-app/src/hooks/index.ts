@@ -115,8 +115,17 @@ export function useUserTier(userId?: string) {
     queryFn: async () => {
       if (!id) return 'FREE';
 
+      // First, check localStorage for immediate tier (updated by upgrade flow)
+      const localTier = localStorage.getItem('user_tier');
+      if (localTier && ['FREE', 'PREMIUM', 'PRO'].includes(localTier)) {
+        console.log('useUserTier: Using tier from localStorage:', localTier);
+        return localTier;
+      }
+
+      // Fall back to API if not in localStorage
       try {
         const response = await backendApi.getUserTier(id);
+        console.log('useUserTier: Fetched tier from API:', response.tier);
         return response.tier;
       } catch (error) {
         // Return default tier if request fails
@@ -126,6 +135,7 @@ export function useUserTier(userId?: string) {
     },
     enabled: !!id && typeof window !== 'undefined', // Only run on client
     retry: 1,
+    staleTime: 0, // Always fetch fresh data to avoid stale cache
   });
 }
 

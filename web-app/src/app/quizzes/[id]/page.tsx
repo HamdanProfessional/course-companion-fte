@@ -27,6 +27,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
   const [showResults, setShowResults] = useState(false);
   const [gradingMode, setGradingMode] = useState<GradingMode>('auto');
   const [result, setResult] = useState<QuizGradingResult | null>(null);
+  const [authError, setAuthError] = useState(false);
 
   const { data: quiz, isLoading } = useQuiz(params.id);
   const { canAccess: canAccessLLM, tier } = useCanAccessPhase2();
@@ -42,6 +43,17 @@ export default function QuizPage({ params }: { params: { id: string } }) {
   }, [canAccessLLM, tier]);
 
   const handleSubmit = async () => {
+    // Check if user is logged in
+    const userId = localStorage.getItem('user_id');
+    if (!userId) {
+      setAuthError(true);
+      // Auto-redirect to login after showing error
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
+      return;
+    }
+
     const allAnswers: Record<string, any> = { ...answers };
 
     // Include open-ended answers
@@ -73,6 +85,8 @@ export default function QuizPage({ params }: { params: { id: string } }) {
       }
     } catch (error) {
       console.error('Quiz submission failed:', error);
+      // Show error message to user
+      alert('Quiz submission failed. Please try again.');
     }
   };
 
@@ -348,6 +362,15 @@ export default function QuizPage({ params }: { params: { id: string } }) {
               <span className="text-lg">Question {currentQuestion + 1}</span>
             </CardTitle>
           </CardHeader>
+
+          {authError && (
+            <div className="mx-6 -mt-2 p-3 rounded-lg bg-accent-warning/10 border border-accent-warning/30">
+              <p className="text-sm text-accent-warning">
+                ⚠️ You need to be logged in to submit this quiz. Redirecting to login...
+              </p>
+            </div>
+          )}
+
           <CardContent className="space-y-6">
             <p className="text-lg text-text-primary leading-relaxed">{question.question_text}</p>
 

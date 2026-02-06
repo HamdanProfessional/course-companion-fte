@@ -10,7 +10,7 @@
  * - Smart study suggestions
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -21,6 +21,7 @@ import {
   useV3Recommendations,
   useV3AIStatus,
 } from '@/hooks/useV3';
+import { useUserTier } from '@/hooks';
 import Link from 'next/link';
 
 // Learning goals for path generation
@@ -36,13 +37,20 @@ export default function AdaptiveLearningPage() {
   const [showPathForm, setShowPathForm] = useState(false);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
-  // Fetch AI features
+  // Get user tier and fetch AI features
+  const { data: tier } = useUserTier();
   const { data: aiStatus, isLoading: statusLoading } = useV3AIStatus();
   const { data: analysis, isLoading: analysisLoading, error: analysisError } = useV3KnowledgeAnalysis();
   const { data: recommendation, isLoading: recLoading } = useV3Recommendations();
 
-  // Check if user can access AI features
-  const canAccessAI = aiStatus?.llm_enabled && analysisError?.message?.includes('403') !== true;
+  // Check if user can access AI features (PREMIUM or PRO tier)
+  const canAccessAI = tier && (tier === 'PREMIUM' || tier === 'PRO');
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Adaptive Learning - User tier:', tier);
+    console.log('Adaptive Learning - Can access AI:', canAccessAI);
+  }, [tier, canAccessAI]);
 
   const toggleGoal = (goal: string) => {
     setSelectedGoals(prev =>

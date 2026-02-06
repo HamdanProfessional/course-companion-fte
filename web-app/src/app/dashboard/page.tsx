@@ -12,25 +12,8 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useProgress, useStreak, useChapters } from '@/hooks';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-// Code split Phase 2 AI Recommendations component
-// Only loads when Phase 2 is enabled, reducing initial bundle size
-const AIRecommendations = dynamic(
-  () => import('@/components/AIRecommendations').then(mod => ({ default: mod.AIRecommendations })),
-  {
-    loading: () => (
-      <Card>
-        <CardContent className="p-6">
-          <LoadingSpinner size="sm" />
-        </CardContent>
-      </Card>
-    ),
-    ssr: false, // Phase 2 features are client-side only
-  }
-);
 
 // StatCard component for dashboard metrics
 function StatCard({
@@ -95,11 +78,20 @@ export default function DashboardPage() {
   useEffect(() => {
     // Get the logged-in user's ID from localStorage
     const storedUserId = localStorage.getItem('user_id');
+    const userRole = localStorage.getItem('user_role');
+
     if (!storedUserId) {
       // Not logged in, redirect to login
       router.push('/login');
       return;
     }
+
+    // If user is a teacher, redirect to teacher dashboard
+    if (userRole === 'teacher') {
+      router.push('/teacher-dashboard');
+      return;
+    }
+
     setUserId(storedUserId);
   }, [router]);
 
@@ -138,10 +130,7 @@ export default function DashboardPage() {
         description="Continue your learning journey through AI Agent Development"
       />
 
-      {/* Phase 2: AI Recommendations */}
-      <AIRecommendations userId={userId} />
-
-      {/* Phase 3: AI Features Quick Links */}
+      {/* Quick Links - AI Features */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <Link href="/adaptive-learning" className="group">
           <Card className="group-hover:border-accent-secondary group-hover:shadow-lg transition-all">

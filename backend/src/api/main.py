@@ -46,13 +46,14 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS
+# Configure CORS - explicitly handle OPTIONS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -101,6 +102,24 @@ async def health_check(request: Request):
         version=settings.app_version,
         timestamp=datetime.utcnow(),
     )
+
+
+@app.options("/{path:path}")
+async def options_handler(request: Request, path: str):
+    """
+    Handle OPTIONS requests for CORS preflight.
+    This must be without rate limiting to allow CORS checks.
+    """
+    from fastapi.responses import Response
+    response = Response(status_code=200)
+    origin = request.headers.get("origin")
+    if origin in settings.cors_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Expose-Headers"] = "*"
+    return response
 
 
 # =============================================================================

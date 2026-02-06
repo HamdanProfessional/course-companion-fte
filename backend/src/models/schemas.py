@@ -28,6 +28,16 @@ class DifficultyLevel(str, Enum):
     INTERMEDIATE = "INTERMEDIATE"
     ADVANCED = "ADVANCED"
 
+    @classmethod
+    def _missing_(cls, value):
+        """Handle case-insensitive enum lookup."""
+        if isinstance(value, str):
+            upper_value = value.upper()
+            for member in cls:
+                if member.value == upper_value:
+                    return member
+        return None  # or raise ValueError
+
 
 class AnswerChoice(str, Enum):
     """Multiple choice answer options."""
@@ -89,6 +99,13 @@ class ChapterBase(BaseModel):
     order: int
     difficulty_level: DifficultyLevel = DifficultyLevel.BEGINNER
     estimated_time: int = Field(default=30, description="Estimated reading time in minutes")
+
+    @validator('difficulty_level', pre=True)
+    def normalize_difficulty_level(cls, v):
+        """Normalize difficulty level to uppercase."""
+        if isinstance(v, str):
+            return v.upper()
+        return v
 
 
 class ChapterCreate(ChapterBase):
