@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search } from 'lucide-react';
+import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search, Users, MessageSquare, GraduationCap, Target, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
@@ -28,9 +28,29 @@ const aiFeatures = [
   { name: 'AI Mentor', href: '/ai-mentor', icon: Sparkles, badge: 'AI' },
 ];
 
+// Teacher-specific navigation
+const teacherNavigation = [
+  { name: 'Teacher Dashboard', href: '/teacher-dashboard', icon: GraduationCap },
+  { name: 'Students', href: '/teacher-dashboard/students', icon: Users },
+  { name: 'Analytics', href: '/teacher-dashboard/analytics', icon: BarChart3 },
+  { name: 'Content', href: '/teacher-dashboard/content', icon: FileText },
+  { name: 'Engagement', href: '/teacher-dashboard/engagement', icon: MessageSquare },
+];
+
 export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+  // Get user role from localStorage
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const role = localStorage.getItem('user_role');
+    setUserRole(role);
+  }, []);
+
+  const isTeacher = userRole === 'teacher';
+  const navigationToShow = isTeacher ? teacherNavigation : navigation;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -65,7 +85,7 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <div className="hidden lg:flex lg:items-center lg:gap-1.5 ml-4">
-          {navigation.map((item) => {
+          {navigationToShow.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -87,11 +107,11 @@ export function Header() {
             );
           })}
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-glass-border mx-2" />
+          {/* Divider - hide for teachers */}
+          {!isTeacher && <div className="w-px h-6 bg-glass-border mx-2" />}
 
-          {/* AI Features */}
-          {aiFeatures.map((item) => {
+          {/* AI Features - hide for teachers */}
+          {!isTeacher && aiFeatures.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -196,7 +216,7 @@ export function Header() {
             className="lg:hidden border-t border-glass-border bg-glass-surface backdrop-blur-xl overflow-hidden"
           >
             <div className="container px-2 py-3 space-y-1">
-              {navigation.map((item, index) => {
+              {navigationToShow.map((item, index) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 return (
@@ -224,13 +244,15 @@ export function Header() {
                 );
               })}
 
-              {/* AI Features Section */}
-              <div className="pt-4 pb-2">
-                <div className="px-4 py-2 text-xs font-bold text-cosmic-primary uppercase tracking-wider">
-                  AI Features
-                </div>
-              </div>
-              {aiFeatures.map((item, index) => {
+              {/* AI Features Section - hide for teachers */}
+              {!isTeacher && (
+                <>
+                  <div className="pt-4 pb-2">
+                    <div className="px-4 py-2 text-xs font-bold text-cosmic-primary uppercase tracking-wider">
+                      AI Features
+                    </div>
+                  </div>
+                  {aiFeatures.map((item, index) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 return (
@@ -262,6 +284,8 @@ export function Header() {
                   </motion.div>
                 );
               })}
+                </>
+              )}
 
               {/* Search bar for mobile */}
               <div className="px-2 py-3">

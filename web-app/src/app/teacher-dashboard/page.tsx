@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { Users, TrendingUp, Award, BookOpen, MessageSquare, CheckCircle, BarChart3, FileEdit, GraduationCap, Target } from 'lucide-react';
 import Link from 'next/link';
 
 // StatCard component for teacher metrics
@@ -269,25 +270,25 @@ export default function TeacherDashboardPage() {
         <QuickActionCard
           title="Manage Students"
           description="View and manage student enrollments"
-          icon="👥"
+          icon={<Users className="w-6 h-6" />}
           href="/teacher-dashboard/students"
         />
         <QuickActionCard
           title="Quiz Analytics"
           description="View quiz performance and insights"
-          icon="📊"
+          icon={<BarChart3 className="w-6 h-6" />}
           href="/teacher-dashboard/analytics"
         />
         <QuickActionCard
           title="Course Content"
           description="Edit chapters and quizzes"
-          icon="📚"
+          icon={<BookOpen className="w-6 h-6" />}
           href="/teacher-dashboard/content"
         />
         <QuickActionCard
           title="Engagement"
           description="Track student engagement metrics"
-          icon="💬"
+          icon={<MessageSquare className="w-6 h-6" />}
           href="/teacher-dashboard/engagement"
         />
       </div>
@@ -298,7 +299,7 @@ export default function TeacherDashboardPage() {
           title="Total Students"
           value={stats.totalStudents}
           subtitle="Enrolled in course"
-          icon="👥"
+          icon={<Users className="w-6 h-6 text-accent-primary" />}
           trend={{ value: 12, isPositive: true }}
           variant="default"
         />
@@ -306,7 +307,7 @@ export default function TeacherDashboardPage() {
           title="Active Students"
           value={stats.activeStudents}
           subtitle="Active in last 7 days"
-          icon="🟢"
+          icon={<TrendingUp className="w-6 h-6 text-accent-success" />}
           trend={{ value: 8, isPositive: true }}
           variant="success"
         />
@@ -314,7 +315,7 @@ export default function TeacherDashboardPage() {
           title="Avg. Quiz Score"
           value={`${stats.averageScore}%`}
           subtitle="Across all quizzes"
-          icon="📊"
+          icon={<Award className="w-6 h-6 text-accent-primary" />}
           trend={{ value: 5, isPositive: true }}
           variant="info"
         />
@@ -322,7 +323,7 @@ export default function TeacherDashboardPage() {
           title="Completion Rate"
           value={`${stats.completionRate}%`}
           subtitle="Students completed course"
-          icon="✅"
+          icon={<CheckCircle className="w-6 h-6 text-accent-warning" />}
           trend={{ value: 3, isPositive: true }}
           variant="warning"
         />
@@ -333,7 +334,9 @@ export default function TeacherDashboardPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">📋</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                <FileEdit className="w-6 h-6 text-cosmic-primary" />
+              </div>
               Recent Student Activity
             </CardTitle>
             <Link href="/teacher-dashboard/students">
