@@ -37,8 +37,9 @@ import {
   Globe,
   Package,
   Activity,
-  Flask,
+  Beaker,
   Box,
+  FileText,
 } from 'lucide-react';
 import {
   getTopics,
@@ -100,7 +101,7 @@ export default function InfiniteQuizPage() {
       '🐳': <Zap className="w-6 h-6" />,
       '📘': <FileText className="w-6 h-6" />,
       '💚': <Activity className="w-6 h-6" />,
-      '🧪': <Flask className="w-6 h-6" />,
+      '🧪': <Beaker className="w-6 h-6" />,
       '🏗️': <Box className="w-6 h-6" />,
       '⚡': <Zap className="w-6 h-6" />,
     };
