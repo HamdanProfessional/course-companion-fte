@@ -327,6 +327,7 @@ export function Header() {
                 );
               })}
                 </>
+              )}
 
                 {/* Learning Tools Section - hide for teachers */}
                 {!isTeacher && (
@@ -366,8 +367,8 @@ export function Header() {
                   </>
                 )}
 
-                {/* Search bar for mobile */}
-                <div className="px-2 py-3">
+              {/* Search bar for mobile */}
+              <div className="px-2 py-3">
                 <SearchBar placeholder="Search..." />
               </div>
 
