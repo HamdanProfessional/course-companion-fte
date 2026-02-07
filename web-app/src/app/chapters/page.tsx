@@ -96,18 +96,29 @@ export default function ChaptersPage() {
         description="Master AI Agent Development step by step"
       />
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative">
+      {/* Search Bar and Filters - Same Row */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        {/* Search Bar */}
+        <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
           <input
             type="text"
-            placeholder="Search chapters by title or description..."
+            placeholder="Search chapters..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-bg-elevated border border-border-default rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-cosmic-primary focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-bg-elevated border border-border-default rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-cosmic-primary focus:border-transparent transition-all"
           />
         </div>
+
+        {/* Filter Tabs */}
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="flex-shrink-0">
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+            <TabsTrigger value="locked">Locked</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Progress Overview */}
@@ -123,16 +134,6 @@ export default function ChaptersPage() {
           <p className="text-xs text-text-muted">{completionPercent}% of course completed</p>
         </CardContent>
       </Card>
-
-      {/* Filter Tabs */}
-      <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">All Chapters</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-          <TabsTrigger value="locked">Locked</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {/* Chapters Grid */}
       {filteredChapters.length === 0 ? (
