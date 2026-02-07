@@ -99,7 +99,7 @@ export default function ChaptersPage() {
       {/* Search Bar and Filters - Same Row */}
       <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         {/* Search Bar */}
-        <div className="relative w-full md:w-96">
+        <div className="relative w-full md:w-[845px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
           <input
             type="text"
