@@ -13,7 +13,7 @@ import { QuizCard } from '@/components/ui/QuizCard';
 import { EmptyStates } from '@/components/ui/EmptyState';
 import { useQuizzes, useChapters, useProgress } from '@/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { FileEdit, Sprout, Rocket, BookOpen, BarChart3, TrendingUp } from 'lucide-react';
+import { FileEdit, Sprout, Rocket, BookOpen, BarChart3, TrendingUp, Flame } from 'lucide-react';
 
 export default function QuizzesPage() {
   const { data: quizzes, isLoading: quizzesLoading } = useQuizzes();
@@ -79,7 +79,7 @@ export default function QuizzesPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -116,9 +116,25 @@ export default function QuizzesPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-sm font-medium text-text-secondary">Intermediate</p>
+                <p className="text-3xl font-bold text-accent-info mt-1">
+                  {intermediateQuizzes.length}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-accent-info" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-text-secondary">Advanced</p>
                 <p className="text-3xl font-bold text-accent-warning mt-1">
-                  {intermediateQuizzes.length + advancedQuizzes.length}
+                  {advancedQuizzes.length}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">

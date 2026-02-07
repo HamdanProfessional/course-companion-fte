@@ -75,11 +75,19 @@ export default function ProgressPage() {
   const currentStreak = progressSummary?.current_streak || 0;
   const longestStreak = progressSummary?.longest_streak || 0;
   const totalChapters = progressSummary?.total_chapters || chapters?.length || 0;
-  const completedChapters = progressSummary?.completed_chapters || [];
+  // Ensure completedChapters is always an array and log for debugging
+  const completedChapters = Array.isArray(progressSummary?.completed_chapters) ? progressSummary.completed_chapters : [];
   const totalQuizzes = progressSummary?.total_quizzes_taken || 0;
   const averageScore = progressSummary?.average_score || 0;
   const unlockedAchievements = achievements?.filter(a => a.unlocked_at) || [];
   const totalAchievementsCount = achievements?.length || 0;
+
+  // Debug logging for milestones
+  if (typeof window !== 'undefined') {
+    console.log('Progress Page - completedChapters:', completedChapters);
+    console.log('Progress Page - completedChapters.length:', completedChapters.length);
+    console.log('Progress Page - progressSummary:', progressSummary);
+  }
 
   const milestones = [
     { milestone: 'Started Learning', completed: true, icon: '', Icon: Rocket, description: 'Began your journey' },

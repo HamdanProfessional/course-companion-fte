@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
-import { Clock, TrendingUp, Lightbulb, Star, ArrowRight, Calendar, MessageSquare, Brain, Target, Award, ChevronDown, ChevronUp } from 'lucide-react';
+import { EmptyStates } from '@/components/ui/EmptyState';
+import { Clock, TrendingUp, Lightbulb, Star, ArrowRight, Calendar, MessageSquare, Brain, Target, Award, ChevronDown, ChevronUp, Inbox } from 'lucide-react';
 
 interface QuestionEvolution {
   date: string;
@@ -34,72 +35,18 @@ interface MilestoneItem {
   level: number;
 }
 
-// Mock data - In production, this would come from the backend
-const mockQuestionEvolution: QuestionEvolution[] = [
-  {
-    date: '2026-01-15',
-    question: 'What is an API?',
-    sophistication: 'beginner',
-    topic: 'Introduction',
-  },
-  {
-    date: '2026-01-20',
-    question: 'How do I call an API in JavaScript?',
-    sophistication: 'beginner',
-    topic: 'API Basics',
-  },
-  {
-    date: '2026-01-28',
-    question: 'What are the differences between REST and GraphQL?',
-    sophistication: 'intermediate',
-    topic: 'API Design',
-  },
-  {
-    date: '2026-02-05',
-    question: 'How do I handle errors when an API call fails?',
-    sophistication: 'intermediate',
-    topic: 'Error Handling',
-  },
-  {
-    date: '2026-02-10',
-    question: 'Can you explain how to implement rate limiting for an API?',
-    sophistication: 'advanced',
-    topic: 'API Architecture',
-  },
-  {
-    date: '2026-02-15',
-    question: 'How do I design a scalable API architecture with caching, load balancing, and database optimization?',
-    sophistication: 'advanced',
-    topic: 'System Design',
-  },
-];
-
-const mockMilestones: MilestoneItem[] = [
-  {
-    date: '2026-01-15',
-    title: 'First Question Asked',
-    description: 'You began your learning journey with foundational questions',
-    level: 1,
-  },
-  {
-    date: '2026-01-28',
-    title: 'Intermediate Thinker',
-    description: 'Your questions showed deeper understanding of concepts',
-    level: 2,
-  },
-  {
-    date: '2026-02-10',
-    title: 'Advanced Inquirer',
-    description: 'You started asking sophisticated, multi-faceted questions',
-    level: 3,
-  },
-];
+interface TimeMachineData {
+  question_evolution: QuestionEvolution[];
+  milestones: MilestoneItem[];
+}
 
 export default function TimeMachinePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionEvolution | null>(null);
   const [expandedMilestones, setExpandedMilestones] = useState<number[]>([]);
+  const [timeMachineData, setTimeMachineData] = useState<TimeMachineData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem('user_id');
@@ -107,7 +54,33 @@ export default function TimeMachinePage() {
       router.push('/login');
       return;
     }
-    setIsLoading(false);
+
+    // Fetch time machine data from backend
+    const fetchTimeMachineData = async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+        const response = await fetch(`${backendUrl}/api/v3/time-machine/${userId}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            // No data available yet - this is expected for new users
+            setTimeMachineData(null);
+          } else {
+            throw new Error('Failed to fetch time machine data');
+          }
+        } else {
+          const data = await response.json();
+          setTimeMachineData(data);
+        }
+      } catch (err) {
+        console.error('Error fetching time machine data:', err);
+        setError('Unable to load time machine data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTimeMachineData();
   }, [router]);
 
   const sophisticationConfig = {
@@ -145,11 +118,50 @@ export default function TimeMachinePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-screen">
+          <LoadingSpinner size="lg" />
+        </div>
+      </PageContainer>
     );
   }
+
+  // Show empty state if no data available
+  if (!timeMachineData || error) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Time Machine"
+          description="See how your questions and understanding have evolved over time"
+        />
+        <Card>
+          <CardContent className="p-16 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+              <Inbox className="w-10 h-10 text-cosmic-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-text-primary mb-2">No Learning History Yet</h3>
+            <p className="text-text-secondary mb-6 max-w-md mx-auto">
+              Start asking questions through the AI Mentor to build your learning timeline.
+              Track how your questions evolve from basic to sophisticated!
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button variant="primary" onClick={() => router.push('/ai-mentor')}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Start Asking Questions
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/chapters')}>
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Browse Chapters
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </PageContainer>
+    );
+  }
+
+  const questionEvolution = timeMachineData.question_evolution || [];
+  const milestones = timeMachineData.milestones || [];
 
   return (
     <PageContainer>
@@ -167,7 +179,7 @@ export default function TimeMachinePage() {
                 <MessageSquare className="w-6 h-6 text-cosmic-primary" />
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-text-primary">{mockQuestionEvolution.length}</h3>
+            <h3 className="text-3xl font-bold text-text-primary">{questionEvolution.length}</h3>
             <p className="text-sm text-text-secondary">Questions Asked</p>
           </CardContent>
         </Card>
@@ -179,7 +191,9 @@ export default function TimeMachinePage() {
                 <TrendingUp className="w-6 h-6 text-accent-success" />
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-accent-success">Advanced</h3>
+            <h3 className="text-3xl font-bold text-accent-success">
+              {questionEvolution.length > 0 ? questionEvolution[questionEvolution.length - 1].sophistication : 'Beginner'}
+            </h3>
             <p className="text-sm text-text-secondary">Current Level</p>
           </CardContent>
         </Card>
@@ -191,8 +205,8 @@ export default function TimeMachinePage() {
                 <Calendar className="w-6 h-6 text-accent-info" />
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-text-primary">1 Month</h3>
-            <p className="text-sm text-text-secondary">Learning Journey</p>
+            <h3 className="text-3xl font-bold text-text-primary">{milestones.length}</h3>
+            <p className="text-sm text-text-secondary">Milestones Achieved</p>
           </CardContent>
         </Card>
       </div>
@@ -210,8 +224,16 @@ export default function TimeMachinePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {mockQuestionEvolution.map((item, index) => {
+              {questionEvolution.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                    <MessageSquare className="w-8 h-8 text-cosmic-primary" />
+                  </div>
+                  <p className="text-text-secondary">No questions recorded yet. Start learning!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {questionEvolution.map((item, index) => {
                   const config = sophisticationConfig[item.sophistication];
                   const Icon = config.icon;
 
@@ -248,7 +270,8 @@ export default function TimeMachinePage() {
                     </div>
                   );
                 })}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -320,8 +343,16 @@ export default function TimeMachinePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {mockMilestones.map((milestone, index) => {
+              {milestones.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                    <Award className="w-6 h-6 text-cosmic-primary" />
+                  </div>
+                  <p className="text-text-secondary text-sm">No milestones yet. Keep learning!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {milestones.map((milestone, index) => {
                   const isExpanded = expandedMilestones.includes(index);
 
                   return (
@@ -361,7 +392,8 @@ export default function TimeMachinePage() {
                     </div>
                   );
                 })}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -374,19 +406,23 @@ export default function TimeMachinePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="p-3 rounded-lg bg-accent-success/10 border border-accent-success/30">
-                <p className="text-text-primary font-medium mb-1">Strong Growth</p>
-                <p className="text-text-secondary">
-                  Your questions have become {Math.round((mockQuestionEvolution.length * 100) / mockQuestionEvolution.length)}% more sophisticated
-                </p>
-              </div>
+              {questionEvolution.length > 0 && (
+                <>
+                  <div className="p-3 rounded-lg bg-accent-success/10 border border-accent-success/30">
+                    <p className="text-text-primary font-medium mb-1">Strong Growth</p>
+                    <p className="text-text-secondary">
+                      You've asked {questionEvolution.length} questions and evolved from foundational to sophisticated thinking
+                    </p>
+                  </div>
 
-              <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/30">
-                <p className="text-text-primary font-medium mb-1">Topic Evolution</p>
-                <p className="text-text-secondary">
-                  Started with basics, now exploring {mockQuestionEvolution[mockQuestionEvolution.length - 1].topic}
-                </p>
-              </div>
+                  <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/30">
+                    <p className="text-text-primary font-medium mb-1">Topic Evolution</p>
+                    <p className="text-text-secondary">
+                      Started with basics, now exploring {questionEvolution[questionEvolution.length - 1].topic}
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div className="p-3 rounded-lg bg-bg-elevated border border-border-default">
                 <p className="text-text-primary font-medium mb-1">Keep Growing!</p>

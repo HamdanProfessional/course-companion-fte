@@ -22,7 +22,7 @@ import {
   useV3AIStatus,
 } from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
-import { Target, Armchair, RotateCcw, Compass, Clock, Map, BookOpen, Zap, Sparkles, Check } from 'lucide-react';
+import { Target, Armchair, RotateCcw, Compass, Clock, Map, BookOpen, Zap, Sparkles, Check, TrendingDown, AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 // Learning goals for path generation
@@ -115,75 +115,125 @@ export default function AdaptiveLearningPage() {
             <CardContent>
               {analysis ? (
                 <div className="space-y-6">
-                  {/* Weak Topics */}
+                  {/* Weak Topics - Enhanced Visual Design */}
                   {analysis.weak_topics && analysis.weak_topics.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-accent-warning" />
-                        Areas to Improve
+                    <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-xl p-5 border border-red-500/30">
+                      <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                          <TrendingDown className="w-4 h-4 text-red-500" />
+                        </div>
+                        Areas That Need Attention
                       </h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {analysis.weak_topics.map((topic, i) => (
-                          <Badge key={i} variant="warning">
-                            {topic}
-                          </Badge>
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-bg-elevated border border-red-500/20 hover:border-red-500/40 transition-all"
+                          >
+                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                            <span className="text-sm font-medium text-text-primary">{topic}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Strong Topics */}
+                  {/* Strong Topics - Enhanced Visual Design */}
                   {analysis.strong_topics && analysis.strong_topics.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-accent-success" />
+                    <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl p-5 border border-emerald-500/30">
+                      <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                          <Zap className="w-4 h-4 text-emerald-500" />
+                        </div>
                         Your Strengths
                       </h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {analysis.strong_topics.map((topic, i) => (
-                          <Badge key={i} variant="success">
-                            {topic}
-                          </Badge>
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-bg-elevated border border-emerald-500/20 hover:border-emerald-500/40 transition-all"
+                          >
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="text-sm font-medium text-text-primary">{topic}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Recommended Review */}
+                  {/* Recommended Review - Enhanced Visual Design */}
                   {analysis.recommended_review && analysis.recommended_review.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <RotateCcw className="w-5 h-5 text-accent-warning" />
-                        Recommended Review
+                    <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 rounded-xl p-5 border border-amber-500/30">
+                      <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                          <RotateCcw className="w-4 h-4 text-amber-500" />
+                        </div>
+                        Recommended Chapters to Review
                       </h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-2">
                         {analysis.recommended_review.map((chapterId, i) => (
                           <Link key={i} href={`/chapters/${chapterId}`}>
-                            <Badge variant="info" className="cursor-pointer hover:opacity-80">
-                              Chapter {chapterId}
-                            </Badge>
+                            <div className="flex items-center justify-between p-4 rounded-lg bg-bg-elevated border border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all cursor-pointer group">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                  <BookOpen className="w-4 h-4 text-amber-500" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-text-primary group-hover:text-amber-500 transition-colors">
+                                    Chapter {chapterId}
+                                  </span>
+                                  <p className="text-xs text-text-muted mt-1">Review recommended based on your quiz performance</p>
+                                </div>
+                              </div>
+                              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
+                                <ArrowRight className="w-3 h-3 text-amber-500" />
+                              </div>
+                            </div>
                           </Link>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Explanation */}
+                  {/* Explanation - Enhanced Visual Design */}
                   {analysis.explanation && (
-                    <div className="bg-bg-elevated rounded-lg p-4 border-l-4 border-accent-primary">
-                      <p className="text-sm text-text-secondary">{analysis.explanation}</p>
+                    <div className="bg-gradient-to-r from-cosmic-primary/10 to-cosmic-purple/10 rounded-xl p-5 border border-cosmic-primary/30">
+                      <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-cosmic-primary/20 flex items-center justify-center">
+                          <AlertCircle className="w-4 h-4 text-cosmic-primary" />
+                        </div>
+                        AI Analysis
+                      </h4>
+                      <p className="text-sm text-text-secondary leading-relaxed">{analysis.explanation}</p>
                       {analysis.confidence_score !== undefined && (
-                        <p className="text-xs text-text-muted mt-2">
-                          Confidence: {Math.round(analysis.confidence_score * 100)}%
-                        </p>
+                        <div className="mt-4 flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-bg-elevated rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-cosmic-primary to-cosmic-purple rounded-full transition-all duration-500"
+                              style={{ width: `${analysis.confidence_score * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-text-primary">
+                            {Math.round(analysis.confidence_score * 100)}% confidence
+                          </span>
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-text-secondary">
-                  Take more quizzes to see your knowledge gap analysis.
-                </p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                    <Target className="w-8 h-8 text-cosmic-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-text-primary mb-2">Start Your Analysis</h3>
+                  <p className="text-text-secondary max-w-md mx-auto mb-6">
+                    Take more quizzes to unlock personalized knowledge gap analysis and learning recommendations.
+                  </p>
+                  <Link href="/quizzes">
+                    <Button variant="primary">Take a Quiz</Button>
+                  </Link>
+                </div>
               )}
             </CardContent>
           </Card>
