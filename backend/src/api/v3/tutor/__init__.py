@@ -20,6 +20,7 @@ from .quizzes import router as quizzes_router
 from .progress import router as progress_router
 from .ai import router as ai_router
 from .access import router as access_router
+from .teacher import router as teacher_router
 
 # Create main tutor router
 router = APIRouter()
@@ -55,6 +56,12 @@ router.include_router(
     tags=["Access & Subscription"]
 )
 
+router.include_router(
+    teacher_router,
+    prefix="/teacher",
+    tags=["Teacher Dashboard"]
+)
+
 
 @router.get("/", tags=["Root"])
 async def tutor_root():
@@ -63,19 +70,21 @@ async def tutor_root():
         "name": "Course Companion FTE - Unified Tutor API",
         "version": "3.0.0",
         "phase": "Phase 3 - Full LLM Integration",
-        "description": "Unified API combining content, quizzes, progress, and AI features",
+        "description": "Unified API combining content, quizzes, progress, AI, and teacher features",
         "endpoints": {
             "content": "/api/v3/tutor/content",
             "quizzes": "/api/v3/tutor/quizzes",
             "progress": "/api/v3/tutor/progress",
             "ai": "/api/v3/tutor/ai",
-            "access": "/api/v3/tutor/access"
+            "access": "/api/v3/tutor/access",
+            "teacher": "/api/v3/tutor/teacher"
         },
         "features": {
             "content_delivery": "Chapters, navigation, search",
             "quiz_grading": "Rule-based + LLM grading",
             "progress_tracking": "Completion, streaks, achievements",
             "ai_features": "Adaptive learning, AI mentor, personalized content",
-            "subscription": "Tier-based access control"
+            "subscription": "Tier-based access control",
+            "teacher_dashboard": "Analytics, student management, engagement metrics"
         }
     }
