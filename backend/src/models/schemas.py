@@ -355,3 +355,141 @@ class ErrorResponse(BaseModel):
 class MessageResponse(BaseModel):
     """Schema for generic message response."""
     message: str
+
+
+# =============================================================================
+# Gamification Schemas
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Tip Schemas
+# -----------------------------------------------------------------------------
+
+class TipBase(BaseModel):
+    """Base tip schema."""
+    content: str
+    category: str = Field(..., description="Category: study_habits, quiz_strategy, motivation, course_tips")
+    difficulty_level: Optional[str] = Field(None, description="beginner, intermediate, advanced or None for all")
+
+
+class TipCreate(TipBase):
+    """Schema for creating a tip."""
+    pass
+
+
+class Tip(TipBase):
+    """Schema for tip response."""
+    id: uuid.UUID
+    active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TipList(BaseModel):
+    """Schema for list of tips."""
+    tips: List[Tip]
+    total: int
+
+
+# -----------------------------------------------------------------------------
+# Leaderboard Schemas
+# -----------------------------------------------------------------------------
+
+class LeaderboardOptInCreate(BaseModel):
+    """Schema for opting into leaderboard."""
+    display_name: str = Field(..., min_length=1, max_length=50, description="Anonymous display name")
+    show_rank: bool = True
+    show_score: bool = True
+    show_streak: bool = True
+
+
+class LeaderboardOptInUpdate(BaseModel):
+    """Schema for updating leaderboard opt-in settings."""
+    display_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    is_opted_in: Optional[bool] = None
+    show_rank: Optional[bool] = None
+    show_score: Optional[bool] = None
+    show_streak: Optional[bool] = None
+
+
+class LeaderboardOptIn(BaseModel):
+    """Schema for leaderboard opt-in response."""
+    id: uuid.UUID
+    user_id: uuid.UUID
+    display_name: str
+    is_opted_in: bool
+    show_rank: bool
+    show_score: bool
+    show_streak: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class LeaderboardEntry(BaseModel):
+    """Schema for a single leaderboard entry."""
+    rank: int
+    user_id: uuid.UUID
+    display_name: str
+    xp: int = Field(..., description="Total experience points")
+    average_score: float = Field(..., description="Average quiz score percentage")
+    current_streak: int = Field(..., description="Current learning streak")
+    completed_chapters: int = Field(..., description="Number of completed chapters")
+
+
+class Leaderboard(BaseModel):
+    """Schema for leaderboard response."""
+    leaderboard: List[LeaderboardEntry]
+    total_entries: int
+    user_rank: Optional[int] = None  # User's rank if they've opted in
+    user_xp: Optional[int] = None  # User's XP if they've opted in
+
+
+# -----------------------------------------------------------------------------
+# Certificate Schemas
+# -----------------------------------------------------------------------------
+
+class CertificateGenerate(BaseModel):
+    """Schema for generating a certificate."""
+    student_name: str = Field(..., min_length=1, max_length=255, description="Full name for certificate")
+
+
+class Certificate(BaseModel):
+    """Schema for certificate response."""
+    id: uuid.UUID
+    certificate_id: str
+    user_id: uuid.UUID
+    student_name: str
+    completion_percentage: int
+    average_quiz_score: int
+    total_chapters_completed: int
+    total_streak_days: int
+    issued_at: datetime
+    verification_count: int
+
+    class Config:
+        from_attributes = True
+
+
+class CertificateVerification(BaseModel):
+    """Schema for certificate verification response."""
+    certificate_id: str
+    is_valid: bool
+    student_name: str
+    completion_percentage: int
+    average_quiz_score: int
+    total_chapters_completed: int
+    total_streak_days: int
+    issued_at: datetime
+    verified_at: datetime
+    verification_url: Optional[str] = None
+
+
+class CertificateList(BaseModel):
+    """Schema for list of user certificates."""
+    certificates: List[Certificate]
+    total: int

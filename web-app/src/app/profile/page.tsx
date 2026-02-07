@@ -3,19 +3,71 @@
 /**
  * User profile and settings page with Professional/Modern SaaS theme.
  */
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { useAuth } from '@/hooks';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { tutorApi, CertificateItem, CertificateEligibility } from '@/lib/api-v3';
 import Link from 'next/link';
-import { User, AlertTriangle, Lock, Gem, Download, Check, X } from 'lucide-react';
+import { User, AlertTriangle, Lock, Gem, Download, Check, X, Award, ExternalLink } from 'lucide-react';
 
 export default function ProfilePage() {
   const { data: user } = useAuth();
+  const [userId] = useLocalStorage('user_id', '');
+  const [certificates, setCertificates] = useState<CertificateItem[]>([]);
+  const [eligibility, setEligibility] = useState<CertificateEligibility | null>(null);
+  const [isLoadingCertificates, setIsLoadingCertificates] = useState(true);
 
   const isFree = !user || user.tier === 'free';
+
+  useEffect(() => {
+    if (userId) {
+      fetchCertificates();
+      fetchEligibility();
+    }
+  }, [userId]);
+
+  const fetchCertificates = async () => {
+    try {
+      const data = await tutorApi.getUserCertificates(userId);
+      setCertificates(data.certificates);
+    } catch (error) {
+      console.error('Failed to fetch certificates:', error);
+    } finally {
+      setIsLoadingCertificates(false);
+    }
+  };
+
+  const fetchEligibility = async () => {
+    try {
+      const data = await tutorApi.checkCertificateEligibility(userId);
+      setEligibility(data);
+    } catch (error) {
+      console.error('Failed to check eligibility:', error);
+    }
+  };
+
+  const handleGenerateCertificate = async () => {
+    if (!userId) return;
+
+    const studentName = prompt('Enter your full name for the certificate:');
+    if (!studentName || !studentName.trim()) return;
+
+    try {
+      await tutorApi.generateCertificate({ user_id: userId, student_name: studentName.trim() });
+      await fetchCertificates();
+      await fetchEligibility();
+      alert('Certificate generated successfully!');
+    } catch (error: any) {
+      console.error('Failed to generate certificate:', error);
+      alert(error.message || 'Failed to generate certificate. Please ensure you meet all requirements.');
+    }
+  };
 
   return (
     <PageContainer>
@@ -195,6 +247,112 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Certificates Section - Gamification Feature */}
+      <GlassCard className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary to-cosmic-purple flex items-center justify-center">
+              <Award className="w-5 h-5 text-white" />
+            </div>
+            Certificates
+          </CardTitle>
+          <CardDescription>
+            Course completion certificates (Requirements: 100% completion, 70%+ average score)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Eligibility Status */}
+          {eligibility && (
+            <div className={`p-4 rounded-lg border mb-4 ${
+              eligibility.eligible
+                ? 'bg-green-500/10 border-green-500/30'
+                : 'bg-glass-hover border-glass-border'
+            }`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  {eligibility.eligible ? (
+                    <Check className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  )}
+                  <span className="font-semibold text-text-primary">
+                    {eligibility.eligible ? 'Eligible for Certificate!' : 'Not Yet Eligible'}
+                  </span>
+                </div>
+                {eligibility.eligible && (
+                  <Button variant="primary" onClick={handleGenerateCertificate}>
+                    <Award className="w-4 h-4 mr-1" />
+                    Generate Certificate
+                  </Button>
+                )}
+              </div>
+              {!eligibility.eligible && (
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-text-secondary">Completion: </span>
+                    <span className={`font-semibold ${eligibility.completion_percentage >= eligibility.min_completion_required ? 'text-green-500' : 'text-text-primary'}`}>
+                      {eligibility.completion_percentage}% / {eligibility.min_completion_required}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-text-secondary">Average Score: </span>
+                    <span className={`font-semibold ${eligibility.average_score >= eligibility.min_score_required ? 'text-green-500' : 'text-text-primary'}`}>
+                      {eligibility.average_score}% / {eligibility.min_score_required}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Certificates List */}
+          <div className="space-y-3">
+            {isLoadingCertificates ? (
+              <div className="text-center py-8 text-text-secondary">Loading certificates...</div>
+            ) : certificates.length === 0 ? (
+              <div className="text-center py-8 text-text-secondary">
+                <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No certificates yet. Complete all course requirements to earn one!</p>
+              </div>
+            ) : (
+              certificates.map((cert) => (
+                <div
+                  key={cert.id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-glass-hover border border-glass-border"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono font-bold text-cosmic-primary">{cert.certificate_id}</span>
+                      <Badge variant="success">Verified</Badge>
+                    </div>
+                    <div className="text-sm text-text-secondary">
+                      Issued to <span className="text-text-primary font-medium">{cert.student_name}</span>
+                      {' '} on {new Date(cert.issued_at).toLocaleDateString()}
+                    </div>
+                    <div className="flex gap-4 mt-2 text-xs text-text-secondary">
+                      <span>Completion: {cert.completion_percentage}%</span>
+                      <span>Avg Score: {cert.average_quiz_score}%</span>
+                      <span>Chapters: {cert.total_chapters_completed}</span>
+                      <span>Streak: {cert.total_streak_days} days</span>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/certificate/verify/${cert.certificate_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <ExternalLink className="w-4 h-4" />
+                      View
+                    </Button>
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </GlassCard>
 
       {/* Danger Zone */}
       <Card className="mt-6 border-accent-danger/30">

@@ -750,6 +750,284 @@ class TutorV3Client {
       }
     );
   }
+
+  // =========================================================================
+  // Gamification: Tips API
+  // =========================================================================
+
+  /**
+   * Get all tips with optional filtering
+   */
+  async getTips(params?: {
+    category?: string;
+    difficulty_level?: string;
+    active_only?: boolean;
+  }): Promise<{ tips: TipItem[]; total: number }> {
+    const queryParams = new URLSearchParams();
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.difficulty_level) queryParams.append('difficulty_level', params.difficulty_level);
+    if (params?.active_only !== undefined) queryParams.append('active_only', String(params.active_only));
+
+    const queryString = queryParams.toString();
+    return this.request(
+      `/api/v3/tutor/tips/${queryString ? `?${queryString}` : ''}`
+    );
+  }
+
+  /**
+   * Get a random tip for dashboard
+   */
+  async getRandomTip(params?: {
+    category?: string;
+    difficulty_level?: string;
+  }): Promise<TipItem> {
+    const queryParams = new URLSearchParams();
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.difficulty_level) queryParams.append('difficulty_level', params.difficulty_level);
+
+    const queryString = queryParams.toString();
+    return this.request(
+      `/api/v3/tutor/tips/random${queryString ? `?${queryString}` : ''}`
+    );
+  }
+
+  // =========================================================================
+  // Gamification: Leaderboard API
+  // =========================================================================
+
+  /**
+   * Get global leaderboard
+   */
+  async getLeaderboard(params?: {
+    limit?: number;
+    user_id?: string;
+  }): Promise<LeaderboardData> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.user_id) queryParams.append('user_id', params.user_id);
+
+    const queryString = queryParams.toString();
+    return this.request(
+      `/api/v3/tutor/leaderboard/${queryString ? `?${queryString}` : ''}`
+    );
+  }
+
+  /**
+   * Get user's leaderboard opt-in status
+   */
+  async getLeaderboardOptInStatus(userId: string): Promise<LeaderboardOptInStatus | null> {
+    return this.request<LeaderboardOptInStatus | null>(
+      `/api/v3/tutor/leaderboard/opt-in-status?user_id=${userId}`
+    );
+  }
+
+  /**
+   * Opt in to leaderboard
+   */
+  async optInToLeaderboard(data: {
+    user_id: string;
+    display_name: string;
+    show_rank?: boolean;
+    show_score?: boolean;
+    show_streak?: boolean;
+  }): Promise<LeaderboardOptInStatus> {
+    return this.request(
+      `/api/v3/tutor/leaderboard/opt-in?user_id=${data.user_id}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          display_name: data.display_name,
+          show_rank: data.show_rank ?? true,
+          show_score: data.show_score ?? true,
+          show_streak: data.show_streak ?? true,
+        }),
+      }
+    );
+  }
+
+  /**
+   * Opt out from leaderboard
+   */
+  async optOutFromLeaderboard(userId: string): Promise<{ message: string }> {
+    return this.request(
+      `/api/v3/tutor/leaderboard/opt-out?user_id=${userId}`,
+      { method: 'POST' }
+    );
+  }
+
+  /**
+   * Update leaderboard privacy settings
+   */
+  async updateLeaderboardSettings(userId: string, settings: {
+    display_name?: string;
+    is_opted_in?: boolean;
+    show_rank?: boolean;
+    show_score?: boolean;
+    show_streak?: boolean;
+  }): Promise<LeaderboardOptInStatus> {
+    return this.request(
+      `/api/v3/tutor/leaderboard/opt-in-settings?user_id=${userId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      }
+    );
+  }
+
+  /**
+   * Get user rank on leaderboard
+   */
+  async getUserRank(userId: string): Promise<{ user_id: string; rank: number }> {
+    return this.request(
+      `/api/v3/tutor/leaderboard/rank/${userId}`
+    );
+  }
+
+  /**
+   * Get user stats for leaderboard
+   */
+  async getUserStats(userId: string): Promise<UserStats> {
+    return this.request(
+      `/api/v3/tutor/leaderboard/stats/${userId}`
+    );
+  }
+
+  // =========================================================================
+  // Gamification: Certificates API
+  // =========================================================================
+
+  /**
+   * Check certificate eligibility
+   */
+  async checkCertificateEligibility(userId: string): Promise<CertificateEligibility> {
+    return this.request(
+      `/api/v3/tutor/certificates/check-eligibility`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId }),
+      }
+    );
+  }
+
+  /**
+   * Generate a certificate
+   */
+  async generateCertificate(data: {
+    user_id: string;
+    student_name: string;
+  }): Promise<CertificateItem> {
+    return this.request(
+      `/api/v3/tutor/certificates/generate?user_id=${data.user_id}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ student_name: data.student_name }),
+      }
+    );
+  }
+
+  /**
+   * Get user's certificates
+   */
+  async getUserCertificates(userId: string): Promise<{ certificates: CertificateItem[]; total: number }> {
+    return this.request(
+      `/api/v3/tutor/certificates?user_id=${userId}`
+    );
+  }
+
+  /**
+   * Verify a certificate (public endpoint, no auth required)
+   */
+  async verifyCertificate(certificateId: string): Promise<CertificateVerification> {
+    return this.request(
+      `/api/v3/certificate/verify/${certificateId}`
+    );
+  }
+}
+
+// =============================================================================
+// Additional Types for Gamification
+// =============================================================================
+
+export interface TipItem {
+  id: string;
+  content: string;
+  category: string;
+  difficulty_level: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: string;
+  display_name: string;
+  xp: number;
+  average_score: number;
+  current_streak: number;
+  completed_chapters: number;
+}
+
+export interface LeaderboardData {
+  leaderboard: LeaderboardEntry[];
+  total_entries: number;
+  user_rank: number | null;
+  user_xp: number | null;
+}
+
+export interface LeaderboardOptInStatus {
+  id: string;
+  user_id: string;
+  display_name: string;
+  is_opted_in: boolean;
+  show_rank: boolean;
+  show_score: boolean;
+  show_streak: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserStats {
+  average_score: number;
+  completed_chapters: number;
+  current_streak: number;
+  xp: number;
+}
+
+export interface CertificateEligibility {
+  eligible: boolean;
+  completion_percentage: number;
+  average_score: number;
+  completed_chapters: number;
+  total_streak_days: number;
+  min_completion_required: number;
+  min_score_required: number;
+  reason: string | null;
+}
+
+export interface CertificateItem {
+  id: string;
+  certificate_id: string;
+  user_id: string;
+  student_name: string;
+  completion_percentage: number;
+  average_quiz_score: number;
+  total_chapters_completed: number;
+  total_streak_days: number;
+  issued_at: string;
+  verification_count: number;
+}
+
+export interface CertificateVerification {
+  certificate_id: string;
+  is_valid: boolean;
+  student_name: string;
+  completion_percentage: number;
+  average_quiz_score: number;
+  total_chapters_completed: number;
+  total_streak_days: number;
+  issued_at: string;
+  verified_at: string;
+  verification_url: string | null;
 }
 
 // Export singleton instance

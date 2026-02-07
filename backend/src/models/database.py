@@ -22,6 +22,7 @@ from sqlalchemy import (
     Index,
     UniqueConstraint,
     CheckConstraint,
+    Boolean,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -101,6 +102,17 @@ class User(Base):
     )
     quiz_attempts: Mapped[List["QuizAttempt"]] = relationship(
         "QuizAttempt",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    leaderboard_opt_in: Mapped[Optional["LeaderboardOptIn"]] = relationship(
+        "LeaderboardOptIn",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    certificates: Mapped[List["Certificate"]] = relationship(
+        "Certificate",
         back_populates="user",
         cascade="all, delete-orphan"
     )
@@ -430,3 +442,193 @@ class LLMCost(Base):
 
     def __repr__(self) -> str:
         return f"<LLMCost(id={self.id}, user_id={self.user_id}, feature={self.feature}, cost=${self.cost_usd:.4f})>"
+
+
+# =============================================================================
+# Gamification Tables
+# =============================================================================
+
+
+class Tip(Base):
+    """Learning tips for students to display on dashboard."""
+
+    __tablename__ = "tips"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # "study_habits", "quiz_strategy", "motivation", "course_tips"
+    difficulty_level: Mapped[Optional[str]] = mapped_column(
+        String(20),
+        nullable=True
+    )  # "beginner", "intermediate", "advanced" or None for all
+    active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False
+    )
+
+    __table_args__ = (
+        Index("idx_tips_category", "category"),
+        Index("idx_tips_active", "active"),
+        CheckConstraint("active IN (true, false)", name="check_tip_active"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Tip(id={self.id}, category={self.category}, active={self.active})>"
+
+
+class LeaderboardOptIn(Base):
+    """User opt-in for global leaderboard with privacy controls."""
+
+    __tablename__ = "leaderboard_opt_in"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
+        ForeignKey("users.id"),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+    display_name: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # Anonymous display name
+    is_opted_in: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+    show_rank: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+    show_score: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+    show_streak: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="leaderboard_opt_in"
+    )
+
+    __table_args__ = (
+        Index("idx_leaderboard_opt_in_user_id", "user_id", unique=True),
+        Index("idx_leaderboard_opt_in_opted_in", "is_opted_in"),
+        CheckConstraint("is_opted_in IN (true, false)", name="check_opted_in"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<LeaderboardOptIn(id={self.id}, display_name={self.display_name}, is_opted_in={self.is_opted_in})>"
+
+
+class Certificate(Base):
+    """Course completion certificates for students."""
+
+    __tablename__ = "certificates"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    certificate_id: Mapped[str] = mapped_column(
+        String(20),
+        unique=True,
+        nullable=False,
+        index=True
+    )  # CERT-XXXXXX format
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+    student_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )  # Full name for certificate
+    completion_percentage: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )  # 100 for course completion
+    average_quiz_score: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )  # Average percentage score
+    total_chapters_completed: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    total_streak_days: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+    issued_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False
+    )
+    verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime,
+        nullable=True
+    )  # Last time certificate was verified
+    verification_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False
+    )  # How many times verified
+
+    # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="certificates"
+    )
+
+    __table_args__ = (
+        Index("idx_certificates_certificate_id", "certificate_id", unique=True),
+        Index("idx_certificates_user_id", "user_id"),
+        CheckConstraint("completion_percentage >= 0 AND completion_percentage <= 100", name="check_cert_completion_range"),
+        CheckConstraint("average_quiz_score >= 0 AND average_quiz_score <= 100", name="check_cert_score_range"),
+        CheckConstraint("total_chapters_completed >= 0", name="check_cert_chapters_non_negative"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Certificate(id={self.id}, certificate_id={self.certificate_id}, user_id={self.user_id})>"

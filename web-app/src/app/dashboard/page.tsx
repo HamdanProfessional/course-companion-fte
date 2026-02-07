@@ -16,6 +16,7 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useProgress, useStreak, useChapters } from '@/hooks';
 import { pageVariants, staggerContainer } from '@/lib/animations';
 import { getMistakeStats } from '@/lib/mistakeBank';
+import { TipOfTheDay } from '@/components/TipOfTheDay';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -205,6 +206,16 @@ export default function DashboardPage() {
             icon={<BookOpen className="h-6 w-6" />}
             variant="cosmic"
           />
+        </motion.div>
+
+        {/* Tip of the Day - Gamification Feature */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <TipOfTheDay />
         </motion.div>
 
         {/* Course Outline */}
