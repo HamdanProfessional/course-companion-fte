@@ -13,7 +13,7 @@ import { QuizCard } from '@/components/ui/QuizCard';
 import { EmptyStates } from '@/components/ui/EmptyState';
 import { useQuizzes, useChapters, useProgress } from '@/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { FileEdit, Sprout, Rocket, BookOpen, BarChart3 } from 'lucide-react';
+import { FileEdit, Sprout, Rocket, BookOpen, BarChart3, TrendingUp } from 'lucide-react';
 
 export default function QuizzesPage() {
   const { data: quizzes, isLoading: quizzesLoading } = useQuizzes();
