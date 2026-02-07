@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
-import { BookOpen, FileEdit, BarChart3, AlertTriangle, Info, Hourglass } from 'lucide-react';
+import { BookOpen, FileEdit, BarChart3, AlertTriangle, Info, Hourglass, Search, Trophy, Flame, Award, Inbox } from 'lucide-react';
 
 /**
  * EmptyState component for consistent empty state UI across the app.
@@ -32,7 +32,7 @@ export interface EmptyStateProps {
 }
 
 export function EmptyState({
-  icon = '📭',
+  icon = <Inbox className="w-8 h-8" />,
   title,
   description,
   actionLabel,
@@ -154,7 +154,9 @@ export const EmptyStates = {
 
   NoSearchResults: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="🔍"
+      icon={<div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+        <Search className="w-6 h-6 text-accent-primary" />
+      </div>}
       title="No results found"
       description="Try different keywords or browse categories."
       size="sm"
@@ -164,7 +166,9 @@ export const EmptyStates = {
 
   NoAchievements: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="🏆"
+      icon={<div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+        <Trophy className="w-10 h-10 text-accent-premium" />
+      </div>}
       title="No achievements yet"
       description="Complete chapters and quizzes to earn achievements!"
       actionLabel="Start Learning"
@@ -175,7 +179,9 @@ export const EmptyStates = {
 
   NoStreak: (props?: Partial<EmptyStateProps>) => (
     <EmptyState
-      icon="🔥"
+      icon={<div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+        <Flame className="w-6 h-6 text-accent-warning" />
+      </div>}
       title="Start your streak"
       description="Practice daily to build a learning streak."
       size="sm"

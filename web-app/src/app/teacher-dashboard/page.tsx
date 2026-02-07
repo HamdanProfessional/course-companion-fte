@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
-import { Users, TrendingUp, Award, BookOpen, MessageSquare, CheckCircle, BarChart3, FileEdit, GraduationCap, Target } from 'lucide-react';
+import { Users, TrendingUp, Award, BookOpen, MessageSquare, CheckCircle, BarChart3, FileEdit, GraduationCap, Target, Flame, AlertTriangle, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useTeacherAnalytics, useTeacherStudents } from '@/hooks';
 
@@ -158,7 +158,10 @@ function StudentProgressRow({
         </div>
         <div className="text-center">
           <p className="text-xs text-text-muted mb-1">Streak</p>
-          <p className="text-sm font-medium text-text-primary">🔥 {streak}</p>
+          <p className="text-sm font-medium text-text-primary flex items-center justify-center gap-1">
+            <Flame className="w-4 h-4" />
+            {streak}
+          </p>
         </div>
         <div className="text-center">
           <p className="text-xs text-text-muted mb-1">Tier</p>
@@ -343,7 +346,9 @@ export default function TeacherDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">🏆</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-accent-premium" />
+              </div>
               Top Performers
             </CardTitle>
           </CardHeader>
@@ -360,7 +365,10 @@ export default function TeacherDashboardPage() {
                       <p className="text-sm text-text-muted">{student.progress}% complete</p>
                     </div>
                   </div>
-                  <Badge variant="success">🔥 {student.streak} day streak</Badge>
+                  <Badge variant="success" className="gap-1">
+                    <Flame className="w-3 h-3" />
+                    {student.streak} day streak
+                  </Badge>
                 </div>
               ))}
               {displayStudents.length === 0 && (
@@ -374,7 +382,9 @@ export default function TeacherDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">⚠️</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-accent-warning" />
+              </div>
               Needs Attention
             </CardTitle>
           </CardHeader>

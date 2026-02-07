@@ -185,7 +185,9 @@ export default function QuizzesPage() {
           {intermediateQuizzes.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
-                <div className="text-4xl mb-3">📈</div>
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+                  <TrendingUp className="w-8 h-8 text-accent-info" />
+                </div>
                 <p className="text-text-secondary">No intermediate quizzes yet.</p>
               </CardContent>
             </Card>

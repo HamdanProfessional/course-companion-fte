@@ -19,7 +19,7 @@ import { getMistakeStats } from '@/lib/mistakeBank';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Trophy, TrendingUp, Zap, FileText, Target, BarChart3, Brain, Bot, Clock, AlertCircle } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Zap, FileText, Target, BarChart3, Brain, Bot, Clock, AlertCircle, Check } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -270,7 +270,10 @@ export default function DashboardPage() {
                                 animate={{ scale: 1 }}
                                 transition={{ type: 'spring', stiffness: 200 }}
                               >
-                                <Badge variant="success">✓ Completed</Badge>
+                                <Badge variant="success" className="gap-1">
+                                  <Check className="w-3 h-3" />
+                                  Completed
+                                </Badge>
                               </motion.div>
                             ) : (
                               <span className="text-text-secondary text-sm font-medium group-hover:text-cosmic-primary transition-colors">

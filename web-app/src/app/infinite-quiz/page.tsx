@@ -93,17 +93,17 @@ export default function InfiniteQuizPage() {
   const getTopicIcon = (icon: string) => {
     const icons: Record<string, React.ReactNode> = {
       'JS': <Code className="w-6 h-6" />,
-      '🐍': <Braces className="w-6 h-6" />,
-      '⚛️': <Sparkles className="w-6 h-6" />,
-      '🔌': <Globe className="w-6 h-6" />,
-      '🗃️': <Target className="w-6 h-6" />,
-      '📦': <Package className="w-6 h-6" />,
-      '🐳': <Zap className="w-6 h-6" />,
-      '📘': <FileText className="w-6 h-6" />,
-      '💚': <Activity className="w-6 h-6" />,
-      '🧪': <Beaker className="w-6 h-6" />,
-      '🏗️': <Box className="w-6 h-6" />,
-      '⚡': <Zap className="w-6 h-6" />,
+      'python': <Braces className="w-6 h-6" />,
+      'react': <Sparkles className="w-6 h-6" />,
+      'api': <Globe className="w-6 h-6" />,
+      'sql': <Target className="w-6 h-6" />,
+      'git': <Package className="w-6 h-6" />,
+      'docker': <Zap className="w-6 h-6" />,
+      'typescript': <FileText className="w-6 h-6" />,
+      'nodejs': <Activity className="w-6 h-6" />,
+      'testing': <Beaker className="w-6 h-6" />,
+      'data-structures': <Box className="w-6 h-6" />,
+      'algorithms': <Zap className="w-6 h-6" />,
     };
     return icons[icon] || <BookOpen className="w-6 h-6" />;
   };
@@ -243,8 +243,8 @@ export default function InfiniteQuizPage() {
               <p className="text-lg text-text-secondary mb-4">
                 You scored {score.correct} out of {score.total}
               </p>
-              <Badge variant={passed ? 'success' : 'warning'} className="text-base px-4 py-2">
-                {passed ? '✓ Passed' : 'Keep practicing (70% required)'}
+              <Badge variant={passed ? 'success' : 'warning'} className="text-base px-4 py-2 gap-1">
+                {passed ? <><CheckCircle2 className="w-4 h-4" /> Passed</> : 'Keep practicing (70% required)'}
               </Badge>
             </CardContent>
           </Card>
@@ -327,8 +327,9 @@ export default function InfiniteQuizPage() {
                                 Correct answer: {q.options[q.correctAnswer]}
                               </p>
                             )}
-                            <p className="text-text-muted italic text-xs mt-2">
-                              💡 {q.explanation}
+                            <p className="text-text-muted italic text-xs mt-2 flex items-start gap-1">
+                              <Lightbulb className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                              <span>{q.explanation}</span>
                             </p>
                           </div>
                         </div>

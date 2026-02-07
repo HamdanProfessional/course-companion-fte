@@ -15,7 +15,7 @@ import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useV3DataExport } from '@/hooks/useV3';
-import { Info } from 'lucide-react';
+import { Info, BarChart3, FileEdit, Flame, Trophy, Check } from 'lucide-react';
 import Link from 'next/link';
 
 const DATA_CATEGORIES = {
@@ -23,25 +23,25 @@ const DATA_CATEGORIES = {
     id: 'progress',
     name: 'Learning Progress',
     description: 'Chapter completion, current chapter, timestamps',
-    icon: '📊',
+    icon: 'BarChart3',
   },
   quiz_history: {
     id: 'quiz_history',
     name: 'Quiz History',
     description: 'All quiz attempts, scores, answers, and timestamps',
-    icon: '📝',
+    icon: 'FileEdit',
   },
   streaks: {
     id: 'streaks',
     name: 'Streak Data',
     description: 'Daily checkins, current and longest streaks',
-    icon: '🔥',
+    icon: 'Flame',
   },
   achievements: {
     id: 'achievements',
     name: 'Achievements',
     description: 'Unlocked achievements, unlock dates, progress',
-    icon: '🏆',
+    icon: 'Trophy',
   },
 };
 
@@ -50,6 +50,16 @@ const EXPORT_FORMATS = [
   { value: 'csv', label: 'CSV', description: 'Spreadsheet-compatible format' },
   { value: 'pdf', label: 'PDF', description: 'Human-readable report document' },
 ];
+
+const getCategoryIcon = (iconName: string) => {
+  const icons: Record<string, React.ReactNode> = {
+    'BarChart3': <BarChart3 className="w-6 h-6 text-accent-primary" />,
+    'FileEdit': <FileEdit className="w-6 h-6 text-accent-primary" />,
+    'Flame': <Flame className="w-6 h-6 text-accent-primary" />,
+    'Trophy': <Trophy className="w-6 h-6 text-accent-primary" />,
+  };
+  return icons[iconName] || <BarChart3 className="w-6 h-6 text-accent-primary" />;
+};
 
 export default function DataExportPage() {
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
@@ -145,7 +155,7 @@ export default function DataExportPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <span className="text-2xl">{category.icon}</span>
+                      <div className="text-2xl">{getCategoryIcon(category.icon)}</div>
                       <div>
                         <h4 className="font-medium text-text-primary">{category.name}</h4>
                         <p className="text-sm text-text-muted mt-1">{category.description}</p>
@@ -233,7 +243,7 @@ export default function DataExportPage() {
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-accent-success/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-accent-success text-lg">✓</span>
+                  <Check className="w-6 h-6 text-accent-success" />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-text-primary mb-1">Export Ready</h4>

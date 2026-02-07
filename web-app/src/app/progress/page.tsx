@@ -29,7 +29,7 @@ import {
   useV3Chapters,
 } from '@/hooks/useV3';
 import type { AchievementItem, ChapterProgress, ScoreHistoryItem } from '@/lib/api-v3';
-import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3, Rocket, Calendar, Clock } from 'lucide-react';
+import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3, Rocket, Calendar, Clock, Check, TrendingUp } from 'lucide-react';
 
 export default function ProgressPage() {
   const router = useRouter();
@@ -82,12 +82,12 @@ export default function ProgressPage() {
   const totalAchievementsCount = achievements?.length || 0;
 
   const milestones = [
-    { milestone: 'Started Learning', completed: true, icon: '🚀', Icon: Rocket, description: 'Began your journey' },
-    { milestone: 'First Chapter', completed: completedChapters.length >= 1, icon: '📖', Icon: BookOpen, description: 'Completed first chapter' },
-    { milestone: '3-Day Streak', completed: longestStreak >= 3, icon: '🔥', Icon: Flame, description: '3 consecutive days' },
-    { milestone: 'Week Streak', completed: longestStreak >= 7, icon: '⭐', Icon: Star, description: '7 consecutive days' },
-    { milestone: 'Halfway There', completed: completedChapters.length >= totalChapters / 2, icon: '🎯', Icon: Target, description: '50% complete' },
-    { milestone: 'Course Complete', completed: completedChapters.length >= totalChapters, icon: '🎓', Icon: GraduationCap, description: '100% complete' },
+    { milestone: 'Started Learning', completed: true, icon: '', Icon: Rocket, description: 'Began your journey' },
+    { milestone: 'First Chapter', completed: completedChapters.length >= 1, icon: '', Icon: BookOpen, description: 'Completed first chapter' },
+    { milestone: '3-Day Streak', completed: longestStreak >= 3, icon: '', Icon: Flame, description: '3 consecutive days' },
+    { milestone: 'Week Streak', completed: longestStreak >= 7, icon: '', Icon: Star, description: '7 consecutive days' },
+    { milestone: 'Halfway There', completed: completedChapters.length >= totalChapters / 2, icon: '', Icon: Target, description: '50% complete' },
+    { milestone: 'Course Complete', completed: completedChapters.length >= totalChapters, icon: '', Icon: GraduationCap, description: '100% complete' },
   ];
 
   const handleCheckin = async () => {
@@ -452,7 +452,7 @@ export default function ProgressPage() {
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                     item.completed ? 'bg-accent-success/20' : 'bg-bg-elevated'
                   }`}>
-                    {item.Icon ? <item.Icon className={`w-6 h-6 ${item.completed ? 'text-accent-success' : 'text-text-muted'}`} /> : <span className="text-2xl">{item.icon}</span>}
+                    <item.Icon className={`w-6 h-6 ${item.completed ? 'text-accent-success' : 'text-text-muted'}`} />
                   </div>
                 </div>
                 <div className="flex-1">
@@ -463,7 +463,7 @@ export default function ProgressPage() {
                 </div>
                 {item.completed && (
                   <div className="w-8 h-8 rounded-full bg-accent-success/20 flex items-center justify-center">
-                    <span className="text-accent-success">✓</span>
+                    <Check className="w-5 h-5 text-accent-success" />
                   </div>
                 )}
               </div>
@@ -504,7 +504,7 @@ export default function ProgressPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-accent-success/20 flex items-center justify-center">
-                        <span className="text-accent-success">✓</span>
+                        <Check className="w-5 h-5 text-accent-success" />
                       </div>
                       <div>
                         <h4 className="font-medium text-text-primary">{chapter.title}</h4>

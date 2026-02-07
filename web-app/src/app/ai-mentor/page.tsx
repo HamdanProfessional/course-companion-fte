@@ -646,7 +646,7 @@ export default function AIMentorPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <span>⚡</span>
+                <Zap className="w-4 h-4" />
                 AI Status
               </CardTitle>
             </CardHeader>

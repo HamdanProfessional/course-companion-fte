@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
-import { Bot, AlertTriangle, Target, BookOpen, Zap } from 'lucide-react';
+import { Bot, AlertTriangle, Target, BookOpen, Zap, Lock, Lightbulb, Check } from 'lucide-react';
 import {
   useChapterRecommendations,
   useKnowledgeAnalysis,
@@ -55,7 +55,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
       <Card variant="elevated" className="border-l-4 border-l-accent-warning">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-2xl">🔒</span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+              <Lock className="w-6 h-6 text-accent-warning" />
+            </div>
             AI-Powered Features
             <Badge variant="premium">Pro</Badge>
           </CardTitle>
@@ -197,8 +199,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
                   ))}
                 </div>
                 {analysis.explanation && (
-                  <p className="text-xs text-text-muted mt-3 italic">
-                    💡 {analysis.explanation}
+                  <p className="text-xs text-text-muted mt-3 italic flex items-start gap-1">
+                    <Lightbulb className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span>{analysis.explanation}</span>
                   </p>
                 )}
               </div>
@@ -217,8 +220,9 @@ export function AIRecommendations({ userId }: AIRecommendationsProps) {
                 <h4 className="font-semibold text-text-primary mb-2">Your Strengths</h4>
                 <div className="flex flex-wrap gap-2">
                   {analysis.strong_topics.map((topic, index) => (
-                    <Badge key={index} variant="success">
-                      ✓ {topic}
+                    <Badge key={index} variant="success" className="gap-1">
+                      <Check className="w-3 h-3" />
+                      {topic}
                     </Badge>
                   ))}
                 </div>

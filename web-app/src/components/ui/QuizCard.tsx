@@ -69,7 +69,10 @@ export function QuizCard({
                 </p>
               )}
               <div className="flex items-center gap-4 text-sm text-text-muted">
-                <span>📝 {questionCount} questions</span>
+                <span className="flex items-center gap-1">
+                  <FileEdit className="w-4 h-4" />
+                  {questionCount} questions
+                </span>
                 {bestScore !== undefined && (
                   <span className={bestScore >= 70 ? 'text-accent-success' : 'text-accent-warning'}>
                     Best: {bestScore}%

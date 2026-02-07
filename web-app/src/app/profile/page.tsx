@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useAuth } from '@/hooks';
 import Link from 'next/link';
-import { User, AlertTriangle } from 'lucide-react';
+import { User, AlertTriangle, Lock, Gem, Download, Check, X } from 'lucide-react';
 
 export default function ProfilePage() {
   const { data: user } = useAuth();
@@ -71,7 +71,9 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">🔒</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-accent-warning" />
+                </div>
                 Change Password
               </CardTitle>
               <CardDescription>Update your password</CardDescription>
@@ -105,7 +107,9 @@ export default function ProfilePage() {
           <Card variant={isFree ? 'default' : 'elevated'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <span className="text-xl">💎</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+                  <Gem className="w-5 h-5 text-accent-premium" />
+                </div>
                 Subscription
               </CardTitle>
               <CardDescription>Your current plan</CardDescription>
@@ -153,7 +157,7 @@ export default function ProfilePage() {
                   ]).map((item, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <span className={item.included ? 'text-accent-success' : 'text-text-muted'}>
-                        {item.included ? '✓' : '✗'}
+                        {item.included ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                       </span>
                       <span className={item.included ? 'text-text-primary' : 'text-text-muted'}>
                         {item.benefit}
@@ -177,7 +181,9 @@ export default function ProfilePage() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-xl">📥</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+              <Download className="w-5 h-5 text-accent-primary" />
+            </div>
             Data Export
           </CardTitle>
           <CardDescription>Download your learning data (GDPR compliance)</CardDescription>

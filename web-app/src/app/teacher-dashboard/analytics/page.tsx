@@ -18,6 +18,7 @@ import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useTeacherQuizAnalytics, type QuizPerformance, type QuestionAnalysis } from '@/hooks';
+import { BarChart3, FileEdit, Clock, AlertTriangle, TrendingUp, Lightbulb, Target, Download, Mail } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TeacherAnalyticsPage() {
@@ -131,7 +132,9 @@ export default function TeacherAnalyticsPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl">📊</span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-accent-info" />
+            </div>
             Quiz Performance Breakdown
           </CardTitle>
         </CardHeader>
@@ -205,7 +208,9 @@ export default function TeacherAnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">📝</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+                <FileEdit className="w-6 h-6 text-accent-primary" />
+              </div>
               Question Analysis
             </CardTitle>
             <p className="text-sm text-text-muted">
@@ -238,16 +243,17 @@ export default function TeacherAnalyticsPage() {
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-text-muted">
-                      <span>⏱️ {q.average_time}s avg time</span>
-                      <span>📊 {q.total_attempts} attempts</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {q.average_time}s avg time</span>
+                      <span className="flex items-center gap-1"><BarChart3 className="w-3 h-3" /> {q.total_attempts} attempts</span>
                       <Badge variant={getDifficultyVariant(q.difficulty)} className="capitalize">
                         {q.difficulty}
                       </Badge>
                     </div>
                     {q.correct_rate < 70 && (
                       <div className="mt-2 pt-2 border-t border-border-subtle">
-                        <p className="text-xs text-accent-warning">
-                          ⚠️ Below target - consider reviewing this topic
+                        <p className="text-xs text-accent-warning flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Below target - consider reviewing this topic
                         </p>
                       </div>
                     )}
@@ -262,7 +268,9 @@ export default function TeacherAnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">📈</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-accent-success" />
+              </div>
               Performance Insights
             </CardTitle>
           </CardHeader>
@@ -283,7 +291,9 @@ export default function TeacherAnalyticsPage() {
 
             <div className="p-4 rounded-lg bg-accent-warning/10 border border-accent-warning/30">
               <div className="flex items-start gap-3">
-                <span className="text-2xl">⚠️</span>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-accent-warning" />
+                </div>
                 <div>
                   <p className="font-medium text-text-primary mb-1">Needs Attention</p>
                   <p className="text-sm text-text-secondary">
@@ -297,7 +307,9 @@ export default function TeacherAnalyticsPage() {
 
             <div className="p-4 rounded-lg bg-accent-info/10 border border-accent-info/30">
               <div className="flex items-start gap-3">
-                <span className="text-2xl">💡</span>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="w-6 h-6 text-accent-info" />
+                </div>
                 <div>
                   <p className="font-medium text-text-primary mb-1">Recommendation</p>
                   <p className="text-sm text-text-secondary">
@@ -311,7 +323,9 @@ export default function TeacherAnalyticsPage() {
 
             <div className="p-4 rounded-lg bg-accent-primary/10 border border-accent-primary/30">
               <div className="flex items-start gap-3">
-                <span className="text-2xl">🎯</span>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Target className="w-6 h-6 text-accent-primary" />
+                </div>
                 <div>
                   <p className="font-medium text-text-primary mb-1">Next Steps</p>
                   <p className="text-sm text-text-secondary">
@@ -329,15 +343,18 @@ export default function TeacherAnalyticsPage() {
         <CardContent className="p-6">
           <div className="flex flex-wrap gap-4">
             <Link href="/teacher-dashboard/content">
-              <Button variant="primary">
-                📝 Edit Quiz Content
+              <Button variant="primary" className="gap-2">
+                <FileEdit className="w-4 h-4" />
+                Edit Quiz Content
               </Button>
             </Link>
-            <Button variant="outline">
-              📥 Export Analytics Report
+            <Button variant="outline" className="gap-2">
+              <Download className="w-4 h-4" />
+              Export Analytics Report
             </Button>
-            <Button variant="outline">
-              📧 Email Students
+            <Button variant="outline" className="gap-2">
+              <Mail className="w-4 h-4" />
+              Email Students
             </Button>
           </div>
         </CardContent>

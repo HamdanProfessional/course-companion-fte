@@ -17,7 +17,7 @@ import { useV3QuizSubmit } from '@/hooks/useV3';
 import type { QuizSubmission, QuizGradingResult } from '@/lib/api-v3';
 import { tutorApi } from '@/lib/api-v3';
 import { addMistakesFromQuiz } from '@/lib/mistakeBank';
-import { Bot, Trophy, BookOpen, AlertTriangle } from 'lucide-react';
+import { Bot, Trophy, BookOpen, AlertTriangle, FileEdit, Sparkles, Check, X, Lightbulb, Zap } from 'lucide-react';
 import Link from 'next/link';
 
 type GradingMode = 'auto' | 'llm' | 'hybrid';
@@ -119,7 +119,9 @@ export default function QuizPage({ params }: { params: { id: string } }) {
     return (
       <PageContainer>
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">📝</div>
+          <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+            <FileEdit className="w-12 h-12 text-accent-primary" />
+          </div>
           <h1 className="text-2xl font-bold text-text-primary">Quiz not found</h1>
           <p className="text-text-secondary mt-2">The quiz you're looking for doesn't exist.</p>
           <Link href="/chapters">
@@ -155,8 +157,9 @@ export default function QuizPage({ params }: { params: { id: string } }) {
             </h1>
             <p className="text-text-secondary">{quiz.title}</p>
             {result.grading_mode !== 'auto' && (
-              <Badge variant="info" className="mt-2">
-                ✨ AI-Graded ({result.grading_mode})
+              <Badge variant="info" className="mt-2 gap-1">
+                <Sparkles className="w-3 h-3" />
+                AI-Graded ({result.grading_mode})
               </Badge>
             )}
           </div>
@@ -173,8 +176,9 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                 You scored {result.total_score} out of {result.max_score} points
               </p>
               {result.passed ? (
-                <Badge variant="success" className="text-base px-4 py-2">
-                  ✓ Passed
+                <Badge variant="success" className="text-base px-4 py-2 gap-1">
+                  <Check className="w-4 h-4" />
+                  Passed
                 </Badge>
               ) : (
                 <Badge variant="warning" className="text-base px-4 py-2">
@@ -222,7 +226,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                           : 'bg-accent-danger/20'
                       }`}>
                         <span className={item.is_correct ?? item.points_earned > 0 ? 'text-accent-success' : 'text-accent-danger'}>
-                          {item.is_correct ?? item.points_earned > 0 ? '✓' : '✗'}
+                          {item.is_correct ?? item.points_earned > 0 ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                         </span>
                       </div>
                       <div className="flex-1">
@@ -240,7 +244,10 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                             <p className="text-accent-success">Correct answer: {item.correct_answer}</p>
                           )}
                           {item.explanation && (
-                            <p className="text-text-muted italic">💡 {item.explanation}</p>
+                            <p className="text-text-muted italic flex items-start gap-1">
+                              <Lightbulb className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                              <span>{item.explanation}</span>
+                            </p>
                           )}
                           {item.feedback && (
                             <div className="mt-2 p-3 rounded bg-bg-elevated border-l-4 border-accent-secondary">
@@ -320,7 +327,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <h4 className="font-semibold text-text-primary flex items-center gap-2">
-                    <span>✨</span>
+                    <Sparkles className="w-4 h-4" />
                     Grading Mode
                   </h4>
                   <p className="text-sm text-text-muted">
@@ -350,7 +357,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                             : 'bg-bg-elevated text-text-secondary hover:bg-bg-hover'
                         }`}
                       >
-                        Hybrid ⚡
+                        Hybrid <Zap className="w-3 h-3 ml-1" />
                       </button>
                       <button
                         onClick={() => setGradingMode('llm')}
@@ -426,8 +433,9 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                     }}
                     className="w-4 h-4"
                   />
-                  <span className="font-medium text-text-primary">
-                    ✨ Write your own answer (AI-graded, up to 30 points)
+                  <span className="font-medium text-text-primary flex items-center gap-1">
+                    <Sparkles className="w-4 h-4" />
+                    Write your own answer (AI-graded, up to 30 points)
                   </span>
                 </label>
                 <textarea

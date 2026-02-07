@@ -12,6 +12,7 @@ import { LoadingSpinner } from './ui/Loading';
 import { Badge } from './uiBadge';
 import { useV3ScoreHistory } from '@/hooks/useV3';
 import { useMemo } from 'react';
+import { BarChart3, FileEdit } from 'lucide-react';
 
 interface QuizScoreChartProps {
   limit?: number;
@@ -57,13 +58,17 @@ export function QuizScoreChart({ limit = 30, className }: QuizScoreChartProps) {
       <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl">📊</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-accent-info" />
+            </div>
             Quiz Performance
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-text-secondary">
-            <div className="text-5xl mb-4">📝</div>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+              <FileEdit className="w-10 h-10 text-accent-primary" />
+            </div>
             <p>No quiz attempts yet.</p>
             <p className="text-sm mt-2">Take your first quiz to see your progress!</p>
           </div>
@@ -79,7 +84,9 @@ export function QuizScoreChart({ limit = 30, className }: QuizScoreChartProps) {
     <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-3">
-          <span className="text-2xl">📊</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-accent-info" />
+          </div>
           Quiz Performance
         </CardTitle>
       </CardHeader>

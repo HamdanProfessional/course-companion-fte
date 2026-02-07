@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
-import { BookOpen, RotateCcw, BarChart3, Upload } from 'lucide-react';
+import { BookOpen, RotateCcw, BarChart3, Upload, FileEdit } from 'lucide-react';
 import Link from 'next/link';
 import { useChapters, useQuizzes } from '@/hooks';
 
@@ -84,7 +84,9 @@ export default function TeacherContentPage() {
         <Card className="border-l-4 border-l-accent-secondary">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">📝</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-secondary/20 to-accent-secondary/10 flex items-center justify-center">
+                <FileEdit className="w-6 h-6 text-accent-secondary" />
+              </div>
               Quizzes
             </CardTitle>
             <p className="text-sm text-text-muted">Manage quiz content</p>

@@ -172,7 +172,11 @@ export function SearchBar({ className, placeholder = 'Search course content...' 
                 </div>
               ) : (
                 <div className="p-4 text-center text-text-muted">
-                  <div className="text-2xl mb-2">🔍</div>
+                  <div className="w-12 h-12 mx-auto mb-2 rounded-lg bg-bg-elevated flex items-center justify-center">
+                    <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                   <p className="text-sm">No results found for "{query}"</p>
                   <p className="text-xs mt-1">Try different keywords</p>
                 </div>

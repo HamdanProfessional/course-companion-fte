@@ -15,7 +15,7 @@ import { EmptyStates } from '@/components/ui/EmptyState';
 import { useChapters, useProgress, useUserTier } from '@/hooks';
 import Link from 'next/link';
 import * as React from 'react';
-import { Sprout, Rocket, Trophy, Lock, BookOpen, CheckCircle, Play, Target, Star, Search } from 'lucide-react';
+import { Sprout, Rocket, Trophy, Lock, BookOpen, CheckCircle, Play, Target, Star, Search, Clock, Check } from 'lucide-react';
 
 type FilterType = 'all' | 'completed' | 'in-progress' | 'locked';
 
@@ -174,7 +174,10 @@ export default function ChaptersPage() {
                         #{index + 1}
                       </span>
                       {isCompleted && (
-                        <Badge variant="success">✓ Completed</Badge>
+                        <Badge variant="success" className="gap-1">
+                          <Check className="w-3 h-3" />
+                          Completed
+                        </Badge>
                       )}
                     </div>
                     <CardTitle className="text-xl group-hover:text-accent-primary transition-colors">
@@ -192,7 +195,7 @@ export default function ChaptersPage() {
                     {difficultyBadge.label}
                   </Badge>
                   <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-bg-elevated px-2 py-1 rounded-md">
-                    <span className="text-xs">⏱</span> {chapter.estimated_time} min
+                    <Clock className="w-3 h-3" /> {chapter.estimated_time} min
                   </span>
                 </div>
               </CardHeader>

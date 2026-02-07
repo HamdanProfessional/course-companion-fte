@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ClipboardList, X, Check, Loader } from 'lucide-react';
 import {
   useV3SubscriptionInfo,
   useV3SubscriptionPlans,
@@ -145,7 +145,9 @@ export default function SubscriptionPage() {
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-2xl">📋</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+                <ClipboardList className="w-5 h-5 text-accent-primary" />
+              </div>
               Current Plan
             </CardTitle>
           </CardHeader>
@@ -247,7 +249,7 @@ export default function SubscriptionPage() {
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="text-accent-success text-lg">✓</span>
+                      <Check className="text-accent-success w-5 h-5 flex-shrink-0 mt-0.5" />
                       <span className="text-sm text-text-secondary">{feature}</span>
                     </li>
                   ))}
@@ -265,7 +267,7 @@ export default function SubscriptionPage() {
                   >
                     {upgradeTier.isPending ? (
                       <span className="flex items-center gap-2">
-                        <span className="animate-spin">⏳</span>
+                        <Loader className="w-4 h-4 animate-spin" />
                         Processing...
                       </span>
                     ) : (
@@ -305,12 +307,12 @@ export default function SubscriptionPage() {
                 {[
                   { feature: 'Course Chapters', free: '1-3', premium: 'All', pro: 'All' },
                   { feature: 'Quiz Grading', free: 'Rule-based', premium: 'AI Enhanced', pro: 'AI Advanced' },
-                  { feature: 'AI Mentor', free: '❌', premium: '✓', pro: '✓' },
-                  { feature: 'Adaptive Learning', free: '❌', premium: '✓', pro: '✓' },
+                  { feature: 'AI Mentor', free: 'No', premium: 'Yes', pro: 'Yes' },
+                  { feature: 'Adaptive Learning', free: 'No', premium: 'Yes', pro: 'Yes' },
                   { feature: 'Streak Tracking', free: '3 days', premium: 'Unlimited', pro: 'Unlimited' },
                   { feature: 'Achievements', free: 'Basic', premium: 'All', pro: 'All' },
-                  { feature: 'API Access', free: '❌', premium: '❌', pro: '✓' },
-                  { feature: 'Priority Support', free: '❌', premium: 'Email', pro: '24h Response' },
+                  { feature: 'API Access', free: 'No', premium: 'No', pro: 'Yes' },
+                  { feature: 'Priority Support', free: 'No', premium: 'Email', pro: '24h Response' },
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-border-default">
                     <td className="py-3 px-4 text-sm text-text-primary">{row.feature}</td>

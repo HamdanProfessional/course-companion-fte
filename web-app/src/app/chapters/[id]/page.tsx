@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { BookOpen } from 'lucide-react';
 
 export default function ChapterPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -52,7 +53,9 @@ export default function ChapterPage({ params }: { params: { id: string } }) {
     return (
       <PageContainer>
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">📖</div>
+          <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+            <BookOpen className="w-12 h-12 text-cosmic-primary" />
+          </div>
           <h1 className="text-2xl font-bold text-text-primary">Chapter not found</h1>
           <p className="text-text-secondary mt-2">The chapter you're looking for doesn't exist.</p>
           <Link href="/chapters">

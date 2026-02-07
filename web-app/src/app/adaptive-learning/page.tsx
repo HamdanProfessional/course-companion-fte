@@ -22,7 +22,7 @@ import {
   useV3AIStatus,
 } from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
-import { Target, Armchair, RotateCcw, Compass, Clock, Map, BookOpen, Zap } from 'lucide-react';
+import { Target, Armchair, RotateCcw, Compass, Clock, Map, BookOpen, Zap, Sparkles, Check } from 'lucide-react';
 import Link from 'next/link';
 
 // Learning goals for path generation
@@ -83,7 +83,9 @@ export default function AdaptiveLearningPage() {
         /* Upgrade Prompt */
         <Card className="mb-8">
           <CardContent className="p-8 text-center">
-            <div className="text-5xl mb-4">✨</div>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+              <Sparkles className="w-10 h-10 text-accent-premium" />
+            </div>
             <h2 className="text-2xl font-bold mb-2">Premium Feature</h2>
             <p className="text-text-secondary mb-6 max-w-md mx-auto">
               Unlock AI-powered adaptive learning with personalized recommendations and knowledge gap analysis.
@@ -291,7 +293,7 @@ export default function AdaptiveLearningPage() {
                                 : 'border-border-default'
                             }`}>
                               {selectedGoals.includes(goal) && (
-                                <span className="text-white text-xs">✓</span>
+                                <Check className="w-3 h-3 text-white" />
                               )}
                             </div>
                             <span className="font-medium">{goal}</span>

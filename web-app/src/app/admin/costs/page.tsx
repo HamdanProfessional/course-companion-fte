@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useV3LLMCosts, useV3AIStatus, useV3SubscriptionInfo } from '@/hooks/useV3';
+import { BarChart3, Lightbulb } from 'lucide-react';
 
 const TIME_PERIODS = [
   { value: '7d', label: 'Last 7 days' },
@@ -36,7 +37,9 @@ export default function CostsDashboardPage() {
       <PageContainer>
         <Card>
           <CardContent className="p-8 text-center">
-            <div className="text-5xl mb-4">📊</div>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+              <BarChart3 className="w-10 h-10 text-accent-info" />
+            </div>
             <h2 className="text-2xl font-bold mb-2">Pro Feature</h2>
             <p className="text-text-secondary mb-6 max-w-md mx-auto">
               The cost tracking dashboard is available to Pro subscribers who need detailed
@@ -152,7 +155,9 @@ export default function CostsDashboardPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl">💡</span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+              <Lightbulb className="w-6 h-6 text-accent-warning" />
+            </div>
             Cost Optimization Tips
           </CardTitle>
         </CardHeader>

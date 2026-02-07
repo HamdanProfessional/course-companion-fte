@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { useTeacherStudents, type TeacherStudent } from '@/hooks';
 import Link from 'next/link';
+import { Flame } from 'lucide-react';
 
 type FilterType = 'all' | 'at-risk' | 'excelling' | 'average';
 
@@ -278,7 +279,7 @@ export default function TeacherStudentsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-1">
-                          <span>🔥</span>
+                          <Flame className="w-4 h-4 text-accent-warning" />
                           <span className="text-sm text-text-primary">{student.streak} days</span>
                         </div>
                       </td>

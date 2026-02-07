@@ -1348,7 +1348,7 @@ export const topics: Topic[] = [
   {
     id: 'python',
     name: 'Python',
-    icon: '🐍',
+    icon: 'python',
     subtopics: [
       {
         id: 'py-basics',
@@ -1360,7 +1360,7 @@ export const topics: Topic[] = [
   {
     id: 'react',
     name: 'React',
-    icon: '⚛️',
+    icon: 'react',
     subtopics: [
       {
         id: 'react-basics',
@@ -1372,7 +1372,7 @@ export const topics: Topic[] = [
   {
     id: 'api',
     name: 'API Development',
-    icon: '🔌',
+    icon: 'api',
     subtopics: [
       {
         id: 'api-basics',
@@ -1384,7 +1384,7 @@ export const topics: Topic[] = [
   {
     id: 'sql',
     name: 'SQL',
-    icon: '🗃️',
+    icon: 'sql',
     subtopics: [
       {
         id: 'sql-queries',
@@ -1396,7 +1396,7 @@ export const topics: Topic[] = [
   {
     id: 'git',
     name: 'Git',
-    icon: '📦',
+    icon: 'git',
     subtopics: [
       {
         id: 'git-commands',
@@ -1408,7 +1408,7 @@ export const topics: Topic[] = [
   {
     id: 'docker',
     name: 'Docker',
-    icon: '🐳',
+    icon: 'docker',
     subtopics: [
       {
         id: 'docker-concepts',
@@ -1420,7 +1420,7 @@ export const topics: Topic[] = [
   {
     id: 'typescript',
     name: 'TypeScript',
-    icon: '📘',
+    icon: 'typescript',
     subtopics: [
       {
         id: 'ts-types',
@@ -1432,7 +1432,7 @@ export const topics: Topic[] = [
   {
     id: 'nodejs',
     name: 'Node.js',
-    icon: '💚',
+    icon: 'nodejs',
     subtopics: [
       {
         id: 'nodejs-concepts',
@@ -1444,7 +1444,7 @@ export const topics: Topic[] = [
   {
     id: 'testing',
     name: 'Testing',
-    icon: '🧪',
+    icon: 'testing',
     subtopics: [
       {
         id: 'test-concepts',
@@ -1456,7 +1456,7 @@ export const topics: Topic[] = [
   {
     id: 'data-structures',
     name: 'Data Structures',
-    icon: '🏗️',
+    icon: 'data-structures',
     subtopics: [
       {
         id: 'ds-basics',
@@ -1468,7 +1468,7 @@ export const topics: Topic[] = [
   {
     id: 'algorithms',
     name: 'Algorithms',
-    icon: '⚡',
+    icon: 'algorithms',
     subtopics: [
       {
         id: 'algo-sorting',

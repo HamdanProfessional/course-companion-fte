@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { SearchBar } from '@/components/SearchBar';
 import { useV3Search } from '@/hooks/useV3';
+import { Search, BookOpen, Lightbulb, HelpCircle } from 'lucide-react';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -182,7 +183,9 @@ export default function SearchPage() {
             /* No Results */
             <Card>
               <CardContent className="p-12 text-center">
-                <div className="text-6xl mb-4">🔍</div>
+                <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
+                  <Search className="w-12 h-12 text-accent-primary" />
+                </div>
                 <h3 className="text-xl font-semibold text-text-primary mb-2">
                   No results found
                 </h3>
@@ -213,7 +216,9 @@ export default function SearchPage() {
         /* Initial State */
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="text-6xl mb-4">🔎</div>
+            <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent-info/20 to-accent-info/10 flex items-center justify-center">
+              <Search className="w-12 h-12 text-accent-info" />
+            </div>
             <h3 className="text-xl font-semibold text-text-primary mb-2">
               Search Course Content
             </h3>
@@ -222,17 +227,23 @@ export default function SearchPage() {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mt-8">
               <div className="p-4 rounded-lg bg-bg-elevated">
-                <div className="text-2xl mb-2">📖</div>
+                <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center mb-2">
+                  <BookOpen className="w-8 h-8 text-cosmic-primary" />
+                </div>
                 <h4 className="font-medium text-text-primary mb-1">Chapters</h4>
                 <p className="text-xs text-text-muted">Search all course content</p>
               </div>
               <div className="p-4 rounded-lg bg-bg-elevated">
-                <div className="text-2xl mb-2">❓</div>
+                <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-accent-secondary/20 to-accent-secondary/10 flex items-center justify-center mb-2">
+                  <HelpCircle className="w-8 h-8 text-accent-secondary" />
+                </div>
                 <h4 className="font-medium text-text-primary mb-1">Quizzes</h4>
                 <p className="text-xs text-text-muted">Find quiz questions</p>
               </div>
               <div className="p-4 rounded-lg bg-bg-elevated">
-                <div className="text-2xl mb-2">💡</div>
+                <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center mb-2">
+                  <Lightbulb className="w-8 h-8 text-accent-warning" />
+                </div>
                 <h4 className="font-medium text-text-primary mb-1">Concepts</h4>
                 <p className="text-xs text-text-muted">Explore topics</p>
               </div>
