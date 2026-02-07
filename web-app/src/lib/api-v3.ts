@@ -8,7 +8,7 @@
  * - Subscription management
  */
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://92.113.147.250:8000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://92.113.147.250:3505';
 
 // =============================================================================
 // Types
