@@ -275,9 +275,6 @@ export default function QuizPage({ params }: { params: { id: string } }) {
             <Link href={`/quizzes/${params.id}`}>
               <Button variant="outline">Retake Quiz</Button>
             </Link>
-            <Link href={`/quizzes/${params.id}/insights`}>
-              <Button variant="secondary">View Insights</Button>
-            </Link>
             <Link href="/mistake-bank">
               <Button variant="warning">View Mistake Bank</Button>
             </Link>

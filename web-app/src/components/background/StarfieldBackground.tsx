@@ -10,22 +10,22 @@ export function StarfieldBackground() {
     setMounted(true);
   }, []);
 
-  // Generate random star positions
-  const smallStars = Array.from({ length: 60 }, (_, i) => ({
+  // Reduced number of stars to prevent GPU leak
+  const smallStars = Array.from({ length: 20 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
     delay: Math.random() * 8,
   }));
 
-  const mediumStars = Array.from({ length: 20 }, (_, i) => ({
+  const mediumStars = Array.from({ length: 8 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
     delay: Math.random() * 12,
   }));
 
-  const largeStars = Array.from({ length: 15 }, (_, i) => ({
+  const largeStars = Array.from({ length: 5 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
@@ -37,17 +37,9 @@ export function StarfieldBackground() {
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-cosmic-bg">
-      {/* Nebula glow effects */}
-      <motion.div
+      {/* Static nebula glow effects - no animation to reduce GPU usage */}
+      <div
         className="absolute inset-0 opacity-20"
-        animate={{
-          backgroundPosition: ['0% 0%', '100% 100%'],
-        }}
-        transition={{
-          duration: 30,
-          repeat: Infinity,
-          repeatType: 'reverse',
-        }}
         style={{
           backgroundImage: `
             radial-gradient(ellipse at 20% 30%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
@@ -58,90 +50,52 @@ export function StarfieldBackground() {
         }}
       />
 
-      {/* Small stars */}
+      {/* Small stars - CSS animation for better performance */}
       {smallStars.map((star) => (
-        <motion.div
+        <div
           key={`small-${star.id}`}
-          className="absolute w-0.5 h-0.5 bg-white rounded-full"
+          className="absolute w-0.5 h-0.5 bg-white rounded-full animate-pulse"
           style={{
             left: `${star.x}%`,
             top: `${star.y}%`,
-          }}
-          animate={{
-            opacity: [0.3, 1, 0.3],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 8,
-            delay: star.delay,
-            repeat: Infinity,
-            ease: 'easeInOut',
+            animationDelay: `${star.delay}s`,
+            animationDuration: '3s',
+            opacity: 0.6,
           }}
         />
       ))}
 
-      {/* Medium stars */}
+      {/* Medium stars - CSS animation */}
       {mediumStars.map((star) => (
-        <motion.div
+        <div
           key={`medium-${star.id}`}
-          className="absolute w-1 h-1 bg-white rounded-full"
+          className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
           style={{
             left: `${star.x}%`,
             top: `${star.y}%`,
-          }}
-          animate={{
-            opacity: [0.5, 1, 0.5],
-            scale: [1, 1.3, 1],
-          }}
-          transition={{
-            duration: 12,
-            delay: star.delay,
-            repeat: Infinity,
-            ease: 'easeInOut',
+            animationDelay: `${star.delay}s`,
+            animationDuration: '4s',
+            opacity: 0.7,
           }}
         />
       ))}
 
-      {/* Large colored stars */}
+      {/* Large colored stars - slower animation */}
       {largeStars.map((star) => (
-        <motion.div
+        <div
           key={`large-${star.id}`}
-          className="absolute w-1.5 h-1.5 rounded-full"
+          className="absolute w-1.5 h-1.5 rounded-full animate-pulse"
           style={{
             left: `${star.x}%`,
             top: `${star.y}%`,
             backgroundColor: star.color,
             boxShadow: `0 0 10px ${star.color}`,
-          }}
-          animate={{
-            opacity: [0.6, 1, 0.6],
-            scale: [1, 1.5, 1],
-          }}
-          transition={{
-            duration: 15,
-            delay: star.delay,
-            repeat: Infinity,
-            ease: 'easeInOut',
+            animationDelay: `${star.delay}s`,
+            animationDuration: '5s',
+            opacity: 0.8,
           }}
         />
       ))}
-
-      {/* Floating dust particles */}
-      <motion.div
-        className="absolute inset-0 opacity-30"
-        animate={{
-          backgroundPosition: ['0% 0%', '100% 100%'],
-        }}
-        transition={{
-          duration: 60,
-          repeat: Infinity,
-          ease: 'linear',
-        }}
-        style={{
-          backgroundImage: 'radial-gradient(1px 1px at 20% 30%, rgba(139, 92, 246, 0.5), transparent), radial-gradient(1px 1px at 60% 70%, rgba(14, 165, 233, 0.5), transparent), radial-gradient(1px 1px at 50% 50%, rgba(236, 72, 153, 0.5), transparent)',
-          backgroundSize: '200px 200px',
-        }}
-      />
     </div>
   );
 }

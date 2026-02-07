@@ -122,6 +122,23 @@ class ProgressService:
 
         return await self.get_user_progress(user_id)
 
+    async def mark_chapter_complete(
+        self,
+        user_id: str,
+        chapter_id: str
+    ) -> Optional[ProgressSchema]:
+        """
+        Alias for update_progress - marks chapter as complete.
+
+        Args:
+            user_id: User UUID
+            chapter_id: Chapter UUID to mark complete
+
+        Returns:
+            Updated progress
+        """
+        return await self.update_progress(user_id, chapter_id)
+
 
 class StreakService:
     """Business logic for streak tracking and gamification."""
