@@ -180,7 +180,7 @@ export default function DashboardPage() {
           <StatCard
             title="Current Streak"
             value={currentStreak}
-            change={5}
+            change={currentStreak > 0 ? Math.min(currentStreak, streak?.longest_streak || currentStreak) : 0}
             icon={<Zap className="h-6 w-6" />}
             trend={currentStreak > 0 ? 'up' : 'neutral'}
             variant="stellar"

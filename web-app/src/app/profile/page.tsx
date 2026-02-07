@@ -44,14 +44,14 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-text-secondary mb-2">
                   Email Address
                 </label>
-                <Input value={user?.email || 'student@example.com'} disabled />
+                <Input value={user?.email || 'Loading...'} disabled />
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">
                   Member Since
                 </label>
                 <Input
-                  value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'January 2026'}
+                  value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Loading...'}
                   disabled
                 />
               </div>
@@ -60,7 +60,7 @@ export default function ProfilePage() {
                   User ID
                 </label>
                 <Input
-                  value={user?.id || '82b8b862-059a-416a-9ef4-e582a4870efa'}
+                  value={user?.id || 'Loading...'}
                   disabled
                 />
               </div>

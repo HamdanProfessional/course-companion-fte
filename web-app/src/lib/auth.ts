@@ -25,10 +25,29 @@ export function getMockUser(): User {
 
 /**
  * Get current user from session.
+ * Reads from localStorage where login/register stores the data.
  * TODO: Implement proper JWT validation with backend.
  */
 export async function getCurrentUser(): Promise<User | null> {
-  // For demo purposes, return mock user
-  // In production, validate JWT token with backend
-  return getMockUser();
+  if (typeof window === 'undefined') return null;
+
+  const userId = localStorage.getItem('user_id');
+  const email = localStorage.getItem('user_email');
+  const tier = localStorage.getItem('user_tier');
+  const token = localStorage.getItem('token');
+
+  // If no token or user_id, user is not logged in
+  if (!token || !userId) {
+    return null;
+  }
+
+  // Normalize tier to lowercase
+  const normalizedTier = tier?.toLowerCase() || 'free';
+
+  return {
+    id: userId,
+    email: email || '',
+    tier: (normalizedTier === 'premium' || normalizedTier === 'pro') ? normalizedTier : 'free',
+    created_at: localStorage.getItem('created_at') || new Date().toISOString(),
+  };
 }
