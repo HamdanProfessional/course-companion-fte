@@ -169,3 +169,22 @@ export {
   usePhase2Status,
   useIsPhase2Enabled,
 } from './usePhase2';
+
+// Teacher Dashboard Hooks
+export {
+  useTeacherAnalytics,
+  useTeacherStudents,
+  useTeacherQuizAnalytics,
+  useTeacherEngagement,
+} from './useTeacher';
+
+export type {
+  TeacherStats,
+  TeacherStudent,
+  QuizStats,
+  QuizPerformance,
+  QuestionAnalysis,
+  EngagementMetrics,
+  AtRiskStudent,
+  RecentActivity,
+} from './useTeacher';
