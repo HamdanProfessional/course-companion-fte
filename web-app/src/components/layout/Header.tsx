@@ -3,17 +3,10 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search, Users, MessageSquare, GraduationCap, Target, Settings, AlertCircle, Infinity, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
-
-// Dynamically import SearchBar to prevent SSR issues
-const SearchBar = dynamic(() => import('@/components/SearchBar').then(mod => ({ default: mod.SearchBar })), {
-  ssr: false,
-  loading: () => <div className="w-64 h-10" />,
-});
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -180,11 +173,6 @@ export function Header() {
               </div>
             </>
           )}
-
-          {/* Search Bar */}
-          <div className="w-56 ml-2">
-            <SearchBar placeholder="Search..." />
-          </div>
         </div>
 
         {/* User menu - desktop */}
@@ -366,11 +354,6 @@ export function Header() {
                     })}
                   </>
                 )}
-
-              {/* Search bar for mobile */}
-              <div className="px-2 py-3">
-                <SearchBar placeholder="Search..." />
-              </div>
 
               {/* Logout Button */}
               <motion.div

@@ -15,7 +15,7 @@ import { EmptyStates } from '@/components/ui/EmptyState';
 import { useChapters, useProgress, useUserTier } from '@/hooks';
 import Link from 'next/link';
 import * as React from 'react';
-import { Sprout, Rocket, Trophy, Lock, BookOpen, CheckCircle, Play, Target, Star } from 'lucide-react';
+import { Sprout, Rocket, Trophy, Lock, BookOpen, CheckCircle, Play, Target, Star, Search } from 'lucide-react';
 
 type FilterType = 'all' | 'completed' | 'in-progress' | 'locked';
 
@@ -24,6 +24,7 @@ export default function ChaptersPage() {
   const { data: progress } = useProgress();
   const { data: tier } = useUserTier();
   const [filter, setFilter] = React.useState<FilterType>('all');
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   if (isLoading) {
     return (
@@ -61,16 +62,20 @@ export default function ChaptersPage() {
   const filteredChapters = chapters?.filter((chapter, index) => {
     const isCompleted = completedChapters.has(chapter.id);
     const isLocked = tier === 'FREE' && index >= 3;
+    const matchesSearch = searchQuery === '' ||
+      chapter.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      chapter.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
+    // Apply filter and search
     switch (filter) {
       case 'completed':
-        return isCompleted;
+        return isCompleted && matchesSearch;
       case 'in-progress':
-        return !isCompleted && !isLocked;
+        return !isCompleted && !isLocked && matchesSearch;
       case 'locked':
-        return isLocked;
+        return isLocked && matchesSearch;
       default:
-        return true;
+        return matchesSearch;
     }
   }) || [];
 
@@ -90,6 +95,20 @@ export default function ChaptersPage() {
         title="Course Chapters"
         description="Master AI Agent Development step by step"
       />
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+          <input
+            type="text"
+            placeholder="Search chapters by title or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-bg-elevated border border-border-default rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-cosmic-primary focus:border-transparent transition-all"
+          />
+        </div>
+      </div>
 
       {/* Progress Overview */}
       <Card className="mb-6">
