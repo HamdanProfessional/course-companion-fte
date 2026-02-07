@@ -17,10 +17,13 @@ import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { BookOpen, RotateCcw, BarChart3, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { useChapters, useQuizzes } from '@/hooks';
 
 export default function TeacherContentPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const { data: chapters, isLoading: chaptersLoading } = useChapters();
+  const { data: quizzes, isLoading: quizzesLoading } = useQuizzes();
 
   useEffect(() => {
     const role = localStorage.getItem('user_role');
@@ -62,9 +65,9 @@ export default function TeacherContentPage() {
             <div className="flex items-center justify-between p-3 rounded-lg bg-bg-elevated">
               <div>
                 <p className="font-medium text-text-primary">Total Chapters</p>
-                <p className="text-sm text-text-muted">8 published chapters</p>
+                <p className="text-sm text-text-muted">{chapters?.length || 0} published chapters</p>
               </div>
-              <span className="text-2xl font-bold text-accent-primary">8</span>
+              <span className="text-2xl font-bold text-accent-primary">{chapters?.length || 0}</span>
             </div>
             <Button variant="primary" className="w-full">
               + Add New Chapter
@@ -90,9 +93,9 @@ export default function TeacherContentPage() {
             <div className="flex items-center justify-between p-3 rounded-lg bg-bg-elevated">
               <div>
                 <p className="font-medium text-text-primary">Total Quizzes</p>
-                <p className="text-sm text-text-muted">8 active quizzes</p>
+                <p className="text-sm text-text-muted">{quizzes?.length || 0} active quizzes</p>
               </div>
-              <span className="text-2xl font-bold text-accent-secondary">8</span>
+              <span className="text-2xl font-bold text-accent-secondary">{quizzes?.length || 0}</span>
             </div>
             <Button variant="primary" className="w-full">
               + Create New Quiz
