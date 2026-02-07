@@ -17,109 +17,65 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { useTeacherQuizAnalytics, type QuizPerformance, type QuestionAnalysis } from '@/hooks';
 import Link from 'next/link';
 
 export default function TeacherAnalyticsPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+
+  const {
+    quizStats,
+    quizPerformance = [],
+    questionAnalysis = [],
+    isLoading,
+    error,
+    refetch,
+  } = useTeacherQuizAnalytics();
 
   useEffect(() => {
     const role = localStorage.getItem('user_role');
     if (role !== 'teacher') {
       router.push('/dashboard');
-      return;
     }
-    setIsLoading(false);
   }, [router]);
 
-  // Mock quiz data
-  const quizStats = {
-    totalAttempts: 342,
-    averageScore: 78,
-    passRate: 85,
-    completionRate: 72,
+  // Helper to get difficulty badge variant
+  const getDifficultyVariant = (difficulty: string): 'beginner' | 'intermediate' | 'success' | 'premium' | 'danger' | 'warning' | 'info' => {
+    switch (difficulty?.toLowerCase()) {
+      case 'beginner':
+      case 'easy':
+        return 'beginner';
+      case 'intermediate':
+      case 'medium':
+        return 'intermediate';
+      case 'advanced':
+      case 'hard':
+        return 'danger';
+      default:
+        return 'beginner';
+    }
   };
 
-  const quizPerformance = [
-    {
-      id: '1',
-      title: 'Introduction to AI Agents',
-      chapter: 'Chapter 1',
-      attempts: 89,
-      avgScore: 82,
-      passRate: 92,
-      difficulty: 'beginner',
-    },
-    {
-      id: '2',
-      title: 'Understanding MCP',
-      chapter: 'Chapter 2',
-      attempts: 76,
-      avgScore: 75,
-      passRate: 88,
-      difficulty: 'beginner',
-    },
-    {
-      id: '3',
-      title: 'Creating Your First Agent',
-      chapter: 'Chapter 3',
-      attempts: 65,
-      avgScore: 68,
-      passRate: 78,
-      difficulty: 'intermediate',
-    },
-    {
-      id: '4',
-      title: 'Building Reusable Skills',
-      chapter: 'Chapter 4',
-      attempts: 52,
-      avgScore: 71,
-      passRate: 82,
-      difficulty: 'intermediate',
-    },
-    {
-      id: '5',
-      title: 'Agent Architectures',
-      chapter: 'Chapter 5',
-      attempts: 60,
-      avgScore: 79,
-      passRate: 86,
-      difficulty: 'intermediate',
-    },
-  ];
-
-  const questionAnalysis = [
-    {
-      question: 'What is the primary purpose of MCP?',
-      correctRate: 85,
-      avgTime: 45,
-      attempts: 89,
-    },
-    {
-      question: 'Which component handles agent perception?',
-      correctRate: 72,
-      avgTime: 62,
-      attempts: 89,
-    },
-    {
-      question: 'How do you create an MCP server?',
-      correctRate: 68,
-      avgTime: 120,
-      attempts: 76,
-    },
-    {
-      question: 'What is agent state management?',
-      correctRate: 58,
-      avgTime: 95,
-      attempts: 65,
-    },
-  ];
-
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="text-center py-12">
+          <p className="text-accent-danger mb-4">Failed to load quiz analytics</p>
+          <Button variant="primary" onClick={() => refetch()}>
+            Try Again
+          </Button>
+        </div>
+      </PageContainer>
     );
   }
 
@@ -136,28 +92,36 @@ export default function TeacherAnalyticsPage() {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">Total Attempts</p>
-            <h3 className="text-3xl font-bold text-accent-primary">{quizStats.totalAttempts}</h3>
+            <h3 className="text-3xl font-bold text-accent-primary">
+              {quizStats?.total_attempts ?? 0}
+            </h3>
             <p className="text-xs text-text-muted mt-2">All quizzes combined</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">Average Score</p>
-            <h3 className="text-3xl font-bold text-accent-success">{quizStats.averageScore}%</h3>
-            <p className="text-xs text-accent-success mt-2">↑ 5% from last month</p>
+            <h3 className="text-3xl font-bold text-accent-success">
+              {quizStats?.average_score ?? 0}%
+            </h3>
+            <p className="text-xs text-accent-success mt-2">Class performance</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">Pass Rate</p>
-            <h3 className="text-3xl font-bold text-accent-info">{quizStats.passRate}%</h3>
+            <h3 className="text-3xl font-bold text-accent-info">
+              {quizStats?.pass_rate ?? 0}%
+            </h3>
             <p className="text-xs text-text-muted mt-2">Scored ≥60%</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">Completion Rate</p>
-            <h3 className="text-3xl font-bold text-accent-warning">{quizStats.completionRate}%</h3>
+            <h3 className="text-3xl font-bold text-accent-warning">
+              {quizStats?.completion_rate ?? 0}%
+            </h3>
             <p className="text-xs text-text-muted mt-2">Students who attempted</p>
           </CardContent>
         </Card>
@@ -172,61 +136,67 @@ export default function TeacherAnalyticsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border-default">
-                  <th className="text-left p-4 text-sm font-medium text-text-secondary">Quiz</th>
-                  <th className="text-left p-4 text-sm font-medium text-text-secondary">Attempts</th>
-                  <th className="text-left p-4 text-sm font-medium text-text-secondary">Avg Score</th>
-                  <th className="text-left p-4 text-sm font-medium text-text-secondary">Pass Rate</th>
-                  <th className="text-left p-4 text-sm font-medium text-text-secondary">Difficulty</th>
-                  <th className="text-left p-4 text-sm font-medium text-text-secondary">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {quizPerformance.map((quiz) => (
-                  <tr key={quiz.id} className="border-b border-border-subtle hover:bg-bg-elevated">
-                    <td className="p-4">
-                      <p className="font-medium text-text-primary">{quiz.title}</p>
-                      <p className="text-sm text-text-muted">{quiz.chapter}</p>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-text-primary">{quiz.attempts}</span>
-                    </td>
-                    <td className="p-4">
-                      <Badge
-                        variant={
-                          quiz.avgScore >= 80
-                            ? 'success'
-                            : quiz.avgScore >= 70
-                            ? 'intermediate'
-                            : 'beginner'
-                        }
-                      >
-                        {quiz.avgScore}%
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <Badge variant={quiz.passRate >= 85 ? 'success' : 'intermediate'}>
-                        {quiz.passRate}%
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <Badge variant={quiz.difficulty === 'beginner' ? 'beginner' : 'intermediate'}>
-                        {quiz.difficulty}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                    </td>
+          {quizPerformance.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-text-muted">No quiz performance data yet. Quizzes will appear here once students attempt them.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border-default">
+                    <th className="text-left p-4 text-sm font-medium text-text-secondary">Quiz</th>
+                    <th className="text-left p-4 text-sm font-medium text-text-secondary">Attempts</th>
+                    <th className="text-left p-4 text-sm font-medium text-text-secondary">Avg Score</th>
+                    <th className="text-left p-4 text-sm font-medium text-text-secondary">Pass Rate</th>
+                    <th className="text-left p-4 text-sm font-medium text-text-secondary">Range</th>
+                    <th className="text-left p-4 text-sm font-medium text-text-secondary">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {quizPerformance.map((quiz) => (
+                    <tr key={quiz.quiz_id} className="border-b border-border-subtle hover:bg-bg-elevated">
+                      <td className="p-4">
+                        <p className="font-medium text-text-primary">{quiz.quiz_title}</p>
+                        <p className="text-sm text-text-muted">ID: {quiz.quiz_id.slice(0, 8)}...</p>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-text-primary">{quiz.total_attempts}</span>
+                      </td>
+                      <td className="p-4">
+                        <Badge
+                          variant={
+                            quiz.average_score >= 80
+                              ? 'success'
+                              : quiz.average_score >= 70
+                              ? 'intermediate'
+                              : 'beginner'
+                          }
+                        >
+                          {quiz.average_score}%
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <Badge variant={quiz.pass_rate >= 85 ? 'success' : 'intermediate'}>
+                          {quiz.pass_rate}%
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm text-text-muted">
+                          {quiz.lowest_score}% - {quiz.highest_score}%
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -243,43 +213,52 @@ export default function TeacherAnalyticsPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {questionAnalysis.map((q, index) => (
-                <div key={index} className="p-4 rounded-lg bg-bg-elevated border border-border-subtle">
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-sm font-medium text-text-primary flex-1 pr-4">
-                      {q.question}
-                    </p>
-                    <Badge
-                      variant={
-                        q.correctRate >= 75
-                          ? 'success'
-                          : q.correctRate >= 60
-                          ? 'intermediate'
-                          : 'beginner'
-                      }
-                    >
-                      {q.correctRate}% correct
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-text-muted">
-                    <span>⏱️ {q.avgTime}s avg time</span>
-                    <span>📊 {q.attempts} attempts</span>
-                  </div>
-                  {q.correctRate < 70 && (
-                    <div className="mt-2 pt-2 border-t border-border-subtle">
-                      <p className="text-xs text-accent-warning">
-                        ⚠️ Below target - consider reviewing this topic
+            {questionAnalysis.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-text-muted">No question data yet. Analysis will appear once students attempt quizzes.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {questionAnalysis.map((q) => (
+                  <div key={q.question_id} className="p-4 rounded-lg bg-bg-elevated border border-border-subtle">
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="text-sm font-medium text-text-primary flex-1 pr-4">
+                        {q.question_text}
                       </p>
+                      <Badge
+                        variant={
+                          q.correct_rate >= 75
+                            ? 'success'
+                            : q.correct_rate >= 60
+                            ? 'intermediate'
+                            : 'beginner'
+                        }
+                      >
+                        {q.correct_rate}% correct
+                      </Badge>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                    <div className="flex items-center gap-4 text-xs text-text-muted">
+                      <span>⏱️ {q.average_time}s avg time</span>
+                      <span>📊 {q.total_attempts} attempts</span>
+                      <Badge variant={getDifficultyVariant(q.difficulty)} className="capitalize">
+                        {q.difficulty}
+                      </Badge>
+                    </div>
+                    {q.correct_rate < 70 && (
+                      <div className="mt-2 pt-2 border-t border-border-subtle">
+                        <p className="text-xs text-accent-warning">
+                          ⚠️ Below target - consider reviewing this topic
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Performance Trends */}
+        {/* Performance Insights */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -294,7 +273,9 @@ export default function TeacherAnalyticsPage() {
                 <div>
                   <p className="font-medium text-text-primary mb-1">Strong Performance</p>
                   <p className="text-sm text-text-secondary">
-                    Chapter 1 & 2 quizzes show strong comprehension. Students are excelling in foundational concepts.
+                    {quizPerformance.length > 0
+                      ? `${quizPerformance.filter((q) => q.average_score >= 80).length} of ${quizPerformance.length} quizzes show strong comprehension. Students are excelling in foundational concepts.`
+                      : 'Quiz performance data will appear here once students complete quizzes.'}
                   </p>
                 </div>
               </div>
@@ -306,7 +287,9 @@ export default function TeacherAnalyticsPage() {
                 <div>
                   <p className="font-medium text-text-primary mb-1">Needs Attention</p>
                   <p className="text-sm text-text-secondary">
-                    Chapter 3 quiz scores dropped. Consider reviewing "Creating Your First Agent" content and adding more examples.
+                    {quizPerformance.filter((q) => q.average_score < 70).length > 0
+                      ? `${quizPerformance.filter((q) => q.average_score < 70).length} quiz(es) below 70%. Consider reviewing content and adding more examples.`
+                      : 'No quizzes need immediate attention.'}
                   </p>
                 </div>
               </div>
@@ -318,7 +301,9 @@ export default function TeacherAnalyticsPage() {
                 <div>
                   <p className="font-medium text-text-primary mb-1">Recommendation</p>
                   <p className="text-sm text-text-secondary">
-                    State management questions have the lowest correct rate (58%). Consider adding a dedicated lesson on this topic.
+                    {questionAnalysis.filter((q) => q.correct_rate < 60).length > 0
+                      ? `${questionAnalysis.filter((q) => q.correct_rate < 60).length} question(s) have below 60% correct rate. Consider adding dedicated lessons on these topics.`
+                      : 'Question-level data will help identify specific knowledge gaps.'}
                   </p>
                 </div>
               </div>

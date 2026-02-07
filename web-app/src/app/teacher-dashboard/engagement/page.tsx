@@ -17,41 +17,80 @@ import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { MessageSquare, Eye, Clock, TrendingUp, AlertCircle, Send, Users, Target } from 'lucide-react';
+import { useTeacherEngagement, type AtRiskStudent, type RecentActivity } from '@/hooks';
 
 export default function TeacherEngagementPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock engagement data
-  const engagementMetrics = {
-    averageSessionTime: '24 min',
-    activeStudents: 89,
-    completionRate: 68,
-    weeklyActivity: '+12%',
-  };
-
-  const atRiskStudents = [
-    { id: 1, name: 'John Smith', email: 'john@example.com', lastActivity: '5 days ago', risk: 'high' },
-    { id: 2, name: 'Sarah Johnson', email: 'sarah@example.com', lastActivity: '3 days ago', risk: 'medium' },
-    { id: 3, name: 'Mike Brown', email: 'mike@example.com', lastActivity: '7 days ago', risk: 'high' },
-  ];
-
-  const recentActivity = [
-    { student: 'Emily Davis', action: 'Completed Chapter 3', time: '2 minutes ago' },
-    { student: 'Tom Wilson', action: 'Started Quiz 2', time: '15 minutes ago' },
-    { student: 'Lisa Anderson', action: 'Achieved 7-day streak', time: '1 hour ago' },
-    { student: 'James Lee', action: 'Asked a question in AI Mentor', time: '2 hours ago' },
-  ];
+  const {
+    metrics,
+    atRiskStudents = [],
+    recentActivity = [],
+    isLoading,
+    error,
+    refetch,
+  } = useTeacherEngagement();
 
   useEffect(() => {
     const role = localStorage.getItem('user_role');
     if (role !== 'teacher') {
       router.push('/dashboard');
-      return;
     }
-    setIsLoading(false);
   }, [router]);
 
+  // Helper to format timestamp
+  const formatTimestamp = (timestamp: string): string => {
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMinutes / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMinutes < 1) return 'Just now';
+      if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      if (diffDays === 1) return '1 day ago';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      return date.toLocaleDateString();
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  // Helper to format last activity
+  const formatLastActivity = (lastActivity: string): string => {
+    try {
+      const date = new Date(lastActivity);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return '1 day ago';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      return `${diffDays} days ago`;
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  // Helper to get risk badge variant
+  const getRiskBadgeVariant = (riskLevel: string): 'danger' | 'warning' | 'info' => {
+    switch (riskLevel?.toLowerCase()) {
+      case 'high':
+        return 'danger';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'info';
+      default:
+        return 'info';
+    }
+  };
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -59,6 +98,27 @@ export default function TeacherEngagementPage() {
       </div>
     );
   }
+
+  // Error state
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="text-center py-12">
+          <p className="text-accent-danger mb-4">Failed to load engagement data</p>
+          <Button variant="primary" onClick={() => refetch()}>
+            Try Again
+          </Button>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // Calculate weekly change from weekly_activity array if available
+  const weeklyChange = metrics?.weekly_activity && metrics.weekly_activity.length >= 2
+    ? ((metrics.weekly_activity[metrics.weekly_activity.length - 1] - metrics.weekly_activity[0]) / Math.abs(metrics.weekly_activity[0]) * 100).toFixed(0)
+    : '+0';
+
+  const displayWeeklyChange = weeklyChange.startsWith('-') ? weeklyChange : `+${weeklyChange}`;
 
   return (
     <PageContainer>
@@ -76,7 +136,7 @@ export default function TeacherEngagementPage() {
                 <Clock className="w-6 h-6 text-cosmic-primary" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-text-primary">{engagementMetrics.averageSessionTime}</h3>
+            <h3 className="text-2xl font-bold text-text-primary">{metrics?.average_session_time ?? 'N/A'}</h3>
             <p className="text-sm text-text-secondary">Avg. Session Time</p>
           </CardContent>
         </Card>
@@ -88,7 +148,7 @@ export default function TeacherEngagementPage() {
                 <Users className="w-6 h-6 text-accent-success" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-text-primary">{engagementMetrics.activeStudents}</h3>
+            <h3 className="text-2xl font-bold text-text-primary">{metrics?.active_students ?? 0}</h3>
             <p className="text-sm text-text-secondary">Active This Week</p>
           </CardContent>
         </Card>
@@ -100,7 +160,7 @@ export default function TeacherEngagementPage() {
                 <Target className="w-6 h-6 text-accent-primary" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-text-primary">{engagementMetrics.completionRate}%</h3>
+            <h3 className="text-2xl font-bold text-text-primary">{metrics?.completion_rate ?? 0}%</h3>
             <p className="text-sm text-text-secondary">Completion Rate</p>
           </CardContent>
         </Card>
@@ -112,7 +172,7 @@ export default function TeacherEngagementPage() {
                 <TrendingUp className="w-6 h-6 text-accent-warning" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-accent-warning">{engagementMetrics.weeklyActivity}</h3>
+            <h3 className="text-2xl font-bold text-accent-warning">{displayWeeklyChange}%</h3>
             <p className="text-sm text-text-secondary">Weekly Change</p>
           </CardContent>
         </Card>
@@ -130,35 +190,50 @@ export default function TeacherEngagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {atRiskStudents.map((student) => (
-                <div
-                  key={student.id}
-                  className="p-4 rounded-lg border border-accent-danger/30 bg-accent-danger/5"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="font-semibold text-text-primary">{student.name}</h4>
-                      <p className="text-sm text-text-secondary">{student.email}</p>
+            {atRiskStudents.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-text-muted">No at-risk students detected. Great job keeping everyone engaged!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {atRiskStudents.map((student) => (
+                  <div
+                    key={student.user_id}
+                    className="p-4 rounded-lg border border-accent-danger/30 bg-accent-danger/5"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-semibold text-text-primary">{student.name}</h4>
+                        <p className="text-sm text-text-secondary">{student.email}</p>
+                      </div>
+                      <Badge
+                        variant={getRiskBadgeVariant(student.risk_level)}
+                        className="capitalize"
+                      >
+                        {student.risk_level} Risk
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={student.risk === 'high' ? 'danger' : 'warning'}
-                      className="capitalize"
-                    >
-                      {student.risk} Risk
-                    </Badge>
+                    <div className="flex items-center gap-2 text-sm text-text-secondary mb-2">
+                      <Clock className="w-4 h-4" />
+                      Last activity: {formatLastActivity(student.last_activity)}
+                    </div>
+                    {student.risk_factors && student.risk_factors.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {student.risk_factors.slice(0, 2).map((factor, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {factor}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <Button variant="outline" size="sm" className="w-full">
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Send Nudge
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-text-secondary mb-3">
-                    <Clock className="w-4 h-4" />
-                    Last activity: {student.lastActivity}
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Send Nudge
-                  </Button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -173,21 +248,27 @@ export default function TeacherEngagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3 pb-4 border-b border-border-default last:border-0 last:pb-0">
-                  <div className="w-8 h-8 rounded-full bg-cosmic-primary/20 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-4 h-4 text-cosmic-primary" />
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-text-muted">No recent activity yet. Activity will appear here as students engage with the course.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentActivity.map((activity) => (
+                  <div key={activity.activity_id} className="flex items-start gap-3 pb-4 border-b border-border-default last:border-0 last:pb-0">
+                    <div className="w-8 h-8 rounded-full bg-cosmic-primary/20 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-4 h-4 text-cosmic-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-text-primary">
+                        <span className="font-semibold">{activity.student_name}</span> {activity.description}
+                      </p>
+                      <p className="text-xs text-text-muted mt-1">{formatTimestamp(activity.timestamp)}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-text-primary">
-                      <span className="font-semibold">{activity.student}</span> {activity.action}
-                    </p>
-                    <p className="text-xs text-text-muted mt-1">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

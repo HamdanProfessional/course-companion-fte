@@ -103,22 +103,9 @@ export function useTeacherAnalytics() {
   return useQuery({
     queryKey: ['teacher', 'analytics'],
     queryFn: async () => {
-      // TODO: Replace with actual API call when endpoint is ready
-      // const response = await tutorApi.get<TeacherStats>('/teacher/analytics');
-      // return response.data;
-
-      // Temporary placeholder data
-      return {
-        total_students: 0,
-        active_students: 0,
-        average_score: 0,
-        completion_rate: 0,
-        students_at_risk: 0,
-        students_failing_quizzes: 0,
-        students_with_stale_streaks: 0,
-      } as TeacherStats;
+      const response = await tutorApi.request<TeacherStats>('/api/v3/tutor/teacher/analytics');
+      return response;
     },
-    enabled: false, // Disabled until backend endpoint is ready
   });
 }
 
@@ -130,13 +117,9 @@ export function useTeacherStudents() {
   return useQuery({
     queryKey: ['teacher', 'students'],
     queryFn: async () => {
-      // TODO: Replace with actual API call when endpoint is ready
-      // const response = await tutorApi.get<TeacherStudent[]>('/teacher/students');
-      // return response.data;
-
-      return [] as TeacherStudent[];
+      const response = await tutorApi.request<TeacherStudent[]>('/api/v3/tutor/teacher/students');
+      return response;
     },
-    enabled: false, // Disabled until backend endpoint is ready
   });
 }
 
@@ -144,43 +127,40 @@ export function useTeacherStudents() {
  * Fetch quiz statistics and performance
  * GET /api/v3/tutor/teacher/analytics/quiz-stats
  * GET /api/v3/tutor/teacher/analytics/quiz-performance
+ * GET /api/v3/tutor/teacher/analytics/question-analysis
  */
 export function useTeacherQuizAnalytics() {
   const quizStats = useQuery({
     queryKey: ['teacher', 'quiz-stats'],
     queryFn: async () => {
-      // TODO: Replace with actual API call
-      // const response = await tutorApi.get<QuizStats>('/teacher/analytics/quiz-stats');
-      // return response.data;
-
-      return {
-        total_attempts: 0,
-        average_score: 0,
-        pass_rate: 0,
-        completion_rate: 0,
-      } as QuizStats;
+      const response = await tutorApi.request<QuizStats>('/api/v3/tutor/teacher/analytics/quiz-stats');
+      return response;
     },
-    enabled: false,
   });
 
   const quizPerformance = useQuery({
     queryKey: ['teacher', 'quiz-performance'],
     queryFn: async () => {
-      // TODO: Replace with actual API call
-      // const response = await tutorApi.get<QuizPerformance[]>('/teacher/analytics/quiz-performance');
-      // return response.data;
-
-      return [] as QuizPerformance[];
+      const response = await tutorApi.request<QuizPerformance[]>('/api/v3/tutor/teacher/analytics/quiz-performance');
+      return response;
     },
-    enabled: false,
+  });
+
+  const questionAnalysis = useQuery({
+    queryKey: ['teacher', 'question-analysis'],
+    queryFn: async () => {
+      const response = await tutorApi.request<QuestionAnalysis[]>('/api/v3/tutor/teacher/analytics/question-analysis');
+      return response;
+    },
   });
 
   return {
     quizStats: quizStats.data,
     quizPerformance: quizPerformance.data,
-    isLoading: quizStats.isLoading || quizPerformance.isLoading,
-    error: quizStats.error || quizPerformance.error,
-    refetch: () => Promise.all([quizStats.refetch(), quizPerformance.refetch()]),
+    questionAnalysis: questionAnalysis.data,
+    isLoading: quizStats.isLoading || quizPerformance.isLoading || questionAnalysis.isLoading,
+    error: quizStats.error || quizPerformance.error || questionAnalysis.error,
+    refetch: () => Promise.all([quizStats.refetch(), quizPerformance.refetch(), questionAnalysis.refetch()]),
   };
 }
 
@@ -192,42 +172,25 @@ export function useTeacherEngagement() {
   const metrics = useQuery({
     queryKey: ['teacher', 'engagement-metrics'],
     queryFn: async () => {
-      // TODO: Replace with actual API call
-      // const response = await tutorApi.get<EngagementMetrics>('/teacher/engagement/metrics');
-      // return response.data;
-
-      return {
-        average_session_time: '0 min',
-        active_students: 0,
-        completion_rate: 0,
-        weekly_activity: [],
-      } as EngagementMetrics;
+      const response = await tutorApi.request<EngagementMetrics>('/api/v3/tutor/teacher/engagement/metrics');
+      return response;
     },
-    enabled: false,
   });
 
   const atRiskStudents = useQuery({
     queryKey: ['teacher', 'at-risk-students'],
     queryFn: async () => {
-      // TODO: Replace with actual API call
-      // const response = await tutorApi.get<AtRiskStudent[]>('/teacher/engagement/at-risk');
-      // return response.data;
-
-      return [] as AtRiskStudent[];
+      const response = await tutorApi.request<AtRiskStudent[]>('/api/v3/tutor/teacher/engagement/at-risk');
+      return response;
     },
-    enabled: false,
   });
 
   const recentActivity = useQuery({
     queryKey: ['teacher', 'recent-activity'],
     queryFn: async () => {
-      // TODO: Replace with actual API call
-      // const response = await tutorApi.get<RecentActivity[]>('/teacher/engagement/activity-feed');
-      // return response.data;
-
-      return [] as RecentActivity[];
+      const response = await tutorApi.request<RecentActivity[]>('/api/v3/tutor/teacher/engagement/activity-feed');
+      return response;
     },
-    enabled: false,
   });
 
   return {

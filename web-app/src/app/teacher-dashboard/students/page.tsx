@@ -18,123 +18,64 @@ import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { useTeacherStudents, type TeacherStudent } from '@/hooks';
 import Link from 'next/link';
 
 type FilterType = 'all' | 'at-risk' | 'excelling' | 'average';
 
 export default function TeacherStudentsPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
 
+  const { data: students = [], isLoading, error, refetch } = useTeacherStudents();
+
   useEffect(() => {
-    const id = localStorage.getItem('user_id');
     const role = localStorage.getItem('user_role');
-
-    if (!id || role !== 'teacher') {
+    if (role !== 'teacher') {
       router.push('/dashboard');
-      return;
     }
-
-    setUserId(id);
-    setUserRole(role);
-    setIsLoading(false);
   }, [router]);
 
-  // Mock student data
-  const allStudents = [
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john@example.com',
-      progress: 75,
-      streak: 12,
-      lastActivity: '2 hours ago',
-      tier: 'PREMIUM',
-      quizScores: [85, 90, 78, 92],
-      completedChapters: 6,
-      totalChapters: 8,
-      joinedDate: '2024-01-15',
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      progress: 45,
-      streak: 5,
-      lastActivity: '1 day ago',
-      tier: 'FREE',
-      quizScores: [65, 70, 55, 60],
-      completedChapters: 3,
-      totalChapters: 8,
-      joinedDate: '2024-01-20',
-    },
-    {
-      id: '3',
-      name: 'Mike Brown',
-      email: 'mike@example.com',
-      progress: 90,
-      streak: 20,
-      lastActivity: '1 hour ago',
-      tier: 'PRO',
-      quizScores: [95, 98, 92, 96],
-      completedChapters: 7,
-      totalChapters: 8,
-      joinedDate: '2024-01-10',
-    },
-    {
-      id: '4',
-      name: 'Emily Davis',
-      email: 'emily@example.com',
-      progress: 30,
-      streak: 3,
-      lastActivity: '3 days ago',
-      tier: 'FREE',
-      quizScores: [45, 50, 40, 48],
-      completedChapters: 2,
-      totalChapters: 8,
-      joinedDate: '2024-01-25',
-    },
-    {
-      id: '5',
-      name: 'David Wilson',
-      email: 'david@example.com',
-      progress: 60,
-      streak: 8,
-      lastActivity: '5 hours ago',
-      tier: 'PREMIUM',
-      quizScores: [75, 80, 72, 78],
-      completedChapters: 5,
-      totalChapters: 8,
-      joinedDate: '2024-01-18',
-    },
-    {
-      id: '6',
-      name: 'Lisa Anderson',
-      email: 'lisa@example.com',
-      progress: 25,
-      streak: 1,
-      lastActivity: '5 days ago',
-      tier: 'FREE',
-      quizScores: [40, 35, 42, 38],
-      completedChapters: 2,
-      totalChapters: 8,
-      joinedDate: '2024-01-28',
-    },
-  ];
+  // Helper to check if student is at-risk
+  const isAtRisk = (student: TeacherStudent): boolean => {
+    return student.progress < 30;
+  };
+
+  // Helper to format last activity
+  const formatLastActivity = (lastActivity: string): string => {
+    try {
+      const date = new Date(lastActivity);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffHours < 1) return 'Just now';
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      if (diffDays === 1) return '1 day ago';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      return `${diffDays} days ago`;
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  // Calculate average quiz score
+  const avgScore = (scores: number[] = []): number => {
+    if (!scores || scores.length === 0) return 0;
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  };
 
   // Filter and search students
-  const filteredStudents = allStudents.filter((student) => {
+  const filteredStudents = students.filter((student) => {
     const matchesSearch =
       student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.email.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesFilter =
       filter === 'all' ||
-      (filter === 'at-risk' && student.progress < 40) ||
+      (filter === 'at-risk' && isAtRisk(student)) ||
       (filter === 'excelling' && student.progress >= 80) ||
       (filter === 'average' && student.progress >= 40 && student.progress < 80);
 
@@ -142,13 +83,36 @@ export default function TeacherStudentsPage() {
   });
 
   // Calculate stats
-  const avgScore = (scores: number[]) => Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const totalStudents = students.length;
+  const activeThisWeek = students.filter((s) => {
+    const lastActivity = new Date(s.last_activity);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return lastActivity > weekAgo;
+  }).length;
+  const atRiskCount = students.filter((s) => isAtRisk(s)).length;
+  const excellingCount = students.filter((s) => s.progress >= 80).length;
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="text-center py-12">
+          <p className="text-accent-danger mb-4">Failed to load student data</p>
+          <Button variant="primary" onClick={() => refetch()}>
+            Try Again
+          </Button>
+        </div>
+      </PageContainer>
     );
   }
 
@@ -165,31 +129,25 @@ export default function TeacherStudentsPage() {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">Total Students</p>
-            <h3 className="text-3xl font-bold text-accent-primary">{allStudents.length}</h3>
+            <h3 className="text-3xl font-bold text-accent-primary">{totalStudents}</h3>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">Active This Week</p>
-            <h3 className="text-3xl font-bold text-accent-success">
-              {allStudents.filter((s) => s.lastActivity.includes('hour') || s.lastActivity.includes('day')).length}
-            </h3>
+            <h3 className="text-3xl font-bold text-accent-success">{activeThisWeek}</h3>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">At Risk</p>
-            <h3 className="text-3xl font-bold text-accent-danger">
-              {allStudents.filter((s) => s.progress < 40).length}
-            </h3>
+            <h3 className="text-3xl font-bold text-accent-danger">{atRiskCount}</h3>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-text-secondary mb-1">Excelling</p>
-            <h3 className="text-3xl font-bold text-accent-success">
-              {allStudents.filter((s) => s.progress >= 80).length}
-            </h3>
+            <h3 className="text-3xl font-bold text-accent-success">{excellingCount}</h3>
           </CardContent>
         </Card>
       </div>
@@ -249,7 +207,11 @@ export default function TeacherStudentsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredStudents.length === 0 ? (
+          {students.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-text-muted">No students yet. Students will appear here when they enroll.</p>
+            </div>
+          ) : filteredStudents.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-text-muted">No students found matching your criteria</p>
             </div>
@@ -269,7 +231,7 @@ export default function TeacherStudentsPage() {
                 </thead>
                 <tbody>
                   {filteredStudents.map((student) => (
-                    <tr key={student.id} className="border-b border-border-subtle hover:bg-bg-elevated">
+                    <tr key={student.user_id} className="border-b border-border-subtle hover:bg-bg-elevated">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-accent-primary/10 flex items-center justify-center text-accent-primary font-semibold">
@@ -298,20 +260,20 @@ export default function TeacherStudentsPage() {
                           <span className="text-sm text-text-primary">{student.progress}%</span>
                         </div>
                         <p className="text-xs text-text-muted mt-1">
-                          {student.completedChapters} of {student.totalChapters} chapters
+                          {student.completed_chapters ?? 0} of {student.total_chapters ?? 0} chapters
                         </p>
                       </td>
                       <td className="p-4">
                         <Badge
                           variant={
-                            avgScore(student.quizScores) >= 80
+                            avgScore(student.quiz_scores) >= 80
                               ? 'success'
-                              : avgScore(student.quizScores) >= 60
+                              : avgScore(student.quiz_scores) >= 60
                               ? 'intermediate'
                               : 'beginner'
                           }
                         >
-                          {avgScore(student.quizScores)}%
+                          {avgScore(student.quiz_scores)}%
                         </Badge>
                       </td>
                       <td className="p-4">
@@ -334,10 +296,10 @@ export default function TeacherStudentsPage() {
                         </Badge>
                       </td>
                       <td className="p-4">
-                        <span className="text-sm text-text-primary">{student.lastActivity}</span>
+                        <span className="text-sm text-text-primary">{formatLastActivity(student.last_activity)}</span>
                       </td>
                       <td className="p-4">
-                        <Link href={`/teacher-dashboard/students/${student.id}`}>
+                        <Link href={`/teacher-dashboard/students/${student.user_id}`}>
                           <Button variant="outline" size="sm">
                             View Details
                           </Button>

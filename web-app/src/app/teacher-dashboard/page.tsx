@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { Users, TrendingUp, Award, BookOpen, MessageSquare, CheckCircle, BarChart3, FileEdit, GraduationCap, Target } from 'lucide-react';
 import Link from 'next/link';
+import { useTeacherAnalytics, useTeacherStudents } from '@/hooks';
 
 // StatCard component for teacher metrics
 function StatCard({
@@ -185,6 +186,9 @@ export default function TeacherDashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { data: stats, isLoading: statsLoading, error: statsError } = useTeacherAnalytics();
+  const { data: students, isLoading: studentsLoading, error: studentsError } = useTeacherStudents();
+
   useEffect(() => {
     // Get user info from localStorage
     const id = localStorage.getItem('user_id');
@@ -206,56 +210,34 @@ export default function TeacherDashboardPage() {
     setIsLoading(false);
   }, [router]);
 
-  // Mock data for demonstration
-  const stats = {
-    totalStudents: 156,
-    activeStudents: 89,
-    averageScore: 78,
-    completionRate: 65,
-  };
-
-  const students = [
-    {
-      name: 'John Smith',
-      email: 'john@example.com',
-      progress: 75,
-      streak: 12,
-      lastActivity: '2h ago',
-      tier: 'PREMIUM',
-    },
-    {
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      progress: 45,
-      streak: 5,
-      lastActivity: '1d ago',
-      tier: 'FREE',
-    },
-    {
-      name: 'Mike Brown',
-      email: 'mike@example.com',
-      progress: 90,
-      streak: 20,
-      lastActivity: '1h ago',
-      tier: 'PRO',
-    },
-    {
-      name: 'Emily Davis',
-      email: 'emily@example.com',
-      progress: 30,
-      streak: 3,
-      lastActivity: '3d ago',
-      tier: 'FREE',
-    },
-  ];
-
-  if (isLoading) {
+  if (isLoading || statsLoading || studentsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
+
+  if (statsError || studentsError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-text-muted mb-4">Failed to load teacher dashboard data</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Transform student data for display
+  const displayStudents = students?.slice(0, 4).map(student => ({
+    name: student.name,
+    email: student.email,
+    progress: student.progress,
+    streak: student.streak,
+    lastActivity: student.last_activity,
+    tier: student.tier,
+  })) || [];
 
   return (
     <PageContainer>
@@ -297,34 +279,30 @@ export default function TeacherDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           title="Total Students"
-          value={stats.totalStudents}
+          value={stats?.total_students || 0}
           subtitle="Enrolled in course"
           icon={<Users className="w-6 h-6 text-accent-primary" />}
-          trend={{ value: 12, isPositive: true }}
           variant="default"
         />
         <StatCard
           title="Active Students"
-          value={stats.activeStudents}
+          value={stats?.active_students || 0}
           subtitle="Active in last 7 days"
           icon={<TrendingUp className="w-6 h-6 text-accent-success" />}
-          trend={{ value: 8, isPositive: true }}
           variant="success"
         />
         <StatCard
           title="Avg. Quiz Score"
-          value={`${stats.averageScore}%`}
+          value={`${Math.round(stats?.average_score || 0)}%`}
           subtitle="Across all quizzes"
           icon={<Award className="w-6 h-6 text-accent-primary" />}
-          trend={{ value: 5, isPositive: true }}
           variant="info"
         />
         <StatCard
           title="Completion Rate"
-          value={`${stats.completionRate}%`}
+          value={`${Math.round(stats?.completion_rate || 0)}%`}
           subtitle="Students completed course"
           icon={<CheckCircle className="w-6 h-6 text-accent-warning" />}
-          trend={{ value: 3, isPositive: true }}
           variant="warning"
         />
       </div>
@@ -348,9 +326,13 @@ export default function TeacherDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {students.map((student, index) => (
-              <StudentProgressRow key={index} {...student} />
-            ))}
+            {displayStudents.length > 0 ? (
+              displayStudents.map((student, index) => (
+                <StudentProgressRow key={index} {...student} />
+              ))
+            ) : (
+              <p className="text-center text-text-muted py-8">No students enrolled yet</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -367,7 +349,7 @@ export default function TeacherDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {students.slice(0, 3).map((student, index) => (
+              {displayStudents.slice(0, 3).map((student, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-accent-success/10 flex items-center justify-center text-accent-success font-bold">
@@ -381,6 +363,9 @@ export default function TeacherDashboardPage() {
                   <Badge variant="success">🔥 {student.streak} day streak</Badge>
                 </div>
               ))}
+              {displayStudents.length === 0 && (
+                <p className="text-center text-text-muted py-4">No students yet</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -400,21 +385,21 @@ export default function TeacherDashboardPage() {
                   <p className="font-medium text-text-primary">Students at risk</p>
                   <p className="text-sm text-text-muted">Not active in 7+ days</p>
                 </div>
-                <Badge variant="danger">12 students</Badge>
+                <Badge variant="danger">{stats?.students_at_risk || 0} students</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-text-primary">Failing quizzes</p>
                   <p className="text-sm text-text-muted">Score below 60%</p>
                 </div>
-                <Badge variant="warning">8 students</Badge>
+                <Badge variant="warning">{stats?.students_failing_quizzes || 0} students</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-text-primary">Stale streaks</p>
                   <p className="text-sm text-text-muted">Lost 3+ day streak</p>
                 </div>
-                <Badge variant="intermediate">15 students</Badge>
+                <Badge variant="intermediate">{stats?.students_with_stale_streaks || 0} students</Badge>
               </div>
               <Link href="/teacher-dashboard/students?filter=at-risk">
                 <Button variant="outline" className="w-full">
