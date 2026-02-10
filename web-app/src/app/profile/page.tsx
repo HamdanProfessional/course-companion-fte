@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useAuth } from '@/hooks';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { tutorApi, CertificateItem, CertificateEligibility } from '@/lib/api-v3';
 import { useV3SubscriptionInfo, useV3SubscriptionPlans, useV3UpgradeTier } from '@/hooks/useV3';
 import Link from 'next/link';
@@ -24,11 +23,16 @@ const BILLING_CYCLES = {
 
 export default function ProfilePage() {
   const { data: user } = useAuth();
-  const [userId] = useLocalStorage('user_id', '');
   const [certificates, setCertificates] = useState<CertificateItem[]>([]);
   const [eligibility, setEligibility] = useState<CertificateEligibility | null>(null);
   const [isLoadingCertificates, setIsLoadingCertificates] = useState(true);
   const [billingCycle, setBillingCycle] = useState<keyof typeof BILLING_CYCLES>('monthly');
+
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   // Subscription hooks
   const { data: subscription, isLoading: subLoading, refetch: refetchSubscription } = useV3SubscriptionInfo();
@@ -39,8 +43,9 @@ export default function ProfilePage() {
   const currentTier = subscription?.current_tier || 'FREE';
 
   const fetchCertificates = async () => {
+    if (!user?.id) return;
     try {
-      const data = await tutorApi.getUserCertificates(userId);
+      const data = await tutorApi.getUserCertificates(user.id);
       setCertificates(data.certificates);
     } catch (error) {
       // Ignore errors
@@ -50,8 +55,9 @@ export default function ProfilePage() {
   };
 
   const fetchEligibility = async () => {
+    if (!user?.id) return;
     try {
-      const data = await tutorApi.checkCertificateEligibility(userId);
+      const data = await tutorApi.checkCertificateEligibility(user.id);
       setEligibility(data);
     } catch (error) {
       // Ignore errors
@@ -59,15 +65,13 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (userId) {
-      fetchCertificates();
-      fetchEligibility();
-    }
+    fetchCertificates();
+    fetchEligibility();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [user?.id]);
 
   const handleGenerateCertificate = async () => {
-    if (!userId) return;
+    if (!user?.id) return;
 
     const studentName = prompt('Enter your full name for the certificate (min 2 characters):');
     if (!studentName || !studentName.trim()) {
@@ -87,7 +91,7 @@ export default function ProfilePage() {
     }
 
     try {
-      await tutorApi.generateCertificate({ user_id: userId, student_name: trimmedName });
+      await tutorApi.generateCertificate({ user_id: user.id, student_name: trimmedName });
       await fetchCertificates();
       await fetchEligibility();
       alert('Certificate generated successfully!');
@@ -103,7 +107,6 @@ export default function ProfilePage() {
         billingCycle,
       });
 
-      localStorage.setItem('user_tier', result.new_tier);
       await refetchSubscription();
 
       alert(`Successfully upgraded to ${tier}!`);
@@ -111,6 +114,51 @@ export default function ProfilePage() {
     } catch (error) {
       alert(`Upgrade failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordMessage('');
+
+    // Validation
+    if (!currentPassword) {
+      setPasswordMessage('Please enter your current password.');
+      return;
+    }
+    if (!newPassword) {
+      setPasswordMessage('Please enter a new password.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordMessage('New password must be at least 8 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage('New passwords do not match.');
+      return;
+    }
+
+    // TODO: Implement password change API
+    setPasswordMessage('Password change feature coming soon. Please contact support to update your password.');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data including progress, quiz results, and personal information.'
+    );
+
+    if (!confirmed) return;
+
+    const secondConfirmation = prompt('Type "DELETE" to confirm account deletion:');
+    if (secondConfirmation !== 'DELETE') {
+      alert('Account deletion cancelled.');
+      return;
+    }
+
+    // TODO: Implement account deletion API
+    alert('Account deletion feature coming soon. Please contact support to delete your account.');
   };
 
   const getPrice = (basePrice: number) => {
@@ -191,21 +239,49 @@ export default function ProfilePage() {
                 <label htmlFor="current-password" className="block text-sm font-medium text-text-secondary mb-2">
                   Current Password
                 </label>
-                <Input id="current-password" type="password" placeholder="Enter current password" />
+                <Input
+                  id="current-password"
+                  type="password"
+                  placeholder="Enter current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
               </div>
               <div>
                 <label htmlFor="new-password" className="block text-sm font-medium text-text-secondary mb-2">
                   New Password
                 </label>
-                <Input id="new-password" type="password" placeholder="Enter new password" />
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="Enter new password (min 8 characters)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
               </div>
               <div>
                 <label htmlFor="confirm-password" className="block text-sm font-medium text-text-secondary mb-2">
                   Confirm New Password
                 </label>
-                <Input id="confirm-password" type="password" placeholder="Confirm new password" />
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
               </div>
-              <Button variant="primary">Update Password</Button>
+              {passwordMessage && (
+                <div className="text-sm bg-glass-hover border border-glass-border p-3 rounded-lg">
+                  {passwordMessage}
+                </div>
+              )}
+              <Button
+                variant="primary"
+                onClick={handlePasswordChange}
+              >
+                Update Password
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -444,7 +520,11 @@ export default function ProfilePage() {
             <p className="text-sm text-text-secondary">
               Deleting your account will permanently remove all your data including progress, quiz results, and personal information. This action cannot be undone.
             </p>
-            <Button variant="danger" className="w-full sm:w-auto">
+            <Button
+              variant="danger"
+              className="w-full sm:w-auto"
+              onClick={handleDeleteAccount}
+            >
               Delete Account
             </Button>
           </div>
