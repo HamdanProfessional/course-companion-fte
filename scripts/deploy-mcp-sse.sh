@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy MCP SSE Server to testservers.online
+# Deploy MCP SSE Server to production
 
 set -e
 
@@ -10,6 +10,10 @@ SERVER="n00bi2761@92.113.147.250"
 REMOTE_DIR="~/course-companion-mcp"
 SSE_PORT="8080"
 
+# Create remote directory first
+echo "Creating remote directory..."
+ssh -o StrictHostKeyChecking=no $SERVER "mkdir -p $REMOTE_DIR"
+
 # Build and upload
 echo "Packaging MCP server..."
 cd chatgpt-app
@@ -17,16 +21,18 @@ cd chatgpt-app
 # Create archive
 tar -czf ../mcp-sse-server.tar.gz \
   mcp_server_sse.py \
-  requirements-sse.txt \
-  manifest.yaml
+  requirements-sse.txt
 
-# Upload to server
+# Upload to server (to home directory first)
 echo "Uploading to server..."
-scp ../mcp-sse-server.tar.gz $SERVER:$REMOTE_DIR/
+scp ../mcp-sse-server.tar.gz $SERVER:~/
 
 # Install and start on server
+echo "Installing on server..."
 ssh -o StrictHostKeyChecking=no $SERVER << 'ENDSSH'
-cd $REMOTE_DIR
+# Move archive to target directory
+mv ~/mcp-sse-server.tar.gz ~/course-companion-mcp/
+cd ~/course-companion-mcp
 
 # Extract
 tar -xzf mcp-sse-server.tar.gz
@@ -56,12 +62,12 @@ fi
 ENDSSH
 
 # Cleanup
+cd ..
 rm ../mcp-sse-server.tar.gz
 
 echo ""
 echo "=== Deployment Complete ==="
-echo "MCP SSE Endpoint: sse.testservers.online/mcp"
-echo "Or: http://92.113.147.250:8080/mcp"
+echo "MCP SSE Endpoint: http://92.113.147.250:8080/mcp"
 echo ""
 echo "Add to ChatGPT Desktop Config:"
 echo '{"mcpServers": {"course-companion-fte": {"transport": "sse", "url": "http://92.113.147.250:8080/mcp"}}}'
