@@ -79,9 +79,15 @@ tools:
         default: 10
 
   - name: get_quiz
-    description: Get quiz questions for a specific quiz
-    endpoint: ${BACKEND_URL}/api/v1/quizzes/{quiz_id}
-    method: GET
+    description: Get quiz questions and load interactive UI widget. This will display a React quiz component in ChatGPT.
+    mcp:
+      server: course-companion-fte
+      tool: get_quiz
+    parameters:
+      - name: quiz_id
+        description: Quiz ID from the list_quizzes tool
+        type: string
+        required: true
 
   - name: submit_quiz
     description: Submit quiz answers for grading
