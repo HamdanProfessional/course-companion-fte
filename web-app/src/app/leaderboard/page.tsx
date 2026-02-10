@@ -31,15 +31,6 @@ export default function LeaderboardPage() {
   const [showStreak, setShowStreak] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!userId) {
-      router.push('/login');
-      return;
-    }
-    fetchLeaderboard();
-    fetchOptInStatus();
-  }, [userId, router]);
-
   const fetchLeaderboard = async () => {
     try {
       setIsLoading(true);
@@ -69,6 +60,17 @@ export default function LeaderboardPage() {
       console.error('Failed to fetch opt-in status:', error);
     }
   };
+
+  useEffect(() => {
+    if (!userId) {
+      router.push('/login');
+      return;
+    }
+    fetchLeaderboard();
+    fetchOptInStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // fetchLeaderboard and fetchOptInStatus are defined outside useEffect intentionally
+  }, [userId, router]);
 
   const handleOptIn = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 BACKEND_URL="https://92.113.147.250"
-WEB_APP_URL="https://web-app-ebon-mu.vercel.app"
+WEB_APP_URL="http://92.113.147.250:3225/"
 ALERT_EMAIL="" # Add your email for alerts
 LOG_FILE="/var/log/course-companion-health.log"
 

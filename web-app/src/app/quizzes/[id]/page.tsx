@@ -89,17 +89,6 @@ export default function QuizPage({ params }: { params: { id: string } }) {
         console.error('Failed to add mistakes to bank:', mistakeError);
         // Don't fail the quiz submission if mistake bank fails
       }
-
-      // If quiz is passed, update progress to mark chapter as complete
-      if (data.passed && quiz?.chapter_id) {
-        try {
-          await tutorApi.updateProgress(quiz.chapter_id, data.percentage);
-          console.log(`Progress updated: Chapter ${quiz.chapter_id} marked as complete`);
-        } catch (progressError) {
-          console.error('Failed to update progress:', progressError);
-          // Don't fail the quiz submission if progress update fails
-        }
-      }
     } catch (error) {
       console.error('Quiz submission failed:', error);
       // Show error message to user

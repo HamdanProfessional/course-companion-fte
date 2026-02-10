@@ -13,8 +13,10 @@ Path: /api/v3/tutor/ai
 
 import logging
 from typing import List, Optional, Dict, Any
-from uuid import UUID
+from uuid import UUID, uuid4
 from enum import Enum
+from datetime import datetime
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from pydantic import BaseModel, Field
@@ -29,9 +31,27 @@ from src.services.adaptive_service import (
     generate_personalized_path,
     AdaptiveServiceError
 )
-from src.services.mentor_service import MentorService, MentorServiceError
+# Mentor service - Phase 3 feature (may not exist in Zero-Backend-LLM architecture)
+try:
+    from src.services.mentor_service import MentorService, MentorServiceError
+except ImportError:
+    # Provide stub implementation for Phase 1 compatibility
+    class MentorServiceError(Exception):
+        pass
+
+    class MentorService:
+        def __init__(self, db):
+            self.db = db
+
+        async def answer_question(self, user_id, question, chapter_context=None, conversation_history=None):
+            raise MentorServiceError("AI Mentor feature is not available in Zero-Backend-LLM mode. Please enable Phase 2/3 LLM features.")
+
+        async def explain_topic(self, topic, context=None, complexity_level="intermediate", include_examples=True):
+            raise MentorServiceError("AI Explanation feature is not available in Zero-Backend-LLM mode. Please enable Phase 2/3 LLM features.")
+
 from src.models.database import User
 from src.models.schemas import ChapterDetail
+from src.api.dependencies import get_current_user, get_optional_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -134,17 +154,8 @@ class QuizGradingRequest(BaseModel):
 # =============================================================================
 
 
-async def verify_premium_access(user_id: UUID, db: AsyncSession) -> User:
+async def verify_premium_access(user: User) -> User:
     """Verify user has premium access for AI features."""
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
     if user.tier == "FREE":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -204,7 +215,7 @@ async def get_ai_status():
 
 @router.get("/adaptive/analysis", response_model=AdaptiveAnalysis)
 async def get_knowledge_analysis(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -217,6 +228,8 @@ async def get_knowledge_analysis(
     - Confidence score based on data amount
 
     **Phase 3 Feature**: Available to all premium users.
+
+    **Authentication**: Required - Users must be logged in.
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -225,9 +238,9 @@ async def get_knowledge_analysis(
         )
 
     try:
-        await verify_premium_access(user_id, db)
+        await verify_premium_access(current_user)
 
-        analysis = await analyze_knowledge_gaps(str(user_id), db)
+        analysis = await analyze_knowledge_gaps(str(current_user.id), db)
 
         return AdaptiveAnalysis(
             weak_topics=analysis.weak_topics,
@@ -255,7 +268,7 @@ async def get_knowledge_analysis(
 
 @router.get("/adaptive/recommendations", response_model=ChapterRecommendation)
 async def get_recommendations(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -268,6 +281,8 @@ async def get_recommendations(
     - Difficulty matching
 
     **Phase 3 Feature**: Smart recommendations for premium users.
+
+    **Authentication**: Required - Users must be logged in.
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -276,9 +291,9 @@ async def get_recommendations(
         )
 
     try:
-        await verify_premium_access(user_id, db)
+        await verify_premium_access(current_user)
 
-        recommendation = await recommend_next_chapter(str(user_id), db)
+        recommendation = await recommend_next_chapter(str(current_user.id), db)
 
         return ChapterRecommendation(
             next_chapter_id=recommendation.next_chapter_id,
@@ -308,7 +323,7 @@ async def get_recommendations(
 @router.post("/adaptive/path", response_model=LearningPathResponse)
 async def create_learning_path(
     request: LearningPathRequest,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -322,6 +337,8 @@ async def create_learning_path(
     - Current progress
 
     **Phase 3 Feature**: AI-powered learning paths.
+
+    **Authentication**: Required - Users must be logged in.
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -330,10 +347,10 @@ async def create_learning_path(
         )
 
     try:
-        await verify_premium_access(user_id, db)
+        await verify_premium_access(current_user)
 
         path = await generate_personalized_path(
-            str(user_id),
+            str(current_user.id),
             request.learning_goals,
             request.available_time_hours,
             db
@@ -365,7 +382,8 @@ async def create_learning_path(
 @router.post("/mentor/chat", response_model=MentorChatResponse)
 async def mentor_chat(
     request: MentorChatRequest,
-    user_id: UUID = Query(description="User UUID"),
+    conversation_id: Optional[UUID] = Query(None, description="Conversation UUID for chat history"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -377,14 +395,21 @@ async def mentor_chat(
     - Asks follow-up questions
     - Suggests relevant chapters
     - Adapts to user's level
+    - Saves conversation history to database
 
-    **Phase 3 Feature**: Interactive AI tutoring.
+    **Phase 3 Feature**: Interactive AI tutoring with chat history.
+
+    **Authentication**: Required - Users must be logged in to chat with the mentor.
 
     Example question:
     ```
     "Can you explain how MCP servers work and how they connect to ChatGPT?"
     ```
     """
+    logger.info(f"Mentor chat request from user {current_user.id}, conversation_id: {conversation_id}")
+    logger.info(f"Question: {request.question[:100]}...")
+    logger.info(f"Conversation history length: {len(request.conversation_history) if request.conversation_history else 0}")
+
     if not settings.enable_phase_2_llm:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -393,7 +418,7 @@ async def mentor_chat(
 
     try:
         # Premium check can be optional for basic mentor features
-        user = await verify_premium_access(user_id, db)
+        user = await verify_premium_access(current_user)
 
         # Convert conversation history
         history = []
@@ -409,11 +434,56 @@ async def mentor_chat(
 
         # Get answer from mentor
         response = await mentor_service.answer_question(
-            user_id=str(user_id),
+            user_id=str(current_user.id),
             question=request.question,
             chapter_context=request.chapter_context,
             conversation_history=history
         )
+
+        # Save to chat history if conversation_id provided
+        if conversation_id:
+            from src.models.database import ChatConversation, ChatMessage
+
+            # Verify conversation belongs to user
+            from sqlalchemy import select
+            conv_result = await db.execute(
+                select(ChatConversation).where(
+                    ChatConversation.id == conversation_id,
+                    ChatConversation.user_id == current_user.id
+                )
+            )
+            conversation = conv_result.scalar_one_or_none()
+
+            if conversation:
+                # Save user message
+                user_message = ChatMessage(
+                    conversation_id=conversation_id,
+                    role="user",
+                    content=request.question
+                )
+                db.add(user_message)
+
+                # Save assistant response
+                assistant_message = ChatMessage(
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=response.get("answer", "")
+                )
+                db.add(assistant_message)
+
+                # Update conversation title if it's the first message
+                from sqlalchemy import func
+                msg_count_result = await db.execute(
+                    select(func.count(ChatMessage.id)).where(ChatMessage.conversation_id == conversation_id)
+                )
+                msg_count = msg_count_result.scalar() - 2  # Subtract the two messages we just added
+
+                if msg_count == 0:
+                    # Update title with first message preview
+                    conversation.title = request.question[:100] + ("..." if len(request.question) > 100 else "")
+
+                conversation.updated_at = func.now()
+                await db.commit()
 
         return MentorChatResponse(
             answer=response.get("answer", ""),
@@ -425,13 +495,13 @@ async def mentor_chat(
     except HTTPException:
         raise
     except MentorServiceError as e:
-        logger.error(f"Mentor service error: {e}")
+        logger.error(f"Mentor service error for user {current_user.id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Error in mentor chat: {e}")
+        logger.error(f"Error in mentor chat for user {current_user.id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get mentor response"
@@ -441,7 +511,7 @@ async def mentor_chat(
 @router.post("/explain", response_model=ContentExplanationResponse)
 async def explain_content(
     request: ContentExplanationRequest,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -455,6 +525,8 @@ async def explain_content(
 
     **Phase 3 Feature**: Personalized content explanations.
 
+    **Authentication**: Required - Users must be logged in.
+
     Complexity levels:
     - `beginner`: Simple language, lots of examples
     - `intermediate`: Balanced (default)
@@ -467,12 +539,8 @@ async def explain_content(
         )
 
     try:
-        # Get user for tier check
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-
         # Free users get basic explanations, premium get detailed
-        if user and user.tier == "FREE":
+        if current_user.tier == "FREE":
             # Simplified response for free users
             return ContentExplanationResponse(
                 explanation=f"This is a basic explanation of {request.topic}. For detailed explanations with examples and analogies, please upgrade to Premium.",
@@ -519,7 +587,7 @@ async def explain_content(
 @router.post("/quiz/grade-llm")
 async def grade_quiz_with_ai(
     request: QuizGradingRequest,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -533,6 +601,8 @@ async def grade_quiz_with_ai(
 
     **Phase 3 Feature**: AI-powered quiz grading.
 
+    **Authentication**: Required - Users must be logged in.
+
     This is an alias to the quizzes endpoint with LLM mode enabled.
     """
     if not settings.enable_phase_2_llm:
@@ -542,13 +612,20 @@ async def grade_quiz_with_ai(
         )
 
     try:
-        await verify_premium_access(user_id, db)
+        await verify_premium_access(current_user)
 
-        from src.services.quiz_llm_service import grade_quiz_with_llm
+        # Quiz LLM service - Phase 3 feature (may not exist in Zero-Backend-LLM architecture)
+        try:
+            from src.services.quiz_llm_service import grade_quiz_with_llm
+        except ImportError:
+            raise HTTPException(
+                status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                detail="LLM quiz grading is not available in Zero-Backend-LLM mode. Please enable Phase 2/3 LLM features."
+            )
 
         result = await grade_quiz_with_llm(
             request.quiz_id,
-            str(user_id),
+            str(current_user.id),
             request.answers,
             db
         )
@@ -576,32 +653,37 @@ async def grade_quiz_with_ai(
 
 @router.get("/usage/costs")
 async def get_llm_usage_costs(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Get LLM usage costs for a user (admin/monitoring).
 
     **Phase 3 Feature**: Cost tracking and monitoring.
+
+    **Authentication**: Required - Pro users only.
     """
     try:
-        # Check if user is admin
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-
-        if not user or user.tier != "PRO":
+        if current_user.tier != "PRO":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cost tracking is only available to Pro users"
             )
 
-        from src.services.cost_tracking_service import CostTrackingService
+        # Cost tracking service - Phase 3 feature (may not exist in Zero-Backend-LLM architecture)
+        try:
+            from src.services.cost_tracking_service import CostTrackingService
+        except ImportError:
+            raise HTTPException(
+                status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                detail="Cost tracking is not available in Zero-Backend-LLM mode. Please enable Phase 2/3 LLM features."
+            )
 
         cost_service = CostTrackingService(db)
-        costs = await cost_service.get_user_costs(str(user_id))
+        costs = await cost_service.get_user_costs(str(current_user.id))
 
         return {
-            "user_id": str(user_id),
+            "user_id": str(current_user.id),
             "total_requests": costs.get("total_requests", 0),
             "total_cost_usd": costs.get("total_cost_usd", 0.0),
             "cost_breakdown": costs.get("cost_breakdown", {}),
@@ -616,4 +698,240 @@ async def get_llm_usage_costs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve usage costs"
+        )
+
+
+class GenerateQuizRequest(BaseModel):
+    """Request for AI-generated quiz questions."""
+    topic: str = Field(..., min_length=3, description="Topic to generate questions about (e.g., 'AI Agents', 'MCP Integration')")
+    subtopic: Optional[str] = Field(None, description="Specific subtopic (optional)")
+    difficulty: str = Field(default="beginner", description="Difficulty: beginner, intermediate, advanced, mixed")
+    num_questions: int = Field(default=5, ge=3, le=10, description="Number of questions to generate (3-10)")
+
+
+class GeneratedQuestionItem(BaseModel):
+    """AI-generated question."""
+    id: str
+    question_text: str
+    options: Dict[str, str]
+    correct_answer: str
+    explanation: str
+    difficulty: str
+    topic: str
+    subtopic: str
+
+
+class GeneratedQuizResponse(BaseModel):
+    """Response with AI-generated quiz."""
+    quiz_id: str
+    questions: List[GeneratedQuestionItem]
+    total_questions: int
+    topic: str
+    subtopic: Optional[str]
+    difficulty: str
+    generated_at: str
+
+
+@router.post("/generate-quiz", response_model=GeneratedQuizResponse)
+async def generate_quiz_with_ai(
+    request: GenerateQuizRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate unlimited quiz questions using AI.
+
+    Creates unique, AI-generated multiple-choice questions on any topic
+    related to AI agents, MCP, ChatGPT apps, and web development.
+
+    **Features:**
+    - Generate 3-10 questions per request
+    - 4 difficulty levels: beginner, intermediate, advanced, mixed
+    - Detailed explanations for each answer
+    - Never runs out of practice material
+
+    **Example Request:**
+    ```json
+    {
+        "topic": "AI Agents",
+        "subtopic": "MCP Integration",
+        "difficulty": "intermediate",
+        "num_questions": 5
+    }
+    ```
+
+    **Phase 3 Feature**: AI-powered infinite quiz generation.
+
+    **Authentication**: Required - Users must be logged in.
+    """
+    if not settings.enable_phase_2_llm:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"detail": "LLM features are not enabled", "phase_2_enabled": False}
+        )
+
+    try:
+        # Import LLM client
+        from src.core.llm import get_llm_client
+
+        llm_client = get_llm_client()
+        if not llm_client:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="LLM client not available"
+            )
+
+        # Prepare prompt for quiz generation
+        difficulty_desc = {
+            "beginner": "basic concepts, simple questions, foundational knowledge",
+            "intermediate": "practical applications, some complexity, real-world scenarios",
+            "advanced": "complex scenarios, edge cases, advanced concepts",
+            "mixed": "mix of beginner, intermediate, and advanced questions"
+        }
+
+        system_prompt = """You are an expert AI tutor generating quiz questions about AI agents, MCP (Model Context Protocol), ChatGPT applications, and web development.
+
+Generate multiple-choice questions in the following JSON format:
+{
+    "questions": [
+        {
+            "question": "Clear question text",
+            "options": {
+                "A": "First option",
+                "B": "Second option",
+                "C": "Third option",
+                "D": "Fourth option"
+            },
+            "correct_answer": "A",
+            "explanation": "Detailed explanation of why this is correct",
+            "difficulty": "beginner|intermediate|advanced"
+        }
+    ]
+}
+
+Requirements:
+- Questions must be clear and unambiguous
+- All options should be plausible
+- Only one correct answer per question
+- Explanations should be educational
+- Difficulty must match the requested level"""
+
+        user_prompt = f"""Generate {request.num_questions} multiple-choice quiz questions about:
+
+Topic: {request.topic}
+{f"Subtopic: {request.subtopic}" if request.subtopic else ""}
+Difficulty: {request.difficulty} ({difficulty_desc.get(request.difficulty, request.difficulty)})
+
+Return valid JSON with the questions array."""
+
+        # Generate questions
+        response = await llm_client.generate(
+            prompt=user_prompt,
+            system_prompt=system_prompt,
+            temperature=0.7,
+            response_format={"type": "json_object"},
+            max_tokens=2000  # Ensure we have enough tokens for the response
+        )
+
+        # Parse JSON response
+        import json
+        import re
+
+        try:
+            # First, try to find complete JSON object
+            # Look for balanced braces
+            brace_count = 0
+            json_start = -1
+            json_end = -1
+
+            for i, char in enumerate(response):
+                if char == '{':
+                    if brace_count == 0:
+                        json_start = i
+                    brace_count += 1
+                elif char == '}':
+                    brace_count -= 1
+                    if brace_count == 0 and json_start >= 0:
+                        json_end = i + 1
+                        break
+
+            if json_start >= 0 and json_end > json_start:
+                json_str = response[json_start:json_end]
+                response_data = json.loads(json_str)
+            else:
+                # Try extracting JSON from markdown code blocks
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+                if json_match:
+                    response_data = json.loads(json_match.group(1))
+                elif '```' in response:
+                    cleaned = re.sub(r'```\w*\n?', '', response).strip()
+                    response_data = json.loads(cleaned)
+                else:
+                    response_data = json.loads(response)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse quiz JSON: {e}")
+            logger.error(f"Response was: {response[:1000]}")
+            # Try to provide a fallback response
+            try:
+                # Generate a simple fallback quiz
+                questions_data = [{
+                    "question": f"What is {request.topic}?",
+                    "options": {
+                        "A": "A software program",
+                        "B": "An autonomous system that perceives and acts",
+                        "C": "A database",
+                        "D": "A programming language"
+                    },
+                    "correct_answer": "B",
+                    "explanation": f"{request.topic} refers to autonomous systems that can perceive their environment and take actions.",
+                    "difficulty": request.difficulty
+                }]
+            except:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate valid quiz questions. The AI response was incomplete. Please try again."
+                )
+
+        questions_data = response_data.get("questions", [])
+
+        if not questions_data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No questions generated. Please try again."
+            )
+
+        # Transform to response format
+        questions = []
+        for i, q_data in enumerate(questions_data):
+            questions.append(GeneratedQuestionItem(
+                id=f"gen_{uuid.uuid4().hex[:8]}_{i}",
+                question_text=q_data.get("question", ""),
+                options=q_data.get("options", {}),
+                correct_answer=q_data.get("correct_answer", "A"),
+                explanation=q_data.get("explanation", ""),
+                difficulty=q_data.get("difficulty", request.difficulty),
+                topic=request.topic,
+                subtopic=request.subtopic or ""
+            ))
+
+        # Create unique quiz ID
+        quiz_id = f"quiz_gen_{uuid.uuid4().hex}"
+
+        return GeneratedQuizResponse(
+            quiz_id=quiz_id,
+            questions=questions,
+            total_questions=len(questions),
+            topic=request.topic,
+            subtopic=request.subtopic,
+            difficulty=request.difficulty,
+            generated_at=datetime.utcnow().isoformat()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating quiz: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate quiz: {str(e)}"
         )

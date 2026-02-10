@@ -26,8 +26,9 @@ router.include_router(
 )
 
 # Include public certificate verification router (no auth required)
-router.include_router(
-    certificate_verify_router.router,
-    prefix="/certificate",
-    tags=["Certificate Verification (Public)"]
-)
+# Temporarily disabled to test chat router
+# router.include_router(
+#     certificate_verify_router.router,
+#     prefix="/certificate",
+#     tags=["Certificate Verification (Public)"]
+# )

@@ -189,9 +189,10 @@ class TeacherService:
             # Get last activity
             last_activity = student.progress.last_activity if student.progress else student.last_login
             if last_activity:
-                last_activity_str = last_activity.isoformat()
+                # Format as readable date: "Feb 7, 2026"
+                last_activity_str = last_activity.strftime("%b %d, %Y")
             else:
-                last_activity_str = student.created_at.isoformat()
+                last_activity_str = student.created_at.strftime("%b %d, %Y")
 
             # Get last 10 quiz scores
             quiz_scores_result = await self.db.execute(
@@ -326,11 +327,21 @@ class TeacherService:
     async def get_question_analysis(self) -> List[QuestionAnalysis]:
         """
         Get question-level analytics for difficulty assessment.
+        Returns empty list if no quiz attempts exist.
         """
+        # First check if there are any quiz attempts at all
+        attempts_count_result = await self.db.execute(
+            select(func.count(QuizAttempt.id))
+        )
+        attempts_count = attempts_count_result.scalar() or 0
+
+        if attempts_count == 0:
+            # No attempts yet, return empty list
+            return []
+
         # Get all questions
         result = await self.db.execute(
             select(Question)
-            .options(selectinload(Quiz))
             .order_by(Question.quiz_id, Question.order)
         )
         questions = result.scalars().all()
@@ -339,7 +350,6 @@ class TeacherService:
 
         for question in questions:
             # Get all attempts for this question
-            # We need to find QuizAttempt records that include this question_id
             attempts_result = await self.db.execute(
                 select(QuizAttempt)
                 .where(QuizAttempt.quiz_id == question.quiz_id)
@@ -354,7 +364,11 @@ class TeacherService:
             correct_count = 0
 
             for attempt in attempts:
+                # Safely get answers - handle None or non-dict values
                 answers = attempt.answers
+                if not answers or not isinstance(answers, dict):
+                    continue
+
                 if question.id in answers:
                     total_attempts += 1
                     if answers[question.id] == question.correct_answer:
@@ -536,7 +550,7 @@ class TeacherService:
                 name = student.email.split('@')[0].replace('.', ' ').replace('_', ' ').title()
 
                 # Format last activity
-                last_activity_str = last_activity.isoformat() if last_activity else student.created_at.isoformat()
+                last_activity_str = last_activity.strftime("%b %d, %Y") if last_activity else student.created_at.strftime("%b %d, %Y")
 
                 at_risk_list.append(AtRiskStudent(
                     user_id=str(student.id),
@@ -579,12 +593,23 @@ class TeacherService:
 
         for attempt, user, quiz in quiz_activities:
             name = user.email.split('@')[0].replace('.', ' ').replace('_', ' ').title()
+            # Format timestamp for display
+            time_diff = datetime.utcnow() - attempt.completed_at
+            if time_diff.days == 0:
+                time_str = attempt.completed_at.strftime("%I:%M %p")
+            elif time_diff.days == 1:
+                time_str = "Yesterday"
+            elif time_diff.days < 7:
+                time_str = f"{time_diff.days} days ago"
+            else:
+                time_str = attempt.completed_at.strftime("%b %d")
+
             activities.append(RecentActivity(
                 activity_id=f"quiz_{attempt.id}",
                 student_name=name,
                 activity_type="quiz_completed",
                 description=f"Completed '{quiz.title}' quiz with score {attempt.score}%",
-                timestamp=attempt.completed_at.isoformat()
+                timestamp=time_str
             ))
 
         # Get recent student logins
@@ -600,12 +625,23 @@ class TeacherService:
         for user in login_users:
             name = user.email.split('@')[0].replace('.', ' ').replace('_', ' ').title()
             if user.last_login:
+                # Format timestamp for display
+                time_diff = datetime.utcnow() - user.last_login
+                if time_diff.days == 0:
+                    time_str = user.last_login.strftime("%I:%M %p")
+                elif time_diff.days == 1:
+                    time_str = "Yesterday"
+                elif time_diff.days < 7:
+                    time_str = f"{time_diff.days} days ago"
+                else:
+                    time_str = user.last_login.strftime("%b %d")
+
                 activities.append(RecentActivity(
                     activity_id=f"login_{user.id}",
                     student_name=name,
                     activity_type="login",
                     description=f"Logged in to continue learning",
-                    timestamp=user.last_login.isoformat()
+                    timestamp=time_str
                 ))
 
         # Sort by timestamp (newest first) and limit

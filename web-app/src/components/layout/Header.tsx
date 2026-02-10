@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search, Users, MessageSquare, GraduationCap, Target, Settings, AlertCircle, Infinity, Clock } from 'lucide-react';
+import { BookOpen, Menu, X, User, LogOut, Home, FileText, ClipboardList, BarChart3, Brain, Sparkles, Search, Users, MessageSquare, GraduationCap, Target, Settings, AlertCircle, Infinity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
@@ -18,7 +18,6 @@ const navigation = [
 const learningTools = [
   { name: 'Infinite Quiz', href: '/infinite-quiz', icon: Infinity },
   { name: 'Progress', href: '/progress', icon: BarChart3 },
-  { name: 'Time Machine', href: '/time-machine', icon: Clock },
   { name: 'Mistake Bank', href: '/mistake-bank', icon: AlertCircle },
 ];
 

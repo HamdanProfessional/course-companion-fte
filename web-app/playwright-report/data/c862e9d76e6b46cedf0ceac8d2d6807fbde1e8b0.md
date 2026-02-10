@@ -1,0 +1,76 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e37] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e38]:
+    - navigation "Global" [ref=e39]:
+      - link "Course Companion" [ref=e40] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e42]
+        - heading "Course Companion" [level=1] [ref=e45]
+      - generic [ref=e46]:
+        - link "Dashboard" [ref=e48] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e49]
+          - text: Dashboard
+        - link "Chapters" [ref=e53] [cursor=pointer]:
+          - /url: /chapters
+          - img [ref=e54]
+          - text: Chapters
+        - link "Quizzes" [ref=e58] [cursor=pointer]:
+          - /url: /quizzes
+          - img [ref=e59]
+          - text: Quizzes
+        - link "Adaptive Learning AI" [ref=e64] [cursor=pointer]:
+          - /url: /adaptive-learning
+          - img [ref=e65]
+          - generic [ref=e73]: Adaptive Learning
+          - generic [ref=e74]: AI
+        - link "AI Mentor AI" [ref=e76] [cursor=pointer]:
+          - /url: /ai-mentor
+          - img [ref=e77]
+          - generic [ref=e80]: AI Mentor
+          - generic [ref=e81]: AI
+        - button [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+      - generic [ref=e88]:
+        - link "Profile" [ref=e89] [cursor=pointer]:
+          - /url: /profile
+          - button "Profile" [ref=e90]:
+            - img [ref=e91]
+            - generic [ref=e94]: Profile
+        - button "Logout" [ref=e95] [cursor=pointer]:
+          - img [ref=e96]
+          - generic [ref=e99]: Logout
+  - main [ref=e100]:
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e106]:
+          - img [ref=e109]
+          - heading "Welcome Back" [level=3] [ref=e111]
+          - paragraph [ref=e112]: Sign in to continue your learning journey
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - generic [ref=e116]: Email
+              - textbox "Email" [ref=e119]:
+                - /placeholder: you@example.com
+            - generic [ref=e120]:
+              - generic [ref=e121]: Password
+              - textbox "Password" [ref=e124]:
+                - /placeholder: ••••••••
+            - button "Sign In" [ref=e126] [cursor=pointer]
+          - generic [ref=e127]:
+            - text: Don't have an account?
+            - link "Sign up" [ref=e128] [cursor=pointer]:
+              - /url: /register
+      - generic [ref=e129]: "Demo credentials: demo@example.com / password123"
+  - contentinfo [ref=e130]:
+    - paragraph [ref=e132]:
+      - text: © 2026 Course Companion FTE. Built with
+      - img [ref=e133]
+      - text: for Panaversity Hackathon IV.
+  - alert [ref=e135]
+```

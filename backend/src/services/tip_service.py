@@ -9,7 +9,7 @@ from typing import List, Optional
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.database import Tip
+from src.models.database import Tip as TipModel
 from src.models.schemas import TipCreate, Tip
 
 
@@ -24,7 +24,7 @@ class TipService:
         category: Optional[str] = None,
         difficulty_level: Optional[str] = None,
         active_only: bool = True
-    ) -> List[Tip]:
+    ) -> List[TipModel]:
         """
         Get all tips with optional filtering.
 
@@ -36,26 +36,26 @@ class TipService:
         Returns:
             List of tips matching filters
         """
-        query = select(Tip)
+        query = select(TipModel)
 
         conditions = []
         if active_only:
-            conditions.append(Tip.active == True)
+            conditions.append(TipModel.active == True)
         if category:
-            conditions.append(Tip.category == category)
+            conditions.append(TipModel.category == category)
         if difficulty_level:
             # Match tips with specific difficulty OR no difficulty (general tips)
             conditions.append(
                 or_(
-                    Tip.difficulty_level == difficulty_level,
-                    Tip.difficulty_level == None  # noqa: E711
+                    TipModel.difficulty_level == difficulty_level,
+                    TipModel.difficulty_level == None  # noqa: E711
                 )
             )
 
         if conditions:
             query = query.where(and_(*conditions))
 
-        query = query.order_by(Tip.created_at.desc())
+        query = query.order_by(TipModel.created_at.desc())
 
         result = await self.db.execute(query)
         tips = result.scalars().all()
@@ -71,7 +71,7 @@ class TipService:
         Returns:
             Tip or None if not found
         """
-        query = select(Tip).where(Tip.id == tip_id)
+        query = select(TipModel).where(Tip.id == tip_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -132,7 +132,7 @@ class TipService:
         Returns:
             Updated tip or None if not found
         """
-        query = select(Tip).where(Tip.id == tip_id)
+        query = select(TipModel).where(Tip.id == tip_id)
         result = await self.db.execute(query)
         tip = result.scalar_one_or_none()
 
@@ -157,7 +157,7 @@ class TipService:
         Returns:
             True if deleted, False if not found
         """
-        query = select(Tip).where(Tip.id == tip_id)
+        query = select(TipModel).where(Tip.id == tip_id)
         result = await self.db.execute(query)
         tip = result.scalar_one_or_none()
 
@@ -180,9 +180,9 @@ class TipService:
         """
         from sqlalchemy import func
 
-        query = select(func.count(Tip.id))
+        query = select(func.count(TipModel.id))
         if active_only:
-            query = query.where(Tip.active == True)
+            query = query.where(TipModel.active == True)
 
         result = await self.db.execute(query)
         return result.scalar() or 0

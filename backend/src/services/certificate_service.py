@@ -12,7 +12,7 @@ from typing import List, Optional
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.database import Certificate, QuizAttempt
+from src.models.database import Certificate as CertificateModel, QuizAttempt
 from src.models.schemas import CertificateGenerate, Certificate, CertificateVerification, CertificateList
 
 
@@ -51,8 +51,8 @@ class CertificateService:
         Returns:
             True if unique, False otherwise
         """
-        query = select(Certificate).where(
-            Certificate.certificate_id == certificate_id
+        query = select(CertificateModel).where(
+            CertificateModel.certificate_id == certificate_id
         )
         result = await self.db.execute(query)
         existing = result.scalar_one_or_none()
@@ -180,7 +180,7 @@ class CertificateService:
             certificate_id = f"{self.CERTIFICATE_PREFIX}-{timestamp_suffix[-6:]}"
 
         # Create certificate
-        certificate = Certificate(
+        certificate = CertificateModel(
             certificate_id=certificate_id,
             user_id=user_id,
             student_name=certificate_data.student_name,
@@ -206,8 +206,8 @@ class CertificateService:
         Returns:
             Certificate or None if not found
         """
-        query = select(Certificate).where(
-            Certificate.certificate_id == certificate_id
+        query = select(CertificateModel).where(
+            CertificateModel.certificate_id == certificate_id
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -261,9 +261,9 @@ class CertificateService:
         Returns:
             List of user certificates
         """
-        query = select(Certificate).where(
-            Certificate.user_id == user_id
-        ).order_by(Certificate.issued_at.desc())
+        query = select(CertificateModel).where(
+            CertificateModel.user_id == user_id
+        ).order_by(CertificateModel.issued_at.desc())
 
         result = await self.db.execute(query)
         certificates = result.scalars().all()
@@ -283,7 +283,7 @@ class CertificateService:
         Returns:
             Certificate or None if not found
         """
-        query = select(Certificate).where(Certificate.id == certificate_uuid)
+        query = select(CertificateModel).where(CertificateModel.id == certificate_uuid)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 

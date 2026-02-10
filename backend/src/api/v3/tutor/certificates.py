@@ -5,7 +5,8 @@ Requirements: 100% course completion, 70%+ average score.
 """
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -13,14 +14,16 @@ from src.services.certificate_service import CertificateService
 from src.models.schemas import (
     CertificateGenerate, Certificate, CertificateVerification, CertificateList
 )
+from src.api.dependencies import get_current_user, get_optional_user
+from src.models.database import User
 
 router = APIRouter()
 
 
 @router.post("/generate", response_model=Certificate, status_code=status.HTTP_201_CREATED)
 async def generate_certificate(
-    user_id: UUID,
     certificate_data: CertificateGenerate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -35,7 +38,6 @@ async def generate_certificate(
     Certificate ID Format: CERT-XXXXXX (random alphanumeric)
 
     Args:
-        user_id: User UUID
         certificate_data: Student name for certificate
 
     Returns:
@@ -43,11 +45,13 @@ async def generate_certificate(
 
     Raises:
         HTTPException 400: If user not eligible
+
+    **Authentication**: Required - Users must be logged in to generate certificates.
     """
     service = CertificateService(db)
 
     # Check eligibility first
-    eligibility = await service.check_eligibility(user_id)
+    eligibility = await service.check_eligibility(current_user.id)
 
     if not eligibility["eligible"]:
         raise HTTPException(
@@ -63,7 +67,7 @@ async def generate_certificate(
         )
 
     # Generate certificate
-    certificate = await service.generate_certificate(user_id, certificate_data)
+    certificate = await service.generate_certificate(current_user.id, certificate_data)
 
     if not certificate:
         raise HTTPException(
@@ -76,7 +80,7 @@ async def generate_certificate(
 
 @router.get("/", response_model=CertificateList)
 async def get_user_certificates(
-    user_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -84,15 +88,40 @@ async def get_user_certificates(
 
     Zero-LLM compliance: Simple database query.
 
-    Args:
-        user_id: User UUID
-
     Returns:
         List of user's certificates
+
+    **Authentication**: Required - Users must be logged in to view their certificates.
     """
     service = CertificateService(db)
-    certificates = await service.get_user_certificates(user_id)
+    certificates = await service.get_user_certificates(current_user.id)
     return certificates
+
+
+# IMPORTANT: /check-eligibility must come before /{certificate_uuid}
+# Otherwise FastAPI will try to parse "check-eligibility" as a UUID
+@router.post("/check-eligibility")
+async def check_certificate_eligibility(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Check if user is eligible for a certificate.
+
+    Zero-LLM compliance: Returns eligibility based on deterministic rules.
+
+    Requirements:
+        - 100% course completion
+        - 70%+ average quiz score
+
+    Returns:
+        Eligibility status with details
+
+    **Authentication**: Required - Users must be logged in to check eligibility.
+    """
+    service = CertificateService(db)
+    eligibility = await service.check_eligibility(current_user.id)
+    return eligibility
 
 
 @router.get("/{certificate_uuid}", response_model=Certificate)
@@ -155,28 +184,3 @@ async def delete_certificate(
         )
 
     return None
-
-
-@router.post("/check-eligibility")
-async def check_certificate_eligibility(
-    user_id: UUID,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Check if user is eligible for a certificate.
-
-    Zero-LLM compliance: Returns eligibility based on deterministic rules.
-
-    Requirements:
-        - 100% course completion
-        - 70%+ average quiz score
-
-    Args:
-        user_id: User UUID
-
-    Returns:
-        Eligibility status with details
-    """
-    service = CertificateService(db)
-    eligibility = await service.check_eligibility(user_id)
-    return eligibility

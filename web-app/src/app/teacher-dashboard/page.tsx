@@ -173,9 +173,9 @@ function StudentProgressRow({
           <p className="text-xs text-text-muted mb-1">Last Active</p>
           <p className="text-sm text-text-primary">{lastActivity}</p>
         </div>
-        <Link href={`/teacher-dashboard/students/${email}`}>
+        <Link href="/teacher-dashboard/students">
           <Button variant="outline" size="sm">
-            View Details
+            View
           </Button>
         </Link>
       </div>

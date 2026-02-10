@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_db
 from src.services.tip_service import TipService
 from src.models.schemas import Tip, TipCreate, TipList
+from src.api.dependencies import get_current_user, require_teacher
+from src.models.database import User
 
 router = APIRouter()
 
@@ -81,44 +83,14 @@ async def get_random_tip(
     return tip
 
 
-@router.get("/{tip_id}", response_model=Tip)
-async def get_tip_by_id(
-    tip_id: UUID,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Get a specific tip by ID.
-
-    Zero-LLM compliance: Returns pre-written tip only.
-
-    Args:
-        tip_id: Tip UUID
-
-    Returns:
-        Tip details
-
-    Raises:
-        HTTPException 404: If tip not found
-    """
-    service = TipService(db)
-    tip = await service.get_tip_by_id(tip_id)
-
-    if not tip:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tip not found"
-        )
-
-    return tip
-
-
 @router.post("/", response_model=Tip, status_code=status.HTTP_201_CREATED)
 async def create_tip(
     tip_data: TipCreate,
+    current_user: User = Depends(require_teacher),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Create a new tip.
+    Create a new tip (teacher only).
 
     Zero-LLM compliance: Creates pre-written tip, no LLM generation.
 
@@ -127,6 +99,8 @@ async def create_tip(
 
     Returns:
         Created tip
+
+    **Authentication**: Required - Teacher role required.
     """
     service = TipService(db)
     tip = await service.create_tip(tip_data)
@@ -137,10 +111,11 @@ async def create_tip(
 async def update_tip(
     tip_id: UUID,
     tip_data: dict,
+    current_user: User = Depends(require_teacher),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Update an existing tip.
+    Update an existing tip (teacher only).
 
     Zero-LLM compliance: Updates pre-written tip content.
 
@@ -153,6 +128,8 @@ async def update_tip(
 
     Raises:
         HTTPException 404: If tip not found
+
+    **Authentication**: Required - Teacher role required.
     """
     service = TipService(db)
     tip = await service.update_tip(tip_id, tip_data)
@@ -169,10 +146,11 @@ async def update_tip(
 @router.delete("/{tip_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tip(
     tip_id: UUID,
+    current_user: User = Depends(require_teacher),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Delete a tip.
+    Delete a tip (teacher only).
 
     Zero-LLM compliance: Deletes pre-written tip.
 
@@ -181,6 +159,8 @@ async def delete_tip(
 
     Raises:
         HTTPException 404: If tip not found
+
+    **Authentication**: Required - Teacher role required.
     """
     service = TipService(db)
     deleted = await service.delete_tip(tip_id)
@@ -213,3 +193,34 @@ async def get_tip_count(
     service = TipService(db)
     count = await service.get_tip_count(active_only=active_only)
     return {"count": count}
+
+
+@router.get("/{tip_id}", response_model=Tip)
+async def get_tip_by_id(
+    tip_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get a specific tip by ID.
+
+    Zero-LLM compliance: Returns pre-written tip only.
+
+    Args:
+        tip_id: Tip UUID
+
+    Returns:
+        Tip details
+
+    Raises:
+        HTTPException 404: If tip not found
+    """
+    service = TipService(db)
+    tip = await service.get_tip_by_id(tip_id)
+
+    if not tip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tip not found"
+        )
+
+    return tip

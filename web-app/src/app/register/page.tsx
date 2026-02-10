@@ -44,9 +44,26 @@ export default function RegisterPage() {
     setFormData({ ...formData, role });
   };
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate email format
+    if (!isValidEmail(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate email not empty
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');

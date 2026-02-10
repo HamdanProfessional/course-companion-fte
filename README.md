@@ -441,6 +441,33 @@ npm run dev
 
 ---
 
+## 📚 Documentation
+
+### Hackathon Deliverables
+
+| Document | Description | Link |
+|----------|-------------|------|
+| **Architecture Diagram** | ASCII system architecture with data flows | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| **Cost Analysis** | Detailed cost breakdown and profitability | [docs/COST_ANALYSIS.md](docs/COST_ANALYSIS.md) |
+| **API Documentation** | OpenAPI/Swagger specification | [docs/API_OPENAPI.yaml](docs/API_OPENAPI.yaml) |
+| **Demo Video Script** | 5-minute demo recording guide | [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md) |
+
+### Project Specifications
+
+| Spec | Description | Status |
+|------|-------------|--------|
+| [Zero-Backend API](specs/1-zero-backend-api/spec.md) | Phase 1 deterministic backend | ✅ Complete |
+| [ChatGPT App](specs/2-chatgpt-app/spec.md) | Conversational AI interface | ✅ Complete |
+| [Web Application](specs/3-web-app/spec.md) | Full LMS web dashboard | ✅ Complete |
+
+### Additional Documentation
+
+- [Agent Skills Guide](.claude/skills/) - Runtime skills for ChatGPT App
+- [Deployment Guide](scripts/) - Production deployment scripts
+- [Bug Tracker](BUGS.md) - Known issues and resolutions
+
+---
+
 ## 🤝 Contributing
 
 This is a hackathon project. For questions or suggestions:

@@ -28,6 +28,8 @@ from .teacher import router as teacher_router
 from .tips import router as tips_router
 from .leaderboard import router as leaderboard_router
 from .certificates import router as certificates_router
+from .chat import router as chat_router
+from .mistakes import router as mistakes_router
 
 # Create main tutor router
 router = APIRouter()
@@ -87,6 +89,18 @@ router.include_router(
     tags=["Certificates"]
 )
 
+router.include_router(
+    chat_router,
+    prefix="/chat",
+    tags=["Chat History"]
+)
+
+router.include_router(
+    mistakes_router,
+    prefix="/mistakes",
+    tags=["Mistake Bank"]
+)
+
 
 @router.get("/", tags=["Root"])
 async def tutor_root():
@@ -105,7 +119,9 @@ async def tutor_root():
             "teacher": "/api/v3/tutor/teacher",
             "tips": "/api/v3/tutor/tips",
             "leaderboard": "/api/v3/tutor/leaderboard",
-            "certificates": "/api/v3/tutor/certificates"
+            "certificates": "/api/v3/tutor/certificates",
+            "chat": "/api/v3/tutor/chat",
+            "mistakes": "/api/v3/tutor/mistakes"
         },
         "features": {
             "content_delivery": "Chapters, navigation, search",

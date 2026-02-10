@@ -29,7 +29,7 @@ import {
   useV3Chapters,
 } from '@/hooks/useV3';
 import type { AchievementItem, ChapterProgress, ScoreHistoryItem } from '@/lib/api-v3';
-import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3, Rocket, Calendar, Clock, Check, TrendingUp } from 'lucide-react';
+import { BookOpen, Flame, Star, Target, GraduationCap, Trophy, FileEdit, CheckCircle, BarChart3, Rocket, Calendar, Check, TrendingUp, Award, Lightbulb, Zap } from 'lucide-react';
 
 export default function ProgressPage() {
   const router = useRouter();
@@ -75,19 +75,12 @@ export default function ProgressPage() {
   const currentStreak = progressSummary?.current_streak || 0;
   const longestStreak = progressSummary?.longest_streak || 0;
   const totalChapters = progressSummary?.total_chapters || chapters?.length || 0;
-  // Ensure completedChapters is always an array and log for debugging
+  // Ensure completedChapters is always an array
   const completedChapters = Array.isArray(progressSummary?.completed_chapters) ? progressSummary.completed_chapters : [];
   const totalQuizzes = progressSummary?.total_quizzes_taken || 0;
   const averageScore = progressSummary?.average_score || 0;
   const unlockedAchievements = achievements?.filter(a => a.unlocked_at) || [];
   const totalAchievementsCount = achievements?.length || 0;
-
-  // Debug logging for milestones
-  if (typeof window !== 'undefined') {
-    console.log('Progress Page - completedChapters:', completedChapters);
-    console.log('Progress Page - completedChapters.length:', completedChapters.length);
-    console.log('Progress Page - progressSummary:', progressSummary);
-  }
 
   const milestones = [
     { milestone: 'Started Learning', completed: true, icon: '', Icon: Rocket, description: 'Began your journey' },
@@ -127,33 +120,6 @@ export default function ProgressPage() {
       />
 
       {/* Time Machine CTA */}
-      <Card className="mb-8 bg-gradient-to-r from-cosmic-primary/10 to-cosmic-purple/10 border-cosmic-primary/30">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-text-primary mb-2 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-primary to-cosmic-purple flex items-center justify-center">
-                  <Clock className="w-7 h-7 text-white" />
-                </div>
-                Time Machine: See How You've Grown
-              </h3>
-              <p className="text-text-secondary">
-                View the evolution of your questions and understanding throughout the semester
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => router.push('/time-machine')}
-              className="gap-2"
-            >
-              <Clock className="w-5 h-5" />
-              View Time Machine
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {/* Completion */}
@@ -557,6 +523,23 @@ function StreakDayCell({ day }: { day: { date: Date | string; active: boolean; s
 function AchievementCard({ achievement }: { achievement: AchievementItem }) {
   const isUnlocked = !!achievement.unlocked_at;
 
+  // Map icon names to Lucide icons
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    'Book': BookOpen,
+    'Edit': FileEdit,
+    'Flame': Flame,
+    'Trophy': Trophy,
+    'Award': Award,
+    'Star': Star,
+    'Target': Target,
+    'GraduationCap': GraduationCap,
+    'Zap': Zap,
+    'Lightbulb': Lightbulb,
+    'Check': CheckCircle,
+  };
+
+  const IconComponent = iconMap[achievement.icon] || Star;
+
   return (
     <div
       className={`p-4 rounded-lg border transition-all ${
@@ -566,8 +549,10 @@ function AchievementCard({ achievement }: { achievement: AchievementItem }) {
       }`}
     >
       <div className="flex items-start gap-3">
-        <div className={`text-3xl ${isUnlocked ? '' : 'grayscale opacity-50'}`}>
-          {achievement.icon}
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+          isUnlocked ? 'bg-accent-success/20' : 'bg-bg-elevated'
+        }`}>
+          <IconComponent className={`w-5 h-5 ${isUnlocked ? 'text-accent-success' : 'text-text-muted'}`} />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

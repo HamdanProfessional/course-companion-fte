@@ -27,6 +27,7 @@ from src.core.config import settings
 from src.services.access_service import AccessService
 from src.models.database import User
 from src.models.schemas import UserTier, AccessCheck, AccessResponse, TierUpdateResponse
+from src.api.dependencies import get_current_user, require_teacher
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -204,16 +205,18 @@ async def list_subscription_plans():
 
 @router.get("/subscription", response_model=SubscriptionInfo)
 async def get_subscription_info(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Get user's current subscription information.
 
     **Phase 3 Enhancement**: Full subscription details.
+
+    **Authentication**: Required - Users must be logged in to view their subscription.
     """
     try:
-        user = await get_user_or_404(user_id, db)
+        user = current_user
 
         # In production, this would fetch from Stripe/Payment processor
         # For now, return basic info
@@ -246,7 +249,7 @@ async def get_subscription_info(
 @router.post("/check", response_model=AccessCheckResponse)
 async def check_access(
     request: AccessCheckRequest,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -260,9 +263,11 @@ async def check_access(
     - `ai-mentor`: AI mentor chat
 
     **Phase 3 Enhancement**: Detailed access control with upgrade prompts.
+
+    **Authentication**: Required - Users must be logged in to check their access.
     """
     try:
-        user = await get_user_or_404(user_id, db)
+        user = current_user
         service = AccessService(db)
 
         # Parse resource
@@ -322,7 +327,7 @@ async def check_access(
 @router.post("/upgrade", response_model=TierUpdateResponse)
 async def upgrade_tier(
     request: TierChangeRequest,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -338,9 +343,11 @@ async def upgrade_tier(
     For this implementation:
     - Direct tier update (for testing)
     - Payment integration would be added here
+
+    **Authentication**: Required - Users must be logged in to upgrade their tier.
     """
     try:
-        user = await get_user_or_404(user_id, db)
+        user = current_user
 
         # In production, this would:
         # 1. Validate payment method
@@ -353,10 +360,10 @@ async def upgrade_tier(
         await db.commit()
 
         # Log the change
-        logger.info(f"User {user_id} tier updated: {old_tier} -> {request.new_tier}")
+        logger.info(f"User {user.id} tier updated: {old_tier} -> {request.new_tier}")
 
         return TierUpdateResponse(
-            user_id=str(user_id),
+            user_id=str(user.id),
             old_tier=old_tier,
             new_tier=request.new_tier,
             upgraded_at=datetime.utcnow()
@@ -376,7 +383,7 @@ async def upgrade_tier(
 @router.post("/downgrade")
 async def downgrade_tier(
     new_tier: UserTier = Body(..., embed=True),
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -386,9 +393,11 @@ async def downgrade_tier(
     User retains current tier access until then.
 
     **Phase 3 Feature**: Graceful downgrade with period end.
+
+    **Authentication**: Required - Users must be logged in to downgrade their tier.
     """
     try:
-        user = await get_user_or_404(user_id, db)
+        user = current_user
 
         # In production, this would:
         # 1. Schedule downgrade in Stripe
@@ -409,7 +418,7 @@ async def downgrade_tier(
         user.tier = new_tier
         await db.commit()
 
-        logger.info(f"User {user_id} downgraded: {old_tier} -> {new_tier}")
+        logger.info(f"User {user.id} downgraded: {old_tier} -> {new_tier}")
 
         return {
             "message": "Tier downgraded successfully",
@@ -432,7 +441,7 @@ async def downgrade_tier(
 @router.post("/export-data", response_model=ExportDataResponse)
 async def request_data_export(
     request: ExportDataRequest,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -450,9 +459,11 @@ async def request_data_export(
     - JSON (default, machine-readable)
     - CSV (spreadsheet-compatible)
     - PDF (human-readable report)
+
+    **Authentication**: Required - Users must be logged in to export their data.
     """
     try:
-        user = await get_user_or_404(user_id, db)
+        user = current_user
 
         # Generate export ID
         import uuid
@@ -488,7 +499,7 @@ async def request_data_export(
 @router.get("/export-data/{export_id}")
 async def get_export_status(
     export_id: str,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -498,6 +509,8 @@ async def get_export_status(
     - Status (processing, ready, expired)
     - Download URL (if ready)
     - Expiration date
+
+    **Authentication**: Required - Users must be logged in to check their export status.
     """
     try:
         # In production, query the export job status
@@ -520,7 +533,7 @@ async def get_export_status(
 @router.delete("/account")
 async def delete_account(
     confirmation: str = Body(..., embed=True, description="Must be 'DELETE' to confirm"),
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -536,6 +549,8 @@ async def delete_account(
     - Cancel any subscriptions
 
     Must confirm by sending confirmation='DELETE'.
+
+    **Authentication**: Required - Users must be logged in to delete their account.
     """
     try:
         if confirmation != "DELETE":
@@ -544,7 +559,7 @@ async def delete_account(
                 detail="Must confirm by sending confirmation='DELETE'"
             )
 
-        user = await get_user_or_404(user_id, db)
+        user = current_user
 
         # In production, this would:
         # 1. Cancel Stripe subscription
@@ -553,11 +568,11 @@ async def delete_account(
         # 4. Log the deletion for audit
 
         # For now, just log
-        logger.warning(f"Account deletion requested for user {user_id}")
+        logger.warning(f"Account deletion requested for user {user.id}")
 
         return {
             "message": "Account deletion initiated",
-            "user_id": str(user_id),
+            "user_id": str(user.id),
             "status": "processing",
             "irreversible": True
         }
@@ -574,7 +589,7 @@ async def delete_account(
 
 @router.get("/payment-methods")
 async def get_payment_methods(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -582,10 +597,12 @@ async def get_payment_methods(
 
     **Phase 3 Feature**: Payment method management.
 
+    **Authentication**: Required - Users must be logged in to view payment methods.
+
     In production, this would fetch from Stripe.
     """
     try:
-        user = await get_user_or_404(user_id, db)
+        user = current_user
 
         # Placeholder - in production, fetch from Stripe
         return {

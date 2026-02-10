@@ -38,6 +38,13 @@ class UserTier(str, Enum):
     PRO = "PRO"
 
 
+class ChatMessageRole(str, Enum):
+    """Chat message role types."""
+    user = "user"
+    assistant = "assistant"
+    system = "system"
+
+
 class DifficultyLevel(str, Enum):
     """Content difficulty levels."""
     BEGINNER = "beginner"
@@ -113,6 +120,11 @@ class User(Base):
     )
     certificates: Mapped[List["Certificate"]] = relationship(
         "Certificate",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    chat_conversations: Mapped[List["ChatConversation"]] = relationship(
+        "ChatConversation",
         back_populates="user",
         cascade="all, delete-orphan"
     )
@@ -632,3 +644,103 @@ class Certificate(Base):
 
     def __repr__(self) -> str:
         return f"<Certificate(id={self.id}, certificate_id={self.certificate_id}, user_id={self.user_id})>"
+
+
+# =============================================================================
+# AI Chat History Tables
+# =============================================================================
+
+
+class ChatConversation(Base):
+    """AI Mentor chat conversations for users."""
+
+    __tablename__ = "chat_conversations"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="New Chat"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="chat_conversations")
+    messages: Mapped[List["ChatMessage"]] = relationship(
+        "ChatMessage",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="ChatMessage.created_at"
+    )
+
+    __table_args__ = (
+        Index("idx_chat_conversations_user_id", "user_id"),
+        Index("idx_chat_conversations_updated_at", "updated_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ChatConversation(id={self.id}, user_id={self.user_id}, title={self.title})>"
+
+
+class ChatMessage(Base):
+    """Individual messages in AI Mentor chat conversations."""
+
+    __tablename__ = "chat_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
+        ForeignKey("chat_conversations.id"),
+        nullable=False,
+        index=True
+    )
+    role: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False
+    )  # "user", "assistant", "system"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False
+    )
+    extra_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    # Relationships
+    conversation: Mapped["ChatConversation"] = relationship(
+        "ChatConversation",
+        back_populates="messages"
+    )
+
+    __table_args__ = (
+        Index("idx_chat_messages_conversation_id", "conversation_id"),
+        Index("idx_chat_messages_created_at", "created_at"),
+        CheckConstraint("role IN ('user', 'assistant', 'system')", name="check_chat_message_role"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ChatMessage(id={self.id}, conversation_id={self.conversation_id}, role={self.role})>"

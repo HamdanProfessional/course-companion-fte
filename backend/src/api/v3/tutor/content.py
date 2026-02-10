@@ -25,6 +25,8 @@ from src.models.schemas import (
     SearchResult,
     SearchResponse,
 )
+from src.api.dependencies import get_optional_user, get_current_user
+from src.models.database import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -81,7 +83,7 @@ class ChapterContentResponse(BaseModel):
 
 @router.get("/chapters", response_model=ChapterListResponse)
 async def list_chapters(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -89,27 +91,30 @@ async def list_chapters(
 
     Returns:
     - Chapter metadata (title, order, difficulty, time)
-    - Completion status for this user
+    - Completion status for this user (if authenticated)
     - Overall completion percentage
 
     **Phase 3 Enhancement**: Includes user's completion status.
+
+    **Authentication**: Optional - Guest users see chapters without completion status.
     """
     try:
         service = ContentService(db)
         chapters = await service.list_chapters()
 
-        # Get user's completed chapters
-        from src.models.database import UserProgress
-        from sqlalchemy import select
-
-        result = await db.execute(
-            select(UserProgress).where(UserProgress.user_id == user_id)
-        )
-        user_progress = result.scalar_one_or_none()
-
+        # Get user's completed chapters (only if authenticated)
         completed_chapters = set()
-        if user_progress and user_progress.completed_chapters:
-            completed_chapters = set(user_progress.completed_chapters or [])
+        if current_user:
+            from src.models.database import Progress as UserProgress
+            from sqlalchemy import select
+
+            result = await db.execute(
+                select(UserProgress).where(UserProgress.user_id == current_user.id)
+            )
+            user_progress = result.scalar_one_or_none()
+
+            if user_progress and user_progress.completed_chapters:
+                completed_chapters = set(user_progress.completed_chapters or [])
 
         # Transform to response format
         chapter_items = []
@@ -118,7 +123,7 @@ async def list_chapters(
                 id=str(ch.id),
                 title=ch.title,
                 order=ch.order,
-                difficulty_level=ch.difficulty_level.value,
+                difficulty_level=ch.difficulty_level.value if hasattr(ch.difficulty_level, 'value') else str(ch.difficulty_level),
                 estimated_time=ch.estimated_time,
                 completed=str(ch.id) in completed_chapters,
                 quiz_id=str(ch.quiz_id) if ch.quiz_id else None
@@ -143,7 +148,7 @@ async def list_chapters(
 @router.get("/chapters/{chapter_id}", response_model=ChapterContentResponse)
 async def get_chapter(
     chapter_id: str,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -152,10 +157,12 @@ async def get_chapter(
     Returns:
     - Complete chapter content
     - Chapter metadata
-    - Completion status
+    - Completion status (if authenticated)
     - Associated quiz (if any)
 
     **Phase 3 Enhancement**: Includes user's progress and LLM-generated summary.
+
+    **Authentication**: Optional - Guest users can view content without completion status.
     """
     try:
         service = ContentService(db)
@@ -167,18 +174,19 @@ async def get_chapter(
                 detail=f"Chapter {chapter_id} not found"
             )
 
-        # Check completion status
-        from src.models.database import UserProgress
-        from sqlalchemy import select
-
-        result = await db.execute(
-            select(UserProgress).where(UserProgress.user_id == user_id)
-        )
-        user_progress = result.scalar_one_or_none()
-
+        # Check completion status (only if authenticated)
         completed = False
-        if user_progress and user_progress.completed_chapters:
-            completed = chapter_id in (user_progress.completed_chapters or [])
+        if current_user:
+            from src.models.database import Progress as UserProgress
+            from sqlalchemy import select
+
+            result = await db.execute(
+                select(UserProgress).where(UserProgress.user_id == current_user.id)
+            )
+            user_progress = result.scalar_one_or_none()
+
+            if user_progress and user_progress.completed_chapters:
+                completed = chapter_id in (user_progress.completed_chapters or [])
 
         # Phase 3: Generate LLM summary if enabled
         summary = None
@@ -193,7 +201,7 @@ async def get_chapter(
             id=str(chapter.id),
             title=chapter.title,
             order=chapter.order,
-            difficulty_level=chapter.difficulty_level.value,
+            difficulty_level=chapter.difficulty_level.value if hasattr(chapter.difficulty_level, 'value') else str(chapter.difficulty_level),
             estimated_time=chapter.estimated_time,
             content=chapter.content,
             summary=summary,
@@ -214,7 +222,7 @@ async def get_chapter(
 @router.get("/chapters/{chapter_id}/navigation", response_model=ChapterNavigationResponse)
 async def get_navigation(
     chapter_id: str,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -227,6 +235,8 @@ async def get_navigation(
     - Whether user can proceed (access check)
 
     **Phase 3 Enhancement**: Includes access control and premium checks.
+
+    **Authentication**: Optional - Guest users see navigation without access control.
     """
     try:
         service = ContentService(db)
@@ -243,15 +253,9 @@ async def get_navigation(
         prev_chapter = await service.get_previous_chapter(chapter_id)
         next_chapter = await service.get_next_chapter(chapter_id)
 
-        # Check access (Chapter 4+ requires premium)
-        from src.models.database import User
-        from sqlalchemy import select
-
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-
+        # Check access (Chapter 4+ requires premium) - only for authenticated users
         can_continue = True
-        if current.order >= 4 and user and user.tier == "FREE":
+        if current_user and current.order >= 4 and current_user.tier == "FREE":
             can_continue = False
 
         return ChapterNavigationResponse(
@@ -259,21 +263,21 @@ async def get_navigation(
                 id=str(current.id),
                 title=current.title,
                 order=current.order,
-                difficulty_level=current.difficulty_level.value,
+                difficulty_level=current.difficulty_level.value if hasattr(current.difficulty_level, 'value') else str(current.difficulty_level),
                 estimated_time=current.estimated_time
             ),
             previous=ChapterListItem(
                 id=str(prev_chapter.id),
                 title=prev_chapter.title,
                 order=prev_chapter.order,
-                difficulty_level=prev_chapter.difficulty_level.value,
+                difficulty_level=prev_chapter.difficulty_level.value if hasattr(prev_chapter.difficulty_level, 'value') else str(prev_chapter.difficulty_level),
                 estimated_time=prev_chapter.estimated_time
             ) if prev_chapter else None,
             next=ChapterListItem(
                 id=str(next_chapter.id),
                 title=next_chapter.title,
                 order=next_chapter.order,
-                difficulty_level=next_chapter.difficulty_level.value,
+                difficulty_level=next_chapter.difficulty_level.value if hasattr(next_chapter.difficulty_level, 'value') else str(next_chapter.difficulty_level),
                 estimated_time=next_chapter.estimated_time
             ) if next_chapter else None,
             can_continue=can_continue
@@ -331,7 +335,7 @@ async def search_content(
 
 @router.get("/continue")
 async def get_continue_learning(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -341,16 +345,18 @@ async def get_continue_learning(
     or the last completed chapter if all are done.
 
     **Phase 3 Enhancement**: Smart continuation based on progress.
+
+    **Authentication**: Required - Users must be logged in to track progress.
     """
     try:
-        from src.models.database import UserProgress
+        from src.models.database import Progress as UserProgress
         from sqlalchemy import select
 
         service = ContentService(db)
 
         # Get user progress
         result = await db.execute(
-            select(UserProgress).where(UserProgress.user_id == user_id)
+            select(UserProgress).where(UserProgress.user_id == current_user.id)
         )
         user_progress = result.scalar_one_or_none()
 

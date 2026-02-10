@@ -50,14 +50,28 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS - explicitly handle OPTIONS
+# Configure CORS - use specific headers for security
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    # Specific headers instead of wildcard for security
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
+    # Only expose specific headers that are safe to expose
+    expose_headers=[
+        "Content-Length",
+        "Content-Type",
+        "X-Total-Count",
+    ],
 )
 
 

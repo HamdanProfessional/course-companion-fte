@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -22,7 +23,7 @@ import {
   useV3AIStatus,
 } from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
-import { Target, Armchair, RotateCcw, Compass, Clock, Map, BookOpen, Zap, Sparkles, Check, TrendingDown, AlertCircle, ArrowRight } from 'lucide-react';
+import { Target, Armchair, RotateCcw, Compass, Clock, Map, BookOpen, Zap, Sparkles, Check, TrendingUp, AlertCircle, ArrowRight, Flame } from 'lucide-react';
 import Link from 'next/link';
 
 // Learning goals for path generation
@@ -46,12 +47,6 @@ export default function AdaptiveLearningPage() {
 
   // Check if user can access AI features (PREMIUM or PRO tier)
   const canAccessAI = tier && (tier === 'PREMIUM' || tier === 'PRO');
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Adaptive Learning - User tier:', tier);
-    console.log('Adaptive Learning - Can access AI:', canAccessAI);
-  }, [tier, canAccessAI]);
 
   const toggleGoal = (goal: string) => {
     setSelectedGoals(prev =>
@@ -115,110 +110,189 @@ export default function AdaptiveLearningPage() {
             <CardContent>
               {analysis ? (
                 <div className="space-y-6">
-                  {/* Weak Topics - Enhanced Visual Design */}
+                  {/* Weak Topics - Nebula Theme with Animations */}
                   {analysis.weak_topics && analysis.weak_topics.length > 0 && (
-                    <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-xl p-5 border border-red-500/30">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      className="bg-gradient-to-br from-cosmic-purple/10 via-cosmic-pink/10 to-cosmic-rose/10 rounded-xl p-5 border border-cosmic-purple/30 hover:border-cosmic-purple/50 transition-all duration-300 hover:shadow-lg hover:shadow-cosmic-purple/20"
+                    >
                       <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
-                          <TrendingDown className="w-4 h-4 text-red-500" />
-                        </div>
+                        <motion.div
+                          className="w-8 h-8 rounded-lg bg-cosmic-purple/20 flex items-center justify-center"
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
+                          <TrendingUp className="w-4 h-4 text-cosmic-purple" />
+                        </motion.div>
                         Areas That Need Attention
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {analysis.weak_topics.map((topic, i) => (
-                          <div
+                          <motion.div
                             key={i}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-bg-elevated border border-red-500/20 hover:border-red-500/40 transition-all"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            whileHover={{ scale: 1.02, x: 5 }}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-bg-elevated border border-cosmic-purple/20 hover:border-cosmic-purple/50 hover:bg-cosmic-purple/5 transition-all cursor-pointer"
                           >
-                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                            <motion.div
+                              className="w-2 h-2 rounded-full bg-cosmic-purple"
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                            />
                             <span className="text-sm font-medium text-text-primary">{topic}</span>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
-                  {/* Strong Topics - Enhanced Visual Design */}
+                  {/* Strong Topics - Nebula Theme with Animations */}
                   {analysis.strong_topics && analysis.strong_topics.length > 0 && (
-                    <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl p-5 border border-emerald-500/30">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.1 }}
+                      className="bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cosmic-cyan/10 rounded-xl p-5 border border-emerald-500/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/20"
+                    >
                       <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <motion.div
+                          className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center"
+                          whileHover={{ scale: 1.1, rotate: -5 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
                           <Zap className="w-4 h-4 text-emerald-500" />
-                        </div>
+                        </motion.div>
                         Your Strengths
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {analysis.strong_topics.map((topic, i) => (
-                          <div
+                          <motion.div
                             key={i}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-bg-elevated border border-emerald-500/20 hover:border-emerald-500/40 transition-all"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 + 0.2 }}
+                            whileHover={{ scale: 1.02, x: 5 }}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-bg-elevated border border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all cursor-pointer"
                           >
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <motion.div
+                              className="w-2 h-2 rounded-full bg-emerald-500"
+                              animate={{ opacity: [1, 0.5, 1] }}
+                              transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                            />
                             <span className="text-sm font-medium text-text-primary">{topic}</span>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
-                  {/* Recommended Review - Enhanced Visual Design */}
+                  {/* Recommended Review - Nebula Theme with Animations */}
                   {analysis.recommended_review && analysis.recommended_review.length > 0 && (
-                    <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 rounded-xl p-5 border border-amber-500/30">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                      className="bg-gradient-to-br from-cosmic-blue/10 via-cosmic-cyan/10 to-cosmic-primary/10 rounded-xl p-5 border border-cosmic-blue/30 hover:border-cosmic-blue/50 transition-all duration-300 hover:shadow-lg hover:shadow-cosmic-blue/20"
+                    >
                       <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                          <RotateCcw className="w-4 h-4 text-amber-500" />
-                        </div>
+                        <motion.div
+                          className="w-8 h-8 rounded-lg bg-cosmic-blue/20 flex items-center justify-center"
+                          whileHover={{ rotate: 180 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                        >
+                          <RotateCcw className="w-4 h-4 text-cosmic-blue" />
+                        </motion.div>
                         Recommended Chapters to Review
                       </h4>
                       <div className="space-y-2">
                         {analysis.recommended_review.map((chapterId, i) => (
                           <Link key={i} href={`/chapters/${chapterId}`}>
-                            <div className="flex items-center justify-between p-4 rounded-lg bg-bg-elevated border border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all cursor-pointer group">
+                            <motion.div
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: i * 0.1 + 0.3 }}
+                              whileHover={{ scale: 1.02, x: 5 }}
+                              className="flex items-center justify-between p-4 rounded-lg bg-bg-elevated border border-cosmic-blue/20 hover:border-cosmic-blue/50 hover:bg-cosmic-blue/5 transition-all cursor-pointer group"
+                            >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                                  <BookOpen className="w-4 h-4 text-amber-500" />
-                                </div>
+                                <motion.div
+                                  className="w-8 h-8 rounded-lg bg-cosmic-blue/20 flex items-center justify-center"
+                                  whileHover={{ rotate: 360 }}
+                                  transition={{ duration: 0.6 }}
+                                >
+                                  <BookOpen className="w-4 h-4 text-cosmic-blue" />
+                                </motion.div>
                                 <div>
-                                  <span className="text-sm font-medium text-text-primary group-hover:text-amber-500 transition-colors">
+                                  <span className="text-sm font-medium text-text-primary group-hover:text-cosmic-blue transition-colors">
                                     Chapter {chapterId}
                                   </span>
                                   <p className="text-xs text-text-muted mt-1">Review recommended based on your quiz performance</p>
                                 </div>
                               </div>
-                              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
-                                <ArrowRight className="w-3 h-3 text-amber-500" />
-                              </div>
-                            </div>
+                              <motion.div
+                                className="w-6 h-6 rounded-full bg-cosmic-blue/20 flex items-center justify-center group-hover:bg-cosmic-blue/30 transition-colors"
+                                whileHover={{ x: 3 }}
+                              >
+                                <ArrowRight className="w-3 h-3 text-cosmic-blue" />
+                              </motion.div>
+                            </motion.div>
                           </Link>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
-                  {/* Explanation - Enhanced Visual Design */}
+                  {/* Explanation - Nebula Theme with Animations */}
                   {analysis.explanation && (
-                    <div className="bg-gradient-to-r from-cosmic-primary/10 to-cosmic-purple/10 rounded-xl p-5 border border-cosmic-primary/30">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.3 }}
+                      className="bg-gradient-to-br from-cosmic-primary/10 via-cosmic-purple/10 to-cosmic-pink/10 rounded-xl p-5 border border-cosmic-primary/30 hover:border-cosmic-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-cosmic-primary/20"
+                    >
                       <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-cosmic-primary/20 flex items-center justify-center">
+                        <motion.div
+                          className="w-8 h-8 rounded-lg bg-cosmic-primary/20 flex items-center justify-center"
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
                           <AlertCircle className="w-4 h-4 text-cosmic-primary" />
-                        </div>
+                        </motion.div>
                         AI Analysis
                       </h4>
-                      <p className="text-sm text-text-secondary leading-relaxed">{analysis.explanation}</p>
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="text-sm text-text-secondary leading-relaxed"
+                      >
+                        {analysis.explanation}
+                      </motion.p>
                       {analysis.confidence_score !== undefined && (
                         <div className="mt-4 flex items-center gap-2">
                           <div className="flex-1 h-2 bg-bg-elevated rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-cosmic-primary to-cosmic-purple rounded-full transition-all duration-500"
-                              style={{ width: `${analysis.confidence_score * 100}%` }}
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-cosmic-primary via-cosmic-purple to-cosmic-pink rounded-full"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${analysis.confidence_score * 100}%` }}
+                              transition={{ duration: 1, delay: 0.6 }}
                             />
                           </div>
-                          <span className="text-xs font-medium text-text-primary">
+                          <motion.span
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.8 }}
+                            className="text-xs font-medium text-text-primary"
+                          >
                             {Math.round(analysis.confidence_score * 100)}% confidence
-                          </span>
+                          </motion.span>
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               ) : (

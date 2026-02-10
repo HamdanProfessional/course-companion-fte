@@ -8,12 +8,87 @@ Only used when ENABLE_PHASE_2_LLM=true in environment.
 import os
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List
+import re
+from typing import Optional, Dict, Any, List, Tuple
 from enum import Enum
 
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Thinking Tag Stripping (for reasoning models like DeepSeek-R1, DAN, etc.)
+# =============================================================================
+
+
+def strip_thinking_tags(content: str) -> Tuple[str, Optional[str]]:
+    """
+    Strip thinking tags from model responses.
+
+    Many reasoning models (DeepSeek-R1, DAN-Qwen, etc.) output their thinking
+    process in <thinking>...</thinking> tags. This function extracts and removes
+    them, returning both the thinking process (if any) and the final answer.
+
+    Args:
+        content: Raw model response that may contain <thinking> tags
+
+    Returns:
+        Tuple of (cleaned_content, thinking_content)
+        - cleaned_content: Response with thinking tags removed
+        - thinking_content: The extracted thinking process, or None if not found
+
+    Examples:
+        >>> strip_thinking_tags("<thinking>Let me think...</thinking>Answer is 42")
+        ("Answer is 42", "Let me think...")
+    """
+    if not content:
+        return content, None
+
+    # Pattern to match <thinking>...</thinking> tags (multiline)
+    thinking_pattern = r'<thinking>(.*?)</thinking>'
+    matches = re.findall(thinking_pattern, content, re.DOTALL | re.IGNORECASE)
+
+    if matches:
+        # Extract all thinking content
+        thinking_content = "\n\n".join(matches).strip()
+
+        # Remove all thinking tags from the response
+        cleaned_content = re.sub(thinking_pattern, '', content, flags=re.DOTALL | re.IGNORECASE)
+        cleaned_content = cleaned_content.strip()
+
+        logger.debug(f"Stripped {len(matches)} thinking tag(s) from response "
+                     f"({len(content)} -> {len(cleaned_content)} chars)")
+
+        return cleaned_content, thinking_content
+
+    return content, None
+
+
+def extract_thinking_to_extra(content: str) -> Tuple[str, Optional[Dict[str, Any]]]:
+    """
+    Extract thinking content and return it as extra data for API responses.
+
+    This is useful for frontend display of the model's reasoning process.
+
+    Args:
+        content: Raw model response
+
+    Returns:
+        Tuple of (cleaned_content, extra_data)
+        - cleaned_content: Response with thinking tags removed
+        - extra_data: Dict with thinking content, or None
+    """
+    cleaned, thinking = strip_thinking_tags(content)
+
+    extra_data = None
+    if thinking:
+        extra_data = {
+            "thinking": thinking,
+            "has_thinking": True
+        }
+
+    return cleaned, extra_data
 
 
 class LLMProvider(Enum):
@@ -263,7 +338,10 @@ class LLMClient:
             timeout=self.timeout
         )
 
-        return response.choices[0].message.content
+        content = response.choices[0].message.content or ""
+        # Strip thinking tags from reasoning models
+        cleaned_content, _ = strip_thinking_tags(content)
+        return cleaned_content
 
     async def _generate_anthropic(
         self,
@@ -290,7 +368,10 @@ class LLMClient:
             timeout=self.timeout
         )
 
-        return response.content[0].text
+        content = response.content[0].text
+        # Strip thinking tags from reasoning models
+        cleaned_content, _ = strip_thinking_tags(content)
+        return cleaned_content
 
     async def _generate_glm(
         self,
@@ -303,6 +384,7 @@ class LLMClient:
         """Generate using GLM (Zhipu AI) API via OpenAI-compatible endpoint.
 
         Note: GLM API doesn't support response_format parameter, so it's ignored.
+        Also strips thinking tags from reasoning models (DAN, DeepSeek-R1, etc.).
         """
         client = self._get_glm_client()
 
@@ -326,7 +408,15 @@ class LLMClient:
             timeout=self.timeout
         )
 
-        return response.choices[0].message.content
+        content = response.choices[0].message.content or ""
+        # Strip thinking tags from reasoning models (DAN-Qwen, DeepSeek-R1, etc.)
+        cleaned_content, thinking = strip_thinking_tags(content)
+
+        # Log if thinking was found (for debugging)
+        if thinking:
+            logger.info(f"GLM response contained thinking tags ({len(thinking)} chars stripped)")
+
+        return cleaned_content
 
     async def analyze(
         self,

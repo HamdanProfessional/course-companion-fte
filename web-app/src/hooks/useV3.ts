@@ -259,6 +259,22 @@ export function useV3MentorChat() {
 }
 
 /**
+ * Hook for mentor chat with history (v3)
+ */
+export function useV3MentorChatWithHistory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ request, conversationId }: { request: V3Types.MentorChatRequest; conversationId?: string }) =>
+      tutorApi.mentorChatWithHistory(request, conversationId),
+    onSuccess: () => {
+      // Invalidate chat history queries
+      queryClient.invalidateQueries({ queryKey: ['v3', 'chat', 'conversations'] });
+    },
+  });
+}
+
+/**
  * Hook for topic explanation (v3)
  */
 export function useV3ExplainTopic() {
@@ -291,6 +307,20 @@ export function useV3LLMCosts() {
     queryFn: () => tutorApi.getLLMUsageCosts(),
     enabled: typeof window !== 'undefined',
     retry: false,
+  });
+}
+
+/**
+ * Hook for AI quiz generation (v3)
+ */
+export function useV3GenerateQuiz() {
+  return useMutation({
+    mutationFn: (request: {
+      topic: string;
+      subtopic?: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced' | 'mixed';
+      num_questions: number;
+    }) => tutorApi.generateQuizWithAI(request),
   });
 }
 
@@ -364,6 +394,133 @@ export function useV3DataExport() {
       include_streaks?: boolean;
       format?: 'json' | 'csv' | 'pdf';
     }) => tutorApi.requestDataExport(options),
+  });
+}
+
+// ============================================================================
+// Chat History Hooks (v3)
+// ============================================================================
+
+/**
+ * Hook for listing chat conversations
+ */
+export function useV3ChatConversations() {
+  return useQuery({
+    queryKey: ['v3', 'chat', 'conversations'],
+    queryFn: () => tutorApi.listConversations(),
+    enabled: typeof window !== 'undefined',
+  });
+}
+
+/**
+ * Hook for creating a new conversation
+ */
+export function useV3CreateConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data?: V3Types.CreateConversationRequest) => tutorApi.createConversation(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['v3', 'chat', 'conversations'] });
+    },
+  });
+}
+
+/**
+ * Hook for getting conversation detail
+ */
+export function useV3ConversationDetail(conversationId: string) {
+  return useQuery({
+    queryKey: ['v3', 'chat', 'conversation', conversationId],
+    queryFn: () => tutorApi.getConversation(conversationId),
+    enabled: !!conversationId,
+  });
+}
+
+/**
+ * Hook for updating conversation title
+ */
+export function useV3UpdateConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ conversationId, data }: { conversationId: string; data: V3Types.UpdateConversationRequest }) =>
+      tutorApi.updateConversation(conversationId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['v3', 'chat', 'conversations'] });
+    },
+  });
+}
+
+/**
+ * Hook for deleting a conversation
+ */
+export function useV3DeleteConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) => tutorApi.deleteConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['v3', 'chat', 'conversations'] });
+    },
+  });
+}
+
+// ============================================================================
+// Mistake Bank Hooks (v3)
+// =============================================================================
+
+/**
+ * Hook for fetching mistakes from both chapter and infinite quizzes
+ */
+export function useV3Mistakes(params?: {
+  source?: 'chapter' | 'infinite';
+  category?: string;
+  difficulty?: string;
+  mastered?: boolean;
+  limit?: number;
+}) {
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+  return useQuery({
+    queryKey: ['v3', 'mistakes', params],
+    queryFn: () => tutorApi.getMistakes(params),
+    enabled: !!userId,
+  });
+}
+
+/**
+ * Hook for fetching mistake statistics
+ */
+export function useV3MistakeStats() {
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+  return useQuery({
+    queryKey: ['v3', 'mistakes', 'stats'],
+    queryFn: () => tutorApi.getMistakeStats(),
+    enabled: !!userId,
+  });
+}
+
+/**
+ * Hook for adding a mistake from infinite quiz
+ */
+export function useV3AddInfiniteMistake() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { question_data: Record<string, any>; wrong_answer: string }) =>
+      tutorApi.addInfiniteQuizMistake(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['v3', 'mistakes'] });
+    },
+  });
+}
+
+/**
+ * Hook for exporting mistakes
+ */
+export function useV3ExportMistakes() {
+  return useMutation({
+    mutationFn: () => tutorApi.exportMistakes(),
   });
 }
 

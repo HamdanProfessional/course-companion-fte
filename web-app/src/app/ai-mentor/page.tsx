@@ -1,170 +1,371 @@
 'use client';
 
 /**
- * AI Mentor Page - Phase 3 (Redesigned)
+ * AI Mentor Page - Nebula Theme with Voice Input
  *
- * Interactive AI tutor for conceptual Q&A with a modern, stunning interface:
- * - Gradient animated hero section with stats
- * - Glassmorphism design for chat container
- * - Enhanced visual hierarchy and animations
- * - Voice Mode: Two-way voice conversations
+ * Modern chat interface with cosmic/nebula styling:
+ * - Dark space-themed gradients
+ * - Voice input with Web Speech API
+ * - Glowing effects on active elements
+ * - ChatGPT-like conversation interface
+ * - Recording animations
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { useV3MentorChat, useV3AIStatus } from '@/hooks/useV3';
+import {
+  useV3ChatConversations,
+  useV3CreateConversation,
+  useV3DeleteConversation,
+  useV3ConversationDetail,
+  useV3MentorChatWithHistory,
+  useV3UpdateConversation,
+} from '@/hooks/useV3';
 import { useUserTier } from '@/hooks';
 import type { MentorMessage } from '@/lib/api-v3';
 import {
   Bot,
   User as UserIcon,
-  Sparkles,
-  Lightbulb,
-  Zap,
-  AlertTriangle,
+  Plus,
+  MessageSquare,
+  Trash2,
+  Edit2,
+  Send,
+  Clock,
   Mic,
   MicOff,
-  Volume2,
-  VolumeX,
-  MessageCircle,
-  TrendingUp,
-  Clock,
-  Star,
-  ThumbsUp,
-  Paperclip,
-  Send,
   X,
+  Sparkles,
 } from 'lucide-react';
+
+// Types
+interface ChatConversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+// Nebula/Cosmic theme colors
+const NEBULA_COLORS = {
+  purple: '#a855f7',
+  pink: '#ec4899',
+  blue: '#0ea5e9',
+  cyan: '#06b6d4',
+  primary: '#8b5cf6',
+  bg: '#0f111a',
+  secondary: '#1e2133',
+};
 
 // Suggested questions to help users get started
 const SUGGESTED_QUESTIONS = [
-  { question: "How do MCP servers connect to ChatGPT?", icon: "🔗" },
-  { question: "What's the difference between a skill and an agent?", icon: "🤖" },
-  { question: "Explain state management in React Query", icon: "⚛️" },
-  { question: "How do I implement adaptive learning?", icon: "🧠" },
+  "How do MCP servers connect to ChatGPT?",
+  "What's the difference between a skill and an agent?",
+  "Explain state management in React Query",
+  "How do I implement adaptive learning?",
 ];
 
-// Typing animation component with bouncing dots
+// Typing animation component
 const TypingIndicator = () => (
   <div className="flex items-center gap-1">
     <motion.span
-      animate={{ y: [0, -8, 0] }}
-      transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-      className="w-2 h-2 bg-cosmic-purple rounded-full"
+      animate={{ y: [0, -4, 0] }}
+      transition={{ duration: 0.4, repeat: Infinity, delay: 0 }}
+      className="w-1.5 h-1.5 bg-cosmic-purple rounded-full"
     />
     <motion.span
-      animate={{ y: [0, -8, 0] }}
-      transition={{ duration: 0.6, repeat: Infinity, delay: 0.1 }}
-      className="w-2 h-2 bg-cosmic-pink rounded-full"
+      animate={{ y: [0, -4, 0] }}
+      transition={{ duration: 0.4, repeat: Infinity, delay: 0.1 }}
+      className="w-1.5 h-1.5 bg-cosmic-pink rounded-full"
     />
     <motion.span
-      animate={{ y: [0, -8, 0] }}
-      transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
-      className="w-2 h-2 bg-cosmic-blue rounded-full"
+      animate={{ y: [0, -4, 0] }}
+      transition={{ duration: 0.4, repeat: Infinity, delay: 0.2 }}
+      className="w-1.5 h-1.5 bg-cosmic-cyan rounded-full"
     />
   </div>
 );
 
-// Animated gradient background component
-const AnimatedGradientBackground = () => (
-  <div className="absolute inset-0 overflow-hidden rounded-t-3xl">
+// Recording pulse animation
+const RecordingPulse = () => (
+  <div className="relative">
     <motion.div
-      className="absolute inset-0 bg-gradient-to-br from-cosmic-purple via-cosmic-pink to-cosmic-blue opacity-30"
+      className="absolute inset-0 bg-cosmic-pink rounded-full"
       animate={{
-        backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+        scale: [1, 1.5, 1],
+        opacity: [0.5, 0, 0.5],
       }}
       transition={{
-        duration: 15,
+        duration: 1.5,
         repeat: Infinity,
-        ease: 'linear',
-      }}
-      style={{
-        backgroundSize: '200% 200%',
-      }}
-    />
-    {/* Floating orbs */}
-    <motion.div
-      className="absolute top-10 left-20 w-32 h-32 bg-cosmic-purple/40 rounded-full blur-3xl"
-      animate={{
-        x: [0, 50, 0],
-        y: [0, 30, 0],
-        scale: [1, 1.2, 1],
-      }}
-      transition={{
-        duration: 8,
-        repeat: Infinity,
-        ease: 'easeInOut',
+        ease: "easeInOut",
       }}
     />
     <motion.div
-      className="absolute bottom-10 right-20 w-40 h-40 bg-cosmic-pink/40 rounded-full blur-3xl"
+      className="absolute inset-0 bg-cosmic-purple rounded-full"
       animate={{
-        x: [0, -50, 0],
-        y: [0, -30, 0],
         scale: [1, 1.3, 1],
+        opacity: [0.5, 0, 0.5],
       }}
       transition={{
-        duration: 10,
+        duration: 1.5,
         repeat: Infinity,
-        ease: 'easeInOut',
-        delay: 1,
-      }}
-    />
-    <motion.div
-      className="absolute top-1/2 left-1/2 w-48 h-48 bg-cosmic-blue/30 rounded-full blur-3xl"
-      animate={{
-        x: [0, 30, -30, 0],
-        y: [0, -40, 40, 0],
-        scale: [1, 1.1, 1],
-      }}
-      transition={{
-        duration: 12,
-        repeat: Infinity,
-        ease: 'easeInOut',
-        delay: 2,
+        ease: "easeInOut",
+        delay: 0.2,
       }}
     />
   </div>
 );
 
 export default function AIMentorPage() {
+  // Chat state
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MentorMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [mounted, setMounted] = useState(false);
 
-  // Voice Mode State
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  // Prevent hydration errors by only rendering browser-specific content after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Voice input state
+  const [isRecording, setIsRecording] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const recognitionRef = useRef<any>(null);
-  const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [recognition, setRecognition] = useState<any>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
-  // Message reactions state
-  const [reactions, setReactions] = useState<Record<number, boolean>>({});
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get user tier
+  // API hooks
   const { data: tier, isLoading: tierLoading } = useUserTier();
-  const { data: aiStatus } = useV3AIStatus();
-  const mentorChat = useV3MentorChat();
+  const { data: conversations, isLoading: conversationsLoading, refetch: refetchConversations } = useV3ChatConversations();
+  const { data: conversationDetail, isLoading: detailLoading } = useV3ConversationDetail(currentChatId || '');
+  const createConversationMutation = useV3CreateConversation();
+  const deleteConversationMutation = useV3DeleteConversation();
+  const updateConversationMutation = useV3UpdateConversation();
+  const mentorChatMutation = useV3MentorChatWithHistory();
 
-  // Check if user can access AI features (PREMIUM or PRO tier)
+  // Check if user can access AI features
   const canAccessAI = (!tierLoading && tier && tier === 'FREE') ? false : true;
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check for browser support
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+      if (SpeechRecognition) {
+        const recognitionInstance = new SpeechRecognition();
+        recognitionInstance.continuous = false;
+        recognitionInstance.interimResults = true;
+        recognitionInstance.lang = 'en-US';
+
+        recognitionInstance.onstart = () => {
+          setIsListening(true);
+          setVoiceError(null);
+        };
+
+        recognitionInstance.onresult = (event: any) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+
+          if (finalTranscript) {
+            setInputValue(prev => prev + finalTranscript);
+          } else if (interimTranscript) {
+            // Show interim results visually
+            setInputValue(prev => {
+              const baseText = prev;
+              return baseText + interimTranscript;
+            });
+          }
+        };
+
+        recognitionInstance.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+          setIsRecording(false);
+
+          if (event.error === 'no-speech') {
+            setVoiceError('No speech detected. Please try again.');
+          } else if (event.error === 'not-allowed') {
+            setVoiceError('Microphone access denied. Please allow microphone access.');
+          } else if (event.error === 'network') {
+            setVoiceError('Network error. Please check your connection.');
+          } else {
+            setVoiceError(`Voice error: ${event.error}`);
+          }
+
+          setTimeout(() => setVoiceError(null), 3000);
+        };
+
+        recognitionInstance.onend = () => {
+          setIsListening(false);
+          setIsRecording(false);
+        };
+
+        setRecognition(recognitionInstance);
+      } else {
+        console.warn('Speech recognition not supported in this browser');
+      }
+    }
+
+    return () => {
+      if (recognition) {
+        recognition.abort();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // recognition is created inside this effect and should not be in dependencies
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Load conversation detail when currentChatId changes
+  useEffect(() => {
+    if (currentChatId && conversationDetail) {
+      setMessages(
+        conversationDetail.messages.map(msg => ({
+          role: msg.role as 'user' | 'assistant' | 'system',
+          content: msg.content,
+          timestamp: msg.created_at,
+        }))
+      );
+    }
+  }, [currentChatId, conversationDetail]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [inputValue]);
+
+  // Start voice recording
+  const startRecording = useCallback(() => {
+    if (!recognition) {
+      setVoiceError('Voice input not supported in this browser');
+      setTimeout(() => setVoiceError(null), 3000);
+      return;
+    }
+
+    try {
+      recognition.start();
+      setIsRecording(true);
+      setVoiceError(null);
+    } catch (error) {
+      console.error('Error starting recognition:', error);
+      setVoiceError('Could not start microphone');
+      setTimeout(() => setVoiceError(null), 3000);
+    }
+  }, [recognition]);
+
+  // Stop voice recording
+  const stopRecording = useCallback(() => {
+    if (recognition && isListening) {
+      recognition.stop();
+      setIsRecording(false);
+    }
+  }, [recognition, isListening]);
+
+  // Toggle recording
+  const toggleRecording = useCallback(() => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }, [isRecording, startRecording, stopRecording]);
+
+  // Start a new chat
+  const startNewChat = async () => {
+    try {
+      const result = await createConversationMutation.mutateAsync();
+      setCurrentChatId(result.id);
+      setMessages([]);
+      setInputValue('');
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+    }
+  };
+
+  // Load a chat from history
+  const loadChat = (chatId: string) => {
+    setCurrentChatId(chatId);
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  // Delete a chat from history
+  const deleteChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteConversationMutation.mutateAsync(chatId);
+      if (currentChatId === chatId) {
+        setCurrentChatId(null);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  };
+
+  // Update conversation title
+  const updateTitle = async (chatId: string) => {
+    if (!newTitle.trim()) {
+      setEditingTitle(null);
+      setNewTitle('');
+      return;
+    }
+
+    try {
+      await updateConversationMutation.mutateAsync({
+        conversationId: chatId,
+        data: { title: newTitle },
+      });
+      setEditingTitle(null);
+      setNewTitle('');
+      refetchConversations();
+    } catch (error) {
+      console.error('Failed to update title:', error);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
+
+    // Check minimum question length (backend requires at least 5 characters)
+    if (inputValue.trim().length < 5) {
+      setVoiceError('Please enter at least 5 characters');
+      setTimeout(() => setVoiceError(null), 3000);
+      return;
+    }
 
     // Check if user is logged in
     const userId = localStorage.getItem('user_id');
@@ -176,6 +377,19 @@ export default function AIMentorPage() {
       return;
     }
 
+    // Create conversation if none exists
+    let chatId = currentChatId;
+    if (!chatId) {
+      try {
+        const result = await createConversationMutation.mutateAsync();
+        chatId = result.id;
+        setCurrentChatId(chatId);
+      } catch (error) {
+        console.error('Failed to create conversation:', error);
+        return;
+      }
+    }
+
     const userMessage: MentorMessage = {
       role: 'user',
       content: inputValue.trim(),
@@ -183,14 +397,24 @@ export default function AIMentorPage() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = inputValue.trim();
     setInputValue('');
     setIsLoading(true);
     setAuthError(false);
 
     try {
-      const response = await mentorChat.mutateAsync({
-        question: userMessage.content,
-        conversation_history: messages,
+      // Sanitize conversation history - only send required fields
+      const sanitizedHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      const response = await mentorChatMutation.mutateAsync({
+        request: {
+          question: messageToSend,
+          conversation_history: sanitizedHistory,
+        },
+        conversationId: chatId,
       });
 
       const assistantMessage: MentorMessage = {
@@ -200,6 +424,7 @@ export default function AIMentorPage() {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      refetchConversations();
     } catch (error) {
       console.error('AI Mentor error:', error);
       const errorMessage: MentorMessage = {
@@ -222,947 +447,488 @@ export default function AIMentorPage() {
 
   const handleSuggestedQuestion = (question: string) => {
     setInputValue(question);
+    setTimeout(() => handleSendMessage(), 100);
   };
 
   const handleClearChat = () => {
+    setCurrentChatId(null);
     setMessages([]);
-    setReactions({});
   };
 
-  const handleReaction = (messageIndex: number) => {
-    setReactions(prev => ({
-      ...prev,
-      [messageIndex]: !prev[messageIndex],
-    }));
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
   };
 
-  // Voice Mode Functions
-  const toggleVoiceMode = () => {
-    if (!isVoiceMode && !voiceEnabled) {
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
-        return;
-      }
-      if (!('speechSynthesis' in window)) {
-        alert('Text-to-speech is not supported in your browser.');
-        return;
-      }
-    }
-    setIsVoiceMode(!isVoiceMode);
-  };
-
-  const toggleListening = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
-  };
-
-  const startListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in your browser.');
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    let finalTranscript = '';
-
-    recognition.onresult = (event: any) => {
-      let interimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      setInputValue(finalTranscript || interimTranscript);
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-      if (event.error === 'not-allowed') {
-        alert('Microphone permission denied. Please allow microphone access to use voice mode.');
-      }
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      if (finalTranscript) {
-        setInputValue(finalTranscript);
-        setTimeout(() => {
-          handleSendMessage();
-        }, 500);
-      }
-    };
-
-    recognition.start();
-    setIsListening(true);
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  };
-
-  const speakText = (text: string) => {
-    if (!voiceEnabled || !('speechSynthesis' in window)) return;
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    synthesisRef.current = utterance;
-
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(voice =>
-      voice.lang.startsWith('en') && (voice.name.includes('Google') || voice.name.includes('Natural'))
-    ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
-
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
-
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const stopSpeaking = () => {
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-  };
-
-  const toggleSpeechEnabled = () => {
-    setVoiceEnabled(!voiceEnabled);
-    if (isSpeaking) {
-      stopSpeaking();
-    }
-  };
-
-  // Auto-speak AI responses when voice mode is enabled
-  useEffect(() => {
-    if (isVoiceMode && voiceEnabled && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === 'assistant' && !isSpeaking) {
-        speakText(lastMessage.content);
-      }
-    }
-  }, [messages, isVoiceMode, voiceEnabled]);
-
-  // Load voices when component mounts
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-      const handleVoicesChanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      window.speechSynthesis.cancel();
-    };
-  }, []);
-
-  if (!canAccessAI && aiStatus) {
+  if (!canAccessAI) {
     return (
-      <PageContainer>
-        <Card className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-cosmic-purple/10 via-cosmic-pink/10 to-cosmic-blue/10" />
-          <CardContent className="relative p-12 text-center">
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ duration: 0.6, type: 'spring' }}
-              className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-cosmic-purple to-cosmic-pink flex items-center justify-center shadow-glow-purple"
-            >
-              <Bot className="w-14 h-14 text-white" />
-            </motion.div>
-            <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-cosmic-purple to-cosmic-pink bg-clip-text text-transparent">
-              Premium Feature
-            </h2>
-            <p className="text-text-secondary mb-8 max-w-md mx-auto text-lg">
-              Unlock AI-powered mentoring with 24/7 access to personalized tutoring and conceptual explanations.
-            </p>
-            <Button variant="primary" size="lg" className="shadow-glow-purple">
-              Upgrade to Premium
-            </Button>
-          </CardContent>
-        </Card>
+      <PageContainer suppressHydrationWarning>
+        <div className="min-h-screen bg-cosmic-bg flex items-center justify-center p-4" suppressHydrationWarning>
+          <Card className="relative overflow-hidden max-w-md w-full border-cosmic-purple/30 bg-cosmic-secondary/50 backdrop-blur-xl">
+            <div className="absolute inset-0 bg-gradient-nebula opacity-10" />
+            <CardContent className="relative p-12 text-center">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-cosmic flex items-center justify-center shadow-nebula"
+              >
+                <Sparkles className="w-12 h-12 text-white" />
+              </motion.div>
+              <h2 className="text-3xl font-bold mb-3 bg-gradient-cosmic bg-clip-text text-transparent">
+                Premium Feature
+              </h2>
+              <p className="text-cosmic-fg/70 mb-8 max-w-md mx-auto">
+                Unlock AI-powered mentoring with 24/7 access to personalized tutoring and conceptual explanations.
+              </p>
+              <Button className="bg-gradient-cosmic hover:shadow-glow-purple text-white border-0">
+                Upgrade to Premium
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
-      {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative mb-8 rounded-3xl overflow-hidden"
-      >
-        <AnimatedGradientBackground />
-        <div className="relative z-10 p-8 md:p-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="flex-1 text-center md:text-left">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="inline-block mb-4"
+    <PageContainer className="p-0" suppressHydrationWarning>
+      <div className="flex h-[calc(100vh-2rem)] gap-0" suppressHydrationWarning>
+        {/* Sidebar - Chat History */}
+        <motion.div
+          initial={false}
+          animate={{ width: isSidebarOpen ? '280px' : '0px' }}
+          transition={{ duration: 0.2 }}
+          className="relative border-r border-glass-border bg-cosmic-secondary/30 backdrop-blur-xl overflow-hidden"
+        >
+          <div className="w-[280px] h-full flex flex-col">
+            {/* Sidebar Header */}
+            <div className="p-4 border-b border-glass-border">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={startNewChat}
+                className="w-full justify-start gap-2 bg-cosmic-bg/50 border-glass-border text-cosmic-fg hover:bg-glass-hover"
               >
-                <div className="relative">
+                <Plus className="w-4 h-4" />
+                New chat
+              </Button>
+            </div>
+
+            {/* Chat List */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {conversationsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner size="sm" />
+                </div>
+              ) : conversations && conversations.length > 0 ? (
+                conversations.map((chat) => (
                   <motion.div
-                    animate={{
-                      scale: [1, 1.1, 1],
-                      rotate: [0, 5, -5, 0],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                    className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cosmic-purple to-cosmic-pink flex items-center justify-center shadow-glow-purple"
+                    key={chat.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`group relative p-3 rounded-lg cursor-pointer transition-all ${
+                      currentChatId === chat.id
+                        ? 'bg-gradient-stellar border border-cosmic-purple/30'
+                        : 'hover:bg-glass-hover border border-transparent'
+                    }`}
+                    onClick={() => loadChat(chat.id)}
                   >
-                    <Bot className="w-12 h-12 text-white" />
-                  </motion.div>
-                  <motion.div
-                    className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cosmic-purple to-cosmic-pink"
-                    animate={{
-                      scale: [1, 1.5, 1.8],
-                      opacity: [0.5, 0.2, 0],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: 'easeOut',
-                    }}
-                  />
-                </div>
-              </motion.div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-3 text-white">
-                AI Mentor
-              </h1>
-              <p className="text-xl text-white/80 mb-6 max-w-2xl">
-                Your intelligent learning companion. Ask questions, get explanations, and master concepts with personalized AI tutoring.
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-                  <MessageCircle className="w-5 h-5 text-cosmic-cyan" />
-                  <span className="text-white font-semibold">24/7 Available</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-                  <Zap className="w-5 h-5 text-yellow-400" />
-                  <span className="text-white font-semibold">Instant Answers</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-                  <Mic className="w-5 h-5 text-cosmic-pink" />
-                  <span className="text-white font-semibold">Voice Mode</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-3 gap-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-center"
-              >
-                <div className="w-16 h-16 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-cosmic-purple/30 to-cosmic-purple/10 backdrop-blur-sm border border-cosmic-purple/30 flex items-center justify-center">
-                  <MessageCircle className="w-8 h-8 text-cosmic-purple" />
-                </div>
-                <div className="text-2xl font-bold text-white">{messages.length}</div>
-                <div className="text-sm text-white/60">Questions</div>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-center"
-              >
-                <div className="w-16 h-16 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-cosmic-pink/30 to-cosmic-pink/10 backdrop-blur-sm border border-cosmic-pink/30 flex items-center justify-center">
-                  <Clock className="w-8 h-8 text-cosmic-pink" />
-                </div>
-                <div className="text-2xl font-bold text-white">{aiStatus ? 'Active' : 'Ready'}</div>
-                <div className="text-sm text-white/60">Status</div>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="text-center"
-              >
-                <div className="w-16 h-16 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-cosmic-blue/30 to-cosmic-blue/10 backdrop-blur-sm border border-cosmic-blue/30 flex items-center justify-center">
-                  <Star className="w-8 h-8 text-cosmic-blue" />
-                </div>
-                <div className="text-2xl font-bold text-white">{(aiStatus?.llm_provider || 'AI').toUpperCase()}</div>
-                <div className="text-sm text-white/60">Powered By</div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main Chat Area */}
-        <div className="lg:col-span-3">
-          <Card className="relative overflow-hidden backdrop-blur-xl bg-glass-surface/80 border-glass-border">
-            {/* Animated gradient border */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cosmic-purple via-cosmic-pink to-cosmic-blue opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ padding: '1px' }}>
-              <div className="absolute inset-0 rounded-2xl bg-cosmic-bg" />
-            </div>
-
-            <div className="relative z-10 h-[700px] flex flex-col">
-              {/* Chat Header */}
-              <CardHeader className="border-b border-glass-border backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-3">
-                    <motion.div
-                      animate={{
-                        scale: [1, 1.1, 1],
-                        rotate: [0, 10, -10, 0],
-                      }}
-                      transition={{
-                        duration: 4,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                      }}
-                      className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-purple to-cosmic-pink flex items-center justify-center shadow-glow-purple"
-                    >
-                      <Bot className="w-7 h-7 text-white" />
-                    </motion.div>
-                    <div>
-                      <div className="text-xl font-bold bg-gradient-to-r from-cosmic-purple to-cosmic-pink bg-clip-text text-transparent">
-                        AI Mentor
+                    {editingTitle === chat.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newTitle}
+                          onChange={(e) => setNewTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') updateTitle(chat.id);
+                            if (e.key === 'Escape') {
+                              setEditingTitle(null);
+                              setNewTitle('');
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 text-sm bg-cosmic-bg border border-glass-border rounded focus:outline-none focus:ring-2 focus:ring-cosmic-purple text-cosmic-fg"
+                          autoFocus
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTitle(chat.id);
+                          }}
+                          className="p-1 hover:bg-glass-hover rounded"
+                        >
+                          <Bot className="w-4 h-4 text-cosmic-cyan" />
+                        </button>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                        <span className="text-sm text-text-secondary">Online</span>
-                      </div>
-                    </div>
-                  </CardTitle>
-
-                  <div className="flex items-center gap-2">
-                    {isVoiceMode && (
-                      <Badge variant="premium" className="shadow-glow-purple">
-                        <Mic className="w-3 h-3 mr-1" />
-                        Voice Mode
-                      </Badge>
-                    )}
-                    <Button
-                      variant={isVoiceMode ? 'primary' : 'outline'}
-                      size="sm"
-                      onClick={toggleVoiceMode}
-                      className="flex items-center gap-2"
-                    >
-                      {isVoiceMode ? (
-                        <>
-                          <Mic className="w-4 h-4" />
-                          Voice On
-                        </>
-                      ) : (
-                        <>
-                          <MicOff className="w-4 h-4" />
-                          Voice Off
-                        </>
-                      )}
-                    </Button>
-
-                    {isVoiceMode && (
+                    ) : (
                       <>
-                        <Button
-                          variant={isListening ? 'danger' : 'outline'}
-                          size="sm"
-                          onClick={toggleListening}
-                          disabled={isLoading}
-                          className="relative"
-                        >
-                          {isListening && (
-                            <motion.div
-                              className="absolute inset-0 bg-red-500/20 rounded-lg"
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ duration: 1, repeat: Infinity }}
-                            />
-                          )}
-                          <Mic className="w-4 h-4" />
-                          {isListening ? 'Stop' : 'Speak'}
-                        </Button>
-
-                        <Button
-                          variant={voiceEnabled ? 'outline' : 'ghost'}
-                          size="sm"
-                          onClick={toggleSpeechEnabled}
-                        >
-                          {voiceEnabled ? (
-                            <Volume2 className="w-4 h-4" />
-                          ) : (
-                            <VolumeX className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </>
-                    )}
-
-                    {messages.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={handleClearChat}>
-                        Clear
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Voice Mode Status Bar */}
-                <AnimatePresence>
-                  {isVoiceMode && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 overflow-hidden"
-                    >
-                      <div className="p-4 rounded-xl bg-gradient-to-r from-cosmic-purple/10 via-cosmic-pink/10 to-cosmic-blue/10 border border-cosmic-purple/30 backdrop-blur-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {isListening ? (
-                              <>
-                                <motion.div
-                                  className="w-3 h-3 bg-red-500 rounded-full"
-                                  animate={{ scale: [1, 1.5, 1] }}
-                                  transition={{ duration: 0.8, repeat: Infinity }}
-                                />
-                                <span className="text-text-primary font-medium">Listening...</span>
-                                <div className="flex gap-1">
-                                  {[0, 1, 2, 3, 4].map((i) => (
-                                    <motion.div
-                                      key={i}
-                                      className="w-1 h-6 bg-gradient-to-t from-cosmic-purple to-cosmic-pink rounded-full"
-                                      animate={{
-                                        height: [24, 40, 24],
-                                      }}
-                                      transition={{
-                                        duration: 0.5,
-                                        repeat: Infinity,
-                                        delay: i * 0.1,
-                                      }}
-                                    />
-                                  ))}
-                                </div>
-                              </>
-                            ) : isSpeaking ? (
-                              <>
-                                <motion.div
-                                  className="w-3 h-3 bg-cosmic-purple rounded-full"
-                                  animate={{ scale: [1, 1.5, 1] }}
-                                  transition={{ duration: 0.8, repeat: Infinity }}
-                                />
-                                <span className="text-text-primary font-medium">Speaking...</span>
-                                <div className="flex gap-1">
-                                  {[0, 1, 2, 3, 4].map((i) => (
-                                    <motion.div
-                                      key={i}
-                                      className="w-1 h-6 bg-gradient-to-t from-cosmic-blue to-cosmic-cyan rounded-full"
-                                      animate={{
-                                        height: [24, 40, 24],
-                                      }}
-                                      transition={{
-                                        duration: 0.5,
-                                        repeat: Infinity,
-                                        delay: i * 0.1,
-                                      }}
-                                    />
-                                  ))}
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="w-3 h-3 bg-green-400 rounded-full" />
-                                <span className="text-text-secondary">
-                                  {voiceEnabled ? 'Ready to speak & listen' : 'Ready to listen only'}
-                                </span>
-                              </>
-                            )}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-cosmic-fg truncate">
+                              {chat.title}
+                            </p>
+                            <p className="text-xs text-cosmic-fg/50 mt-1 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatDate(chat.updated_at)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingTitle(chat.id);
+                                setNewTitle(chat.title);
+                              }}
+                              className="p-1 hover:bg-glass-hover rounded"
+                              title="Rename"
+                            >
+                              <Edit2 className="w-3 h-3 text-cosmic-purple" />
+                            </button>
+                            <button
+                              onClick={(e) => deleteChat(chat.id, e)}
+                              className="p-1 hover:bg-red-500/20 rounded"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3 text-red-400" />
+                            </button>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </CardHeader>
-
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 scroll-smooth">
-                {messages.length === 0 ? (
-                  /* Welcome State */
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="h-full flex flex-col items-center justify-center text-center"
-                  >
-                    <motion.div
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="relative mb-6"
-                    >
-                      <motion.div
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          rotate: [0, 5, -5, 0],
-                        }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                        }}
-                        className="w-24 h-24 rounded-3xl bg-gradient-to-br from-cosmic-purple via-cosmic-pink to-cosmic-blue flex items-center justify-center shadow-nebula"
-                      >
-                        <Sparkles className="w-14 h-14 text-white" />
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 rounded-3xl"
-                        animate={{
-                          scale: [1, 1.3, 1.5],
-                          opacity: [0.4, 0.2, 0],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: 'easeOut',
-                        }}
-                        style={{
-                          background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #0ea5e9 100%)',
-                          filter: 'blur(20px)',
-                        }}
-                      />
-                    </motion.div>
-                    <motion.h3
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                      className="text-2xl font-bold text-text-primary mb-3"
-                    >
-                      Welcome to AI Mentor!
-                    </motion.h3>
-                    <motion.p
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                      className="text-text-secondary max-w-md mb-8 text-lg"
-                    >
-                      Ask me anything about the course material. I'm here to help you understand concepts, answer questions, and guide your learning journey.
-                    </motion.p>
-
-                    {/* Suggested Questions */}
-                    <motion.div
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.5 }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto"
-                    >
-                      {SUGGESTED_QUESTIONS.map((sq, i) => (
-                        <motion.button
-                          key={i}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.6 + i * 0.1 }}
-                          onClick={() => handleSuggestedQuestion(sq.question)}
-                          className="group flex items-center gap-3 p-4 rounded-xl bg-glass-surface border border-glass-border hover:border-cosmic-purple hover:shadow-glow-purple transition-all duration-300 text-left"
-                        >
-                          <span className="text-2xl">{sq.icon}</span>
-                          <span className="text-sm text-text-primary group-hover:text-cosmic-purple transition-colors">
-                            {sq.question}
-                          </span>
-                        </motion.button>
-                      ))}
-                    </motion.div>
+                      </>
+                    )}
                   </motion.div>
-                ) : (
-                  /* Messages */
-                  <div className="space-y-4">
-                    <AnimatePresence mode="popLayout">
-                      {messages.map((message, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          transition={{ duration: 0.3 }}
-                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-[80%] rounded-2xl ${
-                              message.role === 'user'
-                                ? 'bg-gradient-to-br from-cosmic-purple to-cosmic-pink text-white shadow-glow-purple'
-                                : 'bg-glass-surface border border-glass-border text-text-primary'
-                            }`}
-                          >
-                            <div className="p-4">
-                              <div className="flex items-start gap-3">
-                                {message.role === 'assistant' && (
-                                  <motion.div
-                                    whileHover={{ scale: 1.1, rotate: 5 }}
-                                    className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-purple to-cosmic-pink flex items-center justify-center flex-shrink-0 shadow-glow-purple"
-                                  >
-                                    <Bot className="w-6 h-6 text-white" />
-                                  </motion.div>
-                                )}
-                                <div className="flex-1">
-                                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                                  <div className="flex items-center gap-3 mt-3">
-                                    {message.timestamp && (
-                                      <p
-                                        className={`text-xs ${
-                                          message.role === 'user'
-                                            ? 'text-white/70'
-                                            : 'text-text-muted'
-                                        }`}
-                                      >
-                                        {new Date(message.timestamp).toLocaleTimeString([], {
-                                          hour: '2-digit',
-                                          minute: '2-digit',
-                                        })}
-                                      </p>
-                                    )}
-                                    {message.role === 'assistant' && (
-                                      <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => handleReaction(index)}
-                                        className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
-                                          reactions[index]
-                                            ? 'bg-cosmic-purple/20 text-cosmic-purple'
-                                            : 'hover:bg-bg-elevated text-text-muted'
-                                        }`}
-                                      >
-                                        <ThumbsUp className="w-3 h-3" />
-                                      </motion.button>
-                                    )}
-                                  </div>
-                                </div>
-                                {message.role === 'user' && (
-                                  <motion.div
-                                    whileHover={{ scale: 1.1, rotate: -5 }}
-                                    className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-blue to-cosmic-cyan flex items-center justify-center flex-shrink-0 shadow-glow-blue"
-                                  >
-                                    <UserIcon className="w-6 h-6 text-white" />
-                                  </motion.div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+                ))
+              ) : (
+                <div className="text-center py-8 text-cosmic-fg/50 text-sm">
+                  No chat history yet
+                </div>
+              )}
+            </div>
 
-                    {/* Loading State */}
-                    <AnimatePresence>
-                      {isLoading && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          className="flex justify-start"
-                        >
-                          <div className="bg-glass-surface border border-glass-border rounded-2xl px-6 py-4 flex items-center gap-3">
-                            <TypingIndicator />
-                            <span className="text-sm text-text-muted">Thinking...</span>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+            {/* Sidebar Footer */}
+            <div className="p-4 border-t border-glass-border text-xs text-cosmic-fg/50">
+              <p>AI Mentor v2.0 - Nebula Edition</p>
+            </div>
+          </div>
+        </motion.div>
 
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-              </div>
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col bg-cosmic-bg relative overflow-hidden">
+          {/* Animated background */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <motion.div
+              className="absolute top-20 left-20 w-96 h-96 bg-cosmic-purple/10 rounded-full blur-3xl"
+              animate={{
+                scale: [1, 1.2, 1],
+                x: [0, 30, 0],
+                y: [0, -30, 0],
+              }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute bottom-20 right-20 w-96 h-96 bg-cosmic-blue/10 rounded-full blur-3xl"
+              animate={{
+                scale: [1, 1.3, 1],
+                x: [0, -30, 0],
+                y: [0, 30, 0],
+              }}
+              transition={{
+                duration: 25,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cosmic-pink/10 rounded-full blur-3xl"
+              animate={{
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 15,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          </div>
 
-              {/* Input Area */}
-              <div className="border-t border-glass-border p-4 backdrop-blur-xl">
-                {authError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 p-4 rounded-xl bg-accent-warning/10 border border-accent-warning/30 flex items-center gap-3"
-                  >
-                    <AlertTriangle className="w-5 h-5 text-accent-warning flex-shrink-0" />
-                    <p className="text-sm text-accent-warning">
-                      You need to be logged in to use AI Mentor. Redirecting to login...
-                    </p>
-                  </motion.div>
-                )}
-
-                <div className="relative">
-                  <div className="flex items-end gap-3 p-3 rounded-2xl bg-glass-surface border border-glass-border shadow-lg">
-                    {/* Attachment button */}
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="p-2 rounded-xl hover:bg-bg-elevated transition-colors text-text-muted hover:text-cosmic-purple"
-                      title="Attach files (coming soon)"
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </motion.button>
-
-                    {/* Text input */}
-                    <textarea
-                      value={inputValue}
-                      onChange={e => setInputValue(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Ask me anything about the course..."
-                      className="flex-1 bg-transparent text-text-primary placeholder:text-text-muted resize-none focus:outline-none"
-                      rows={1}
-                      disabled={isLoading}
-                      style={{ minHeight: '44px', maxHeight: '120px' }}
-                    />
-
-                    {/* Character counter */}
-                    <span className="text-xs text-text-muted self-end mb-1">
-                      {inputValue.length} / 500
-                    </span>
-
-                    {/* Send button */}
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        variant="primary"
-                        onClick={handleSendMessage}
-                        disabled={!inputValue.trim() || isLoading}
-                        className="shadow-glow-purple"
-                      >
-                        {isLoading ? (
-                          <LoadingSpinner size="sm" />
-                        ) : (
-                          <Send className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </motion.div>
-                  </div>
-
-                  {/* Helper text */}
-                  <p className="text-xs text-text-muted mt-2 text-center">
-                    Press Enter to send, Shift+Enter for new line
-                  </p>
+          {/* Chat Header */}
+          <div className="relative flex items-center justify-between px-4 py-3 border-b border-glass-border bg-cosmic-secondary/30 backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="lg:hidden text-cosmic-fg hover:bg-glass-hover"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <motion.div
+                  className="w-8 h-8 rounded-lg bg-gradient-cosmic flex items-center justify-center shadow-glow-purple"
+                  animate={{
+                    boxShadow: [
+                      '0 0 20px rgba(139, 92, 246, 0.5)',
+                      '0 0 30px rgba(14, 165, 233, 0.5)',
+                      '0 0 20px rgba(139, 92, 246, 0.5)',
+                    ],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Sparkles className="w-5 h-5 text-white" />
+                </motion.div>
+                <div>
+                  <h1 className="font-semibold text-cosmic-fg">AI Mentor</h1>
+                  <p className="text-xs text-cosmic-fg/60">Always here to help</p>
                 </div>
               </div>
             </div>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Quick Tips */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="backdrop-blur-xl bg-glass-surface/80 border-glass-border overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-cosmic-purple/10 to-cosmic-pink/10" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <motion.div
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-warning/30 to-accent-warning/10 flex items-center justify-center"
-                  >
-                    <Lightbulb className="w-4 h-4 text-accent-warning" />
-                  </motion.div>
-                  <span className="bg-gradient-to-r from-cosmic-purple to-cosmic-pink bg-clip-text text-transparent font-bold">
-                    Quick Tips
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-3">
-                {[
-                  { tip: "Be specific with your questions", icon: "🎯" },
-                  { tip: "Reference chapters when relevant", icon: "📚" },
-                  { tip: "Ask follow-up questions", icon: "🔄" },
-                  { tip: "Use examples for clarity", icon: "💡" },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-glass-surface border border-glass-border hover:border-cosmic-purple hover:shadow-glow-purple transition-all duration-300 group"
-                  >
-                    <span className="text-xl group-hover:scale-110 transition-transform">{item.icon}</span>
-                    <span className="text-sm text-text-secondary">{item.tip}</span>
-                  </motion.div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Voice Mode Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className={`backdrop-blur-xl bg-glass-surface/80 border-glass-border overflow-hidden ${
-              isVoiceMode ? 'border-cosmic-purple shadow-glow-purple' : ''
-            }`}>
-              {isVoiceMode && (
-                <div className="absolute inset-0 bg-gradient-to-br from-cosmic-purple/20 to-cosmic-pink/20" />
+            <div className="flex items-center gap-2">
+              {messages.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleClearChat} className="text-cosmic-fg hover:bg-glass-hover">
+                  Clear chat
+                </Button>
               )}
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-base flex items-center gap-2">
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div className="relative flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-4 py-6">
+              {messages.length === 0 ? (
+                /* Welcome State */
+                <div className="h-full flex flex-col items-center justify-center text-center py-12">
                   <motion.div
-                    animate={isVoiceMode ? {
-                      scale: [1, 1.2, 1],
-                      rotate: [0, 180],
-                    } : {}}
-                    transition={{
-                      duration: 2,
-                      repeat: isVoiceMode ? Infinity : 0,
-                    }}
-                    className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary/30 to-cosmic-purple/30 flex items-center justify-center"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="w-16 h-16 mb-6 rounded-2xl bg-gradient-cosmic flex items-center justify-center shadow-nebula"
                   >
-                    <Mic className="w-4 h-4 text-cosmic-primary" />
+                    <Sparkles className="w-10 h-10 text-white" />
                   </motion.div>
-                  <span className="bg-gradient-to-r from-cosmic-primary to-cosmic-purple bg-clip-text text-transparent font-bold">
-                    Voice Mode
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-4">
-                {isVoiceMode ? (
-                  <>
+                  <h3 className="text-2xl font-semibold text-cosmic-fg mb-2">
+                    How can I help you today?
+                  </h3>
+                  <p className="text-cosmic-fg/60 mb-8 max-w-md">
+                    Ask me anything about the course material. I'm here to help you understand concepts and answer questions.
+                  </p>
+
+                  {/* Suggested Questions */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                    {SUGGESTED_QUESTIONS.map((question, i) => (
+                      <motion.button
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        onClick={() => handleSuggestedQuestion(question)}
+                        className="text-left p-4 rounded-xl border border-glass-border hover:border-cosmic-purple/50 hover:bg-glass-hover transition-all group"
+                      >
+                        <p className="text-sm text-cosmic-fg group-hover:text-cosmic-purple transition-colors">{question}</p>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Messages */
+                <div className="space-y-6">
+                  <AnimatePresence mode="popLayout">
+                    {messages.map((message, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {message.role === 'assistant' && (
+                          <div className="w-8 h-8 rounded-lg bg-gradient-cosmic flex items-center justify-center flex-shrink-0 shadow-glow-purple">
+                            <Sparkles className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <div className={`max-w-[80%] ${message.role === 'user' ? 'bg-gradient-to-r from-cosmic-purple to-cosmic-pink text-white' : 'text-cosmic-fg'}`}>
+                          <div className={`rounded-2xl px-4 py-3 ${
+                            message.role === 'user'
+                              ? 'bg-gradient-to-r from-cosmic-purple to-cosmic-pink shadow-glow-purple'
+                              : 'bg-glass-surface border border-glass-border backdrop-blur-xl'
+                          }`}>
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                          </div>
+                          {message.timestamp && (
+                            <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-cosmic-fg/70' : 'text-cosmic-fg/50'}`}>
+                              {new Date(message.timestamp).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          )}
+                        </div>
+                        {message.role === 'user' && (
+                          <div className="w-8 h-8 rounded-lg bg-glass-surface border border-glass-border flex items-center justify-center flex-shrink-0">
+                            <UserIcon className="w-5 h-5 text-cosmic-fg" />
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+
+                  {/* Loading State */}
+                  <AnimatePresence>
+                    {isLoading && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="flex gap-4"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-gradient-cosmic flex items-center justify-center flex-shrink-0 shadow-glow-purple">
+                          <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="bg-glass-surface border border-glass-border backdrop-blur-xl rounded-2xl px-4 py-3 flex items-center gap-2">
+                          <TypingIndicator />
+                          <span className="text-sm text-cosmic-fg/70">Thinking...</span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Input Area */}
+          <div className="relative border-t border-glass-border bg-cosmic-secondary/30 backdrop-blur-xl">
+            <div className="max-w-3xl mx-auto px-4 py-4">
+              {authError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-3 rounded-lg bg-orange-500/20 border border-orange-500/30 text-sm text-orange-300"
+                >
+                  You need to be logged in to use AI Mentor. Redirecting to login...
+                </motion.div>
+              )}
+
+              {voiceError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-sm text-red-300"
+                >
+                  {voiceError}
+                </motion.div>
+              )}
+
+              <div className="relative flex items-end gap-2 p-3 rounded-xl border border-glass-border focus-within:border-cosmic-purple/50 focus-within:ring-2 focus-within:ring-cosmic-purple/20 transition-all bg-glass-surface/50 backdrop-blur-xl">
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    // Auto-resize textarea
+                    if (textareaRef.current) {
+                      textareaRef.current.style.height = 'auto';
+                      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Message AI Mentor..."
+                  className="flex-1 bg-transparent text-cosmic-fg placeholder:text-cosmic-fg/40 resize-none focus:outline-none text-sm leading-relaxed py-2"
+                  rows={1}
+                  disabled={isLoading}
+                  style={{ minHeight: '44px', maxHeight: '200px', overflowY: 'auto' }}
+                />
+
+                {/* Voice Input Button */}
+                <div className="relative flex items-center gap-2">
+                  {isRecording ? (
                     <motion.div
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="p-4 rounded-xl bg-gradient-to-r from-accent-success/20 to-accent-success/10 border border-accent-success/30"
+                      className="relative"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <motion.div
-                          className="w-2 h-2 bg-green-400 rounded-full"
-                          animate={{ scale: [1, 1.5, 1] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                        />
-                        <span className="text-text-primary font-semibold">Active</span>
-                      </div>
-                      <p className="text-text-secondary text-xs">
-                        Tap Speak to ask questions verbally. AI responses will be spoken aloud.
-                      </p>
-                    </motion.div>
-                    <div className="space-y-3 text-sm">
-                      <motion.div
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-bg-elevated transition-colors"
-                      >
-                        <Zap className="w-4 h-4 text-cosmic-purple" />
-                        <span className="text-text-secondary">Perfect for commuting</span>
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-bg-elevated transition-colors"
-                      >
-                        <Zap className="w-4 h-4 text-cosmic-pink" />
-                        <span className="text-text-secondary">Practice oral skills</span>
-                      </motion.div>
-                    </div>
-                    <p className="text-xs text-text-muted text-center">
-                      Requires microphone permission
-                    </p>
-                  </>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-text-secondary mb-4 text-sm">
-                      Enable voice mode for hands-free conversations
-                    </p>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <RecordingPulse />
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        onClick={toggleVoiceMode}
-                        className="w-full shadow-glow-purple"
+                        onClick={toggleRecording}
+                        className="relative bg-cosmic-pink hover:bg-cosmic-pink/80 text-white p-2 rounded-full"
                       >
-                        <Mic className="w-4 h-4 mr-2" />
-                        Enable Voice
+                        <MicOff className="w-4 h-4" />
                       </Button>
                     </motion.div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleRecording}
+                      disabled={isLoading}
+                      className="text-cosmic-fg/60 hover:text-cosmic-purple hover:bg-glass-hover p-2 rounded-full transition-colors"
+                      title={recognition ? 'Click to speak' : 'Voice input not supported'}
+                    >
+                      <Mic className="w-4 h-4" />
+                    </Button>
+                  )}
 
-          {/* AI Status */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card className="backdrop-blur-xl bg-glass-surface/80 border-glass-border overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-cosmic-blue/10 to-cosmic-cyan/10" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <motion.div
-                    animate={{ rotate: [0, 360] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                    className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-blue/30 to-cosmic-cyan/30 flex items-center justify-center"
+                  <Button
+                    variant={inputValue.trim() ? 'primary' : 'ghost'}
+                    size="sm"
+                    onClick={handleSendMessage}
+                    disabled={!inputValue.trim() || isLoading}
+                    className="flex-shrink-0"
                   >
-                    <Zap className="w-4 h-4 text-cosmic-blue" />
+                    {isLoading ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-cosmic-fg/50">
+                  Press Enter to send, Shift+Enter for new line
+                </p>
+                {isRecording && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-2 text-xs text-cosmic-pink"
+                  >
+                    <motion.span
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    >
+                      Recording...
+                    </motion.span>
                   </motion.div>
-                  <span className="bg-gradient-to-r from-cosmic-blue to-cosmic-cyan bg-clip-text text-transparent font-bold">
-                    AI Status
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-3">
-                <div className="flex justify-between items-center p-3 rounded-xl bg-glass-surface border border-glass-border">
-                  <span className="text-sm text-text-secondary">Provider</span>
-                  <Badge variant="info" glow>{(aiStatus?.llm_provider || 'AI').toUpperCase()}</Badge>
-                </div>
-                <div className="flex justify-between items-center p-3 rounded-xl bg-glass-surface border border-glass-border">
-                  <span className="text-sm text-text-secondary">Status</span>
-                  <div className="flex items-center gap-2">
-                    <motion.div
-                      className="w-2 h-2 bg-green-400 rounded-full"
-                      animate={{ scale: [1, 1.3, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                    <Badge variant="success" glow>Online</Badge>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center p-3 rounded-xl bg-glass-surface border border-glass-border">
-                  <span className="text-sm text-text-secondary">Model</span>
-                  <Badge variant="premium" glow>GPT-4</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </PageContainer>

@@ -1,0 +1,51 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e37] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e38]:
+    - navigation "Global" [ref=e39]:
+      - link [ref=e40] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e42]
+      - generic [ref=e44]:
+        - link [ref=e45] [cursor=pointer]:
+          - /url: /profile
+          - img [ref=e46]
+        - button "Toggle menu" [ref=e49] [cursor=pointer]:
+          - generic [ref=e50]: Open main menu
+          - img [ref=e52]
+  - main [ref=e53]:
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - img [ref=e62]
+          - heading "Welcome Back" [level=3] [ref=e64]
+          - paragraph [ref=e65]: Sign in to continue your learning journey
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - generic [ref=e69]: Email
+              - textbox "Email" [disabled] [ref=e72]:
+                - /placeholder: you@example.com
+                - text: demo@example.com
+            - generic [ref=e73]:
+              - generic [ref=e74]: Password
+              - textbox "Password" [disabled] [ref=e77]:
+                - /placeholder: ••••••••
+                - text: password123
+            - generic [ref=e78]:
+              - button [disabled]
+          - generic [ref=e79]:
+            - text: Don't have an account?
+            - link "Sign up" [ref=e80] [cursor=pointer]:
+              - /url: /register
+      - generic [ref=e81]: "Demo credentials: demo@example.com / password123"
+  - contentinfo [ref=e82]:
+    - paragraph [ref=e84]:
+      - text: © 2026 Course Companion FTE. Built with
+      - img [ref=e85]
+      - text: for Panaversity Hackathon IV.
+  - alert [ref=e87]
+```

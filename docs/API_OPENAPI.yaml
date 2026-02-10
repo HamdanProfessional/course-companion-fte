@@ -1,0 +1,1057 @@
+openapi: 3.0.3
+info:
+  title: Course Companion FTE API
+  description: |
+    **Zero-Backend-LLM Educational Platform API**
+
+    A Digital Full-Time Equivalent (FTE) educational tutor that serves thousands of students simultaneously.
+
+    ## Architecture
+
+    - **Phase 1 (Zero-LLM):** Deterministic content delivery, rule-based quizzes, progress tracking
+    - **Phase 2 (Hybrid):** Premium AI features (LLM grading, AI mentor, adaptive learning)
+    - **Phase 3 (Web):** Full web application with all features
+
+    ## Authentication
+
+    Most endpoints require JWT authentication via `Authorization: Bearer <token>` header.
+
+    ## Rate Limits
+
+    - Free users: 100 requests/hour
+    - Premium users: 1000 requests/hour
+    - PRO users: Unlimited
+
+  version: 1.0.0
+  contact:
+    name: Course Companion FTE Team
+    url: https://github.com/course-companion-fte
+  license:
+    name: MIT
+
+servers:
+  - url: http://92.113.147.250:3505
+    description: Production server
+  - url: http://localhost:3505
+    description: Local development server
+
+tags:
+  - name: Content
+    description: Course content delivery and navigation
+  - name: Quizzes
+    description: Quiz management and grading
+  - name: Progress
+    description: User progress tracking and gamification
+  - name: AI
+    description: Premium AI features (Phase 2)
+  - name: Access
+    description: Tier-based access control
+  - name: Certificates
+    description: Course completion certificates
+  - name: Teacher
+    description: Teacher dashboard analytics
+
+paths:
+  /api/v3/tutor/content/chapters:
+    get:
+      tags: [Content]
+      summary: List all chapters
+      description: |
+        Returns all course chapters with metadata and completion status.
+
+        **Phase:** Zero-LLM (deterministic)
+      operationId: listChapters
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of chapters retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chapters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChapterListItem'
+                  total:
+                    type: integer
+                  completion_percentage:
+                    type: number
+
+  /api/v3/tutor/content/chapters/{chapter_id}:
+    get:
+      tags: [Content]
+      summary: Get chapter content
+      description: |
+        Returns full chapter content with completion status.
+
+        **Phase:** Zero-LLM (serves content verbatim)
+      operationId: getChapter
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter content retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterContent'
+        '404':
+          description: Chapter not found
+
+  /api/v3/tutor/content/chapters/{chapter_id}/navigation:
+    get:
+      tags: [Content]
+      summary: Get chapter navigation
+      description: Returns previous and next chapter for navigation
+      operationId: getNavigation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Navigation context retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterNavigation'
+
+  /api/v3/tutor/content/search:
+    get:
+      tags: [Content]
+      summary: Search course content
+      description: Keyword search across all course content
+      operationId: searchContent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Search query
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  total:
+                    type: integer
+
+  /api/v3/tutor/quizzes/by-chapter/{chapter_id}:
+    get:
+      tags: [Quizzes]
+      summary: Get quiz for chapter
+      description: Returns quiz questions (without answers)
+      operationId: getQuizByChapter
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quiz retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizDetail'
+
+  /api/v3/tutor/quizzes/{quiz_id}/submit:
+    post:
+      tags: [Quizzes]
+      summary: Submit quiz for grading
+      description: |
+        Submit quiz answers for grading.
+
+        **Grading Modes:**
+        - `auto`: Rule-based grading (Phase 1 - Zero-LLM)
+        - `llm`: AI-powered grading with detailed feedback (Phase 2 - PRO only)
+        - `hybrid`: Rule-based MC + LLM for open-ended
+      operationId: submitQuiz
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizSubmission'
+      responses:
+        '200':
+          description: Quiz graded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizGradingResult'
+        '403':
+          description: Premium subscription required for LLM grading
+
+  /api/v3/tutor/quizzes/{quiz_id}/insights:
+    get:
+      tags: [Quizzes]
+      summary: Get AI-powered quiz insights
+      description: Performance analysis and personalized recommendations
+      operationId: getQuizInsights
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Insights generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizInsights'
+
+  /api/v3/tutor/progress/summary:
+    get:
+      tags: [Progress]
+      summary: Get progress summary
+      description: Overall user progress including completion, streaks, achievements
+      operationId: getProgressSummary
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Progress summary retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressSummary'
+
+  /api/v3/tutor/progress/chapters:
+    get:
+      tags: [Progress]
+      summary: Get chapter-by-chapter progress
+      description: Detailed progress for each chapter
+      operationId: getChaptersProgress
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Chapter progress retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChapterProgress'
+
+  /api/v3/tutor/progress/update:
+    post:
+      tags: [Progress]
+      summary: Mark chapter as complete
+      description: Updates user progress by marking a chapter complete
+      operationId: updateProgress
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chapter_id]
+              properties:
+                chapter_id:
+                  type: string
+                  format: uuid
+                quiz_score:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+      responses:
+        '200':
+          description: Progress updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Progress'
+
+  /api/v3/tutor/progress/streak/calendar:
+    get:
+      tags: [Progress]
+      summary: Get streak calendar
+      description: Monthly view of learning activity
+      operationId: getStreakCalendar
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+      responses:
+        '200':
+          description: Streak calendar retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakCalendar'
+
+  /api/v3/tutor/progress/achievements:
+    get:
+      tags: [Progress]
+      summary: Get achievements
+      description: All achievements with unlock status
+      operationId: getAchievements
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Achievements retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AchievementItem'
+
+  /api/v3/tutor/progress/checkin:
+    post:
+      tags: [Progress]
+      summary: Record daily checkin
+      description: Updates learning streak
+      operationId: dailyCheckin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Checkin recorded
+          content:
+            application/json:
+              type: object
+              properties:
+                streak_updated:
+                  type: boolean
+                current_streak:
+                  type: integer
+                longest_streak:
+                  type: integer
+
+  /api/v3/tutor/ai/mentor:
+    post:
+      tags: [AI]
+      summary: Chat with AI mentor
+      description: |
+        Premium feature: AI-powered tutoring conversations.
+
+        **Phase:** Hybrid (requires PRO tier)
+      operationId: mentorChat
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorChatRequest'
+      responses:
+        '200':
+          description: AI mentor response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorChatResponse'
+        '403':
+          description: PRO subscription required
+
+  /api/v3/tutor/ai/analyze:
+    get:
+      tags: [AI]
+      summary: Get knowledge analysis
+      description: AI-powered learning gap analysis
+      operationId: getKnowledgeAnalysis
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Knowledge analysis retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  strengths:
+                    type: array
+                    items:
+                      type: string
+                  weaknesses:
+                    type: array
+                    items:
+                      type: string
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+
+  /api/v3/tutor/access/plans:
+    get:
+      tags: [Access]
+      summary: List subscription plans
+      description: Available pricing tiers
+      operationId: listPlans
+      responses:
+        '200':
+          description: Plans retrieved
+          content:
+            application/json:
+              type: array
+              items:
+                $ref: '#/components/schemas/SubscriptionPlan'
+
+  /api/v3/tutor/access/subscription:
+    get:
+      tags: [Access]
+      summary: Get current subscription
+      description: User's current tier and billing info
+      operationId: getSubscription
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Subscription info retrieved
+          content:
+            application/json:
+              $ref: '#/components/schemas/SubscriptionInfo'
+
+  /api/v3/tutor/certificates/generate:
+    post:
+      tags: [Certificates]
+      summary: Generate completion certificate
+      description: |
+        Generates a certificate upon course completion.
+
+        Requirements:
+        - 100% course completion
+        - 70%+ average quiz score
+      operationId: generateCertificate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_name]
+              properties:
+                user_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+      responses:
+        '200':
+          description: Certificate generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certificate_id:
+                    type: string
+                    format: uuid
+                  verification_code:
+                    type: string
+                  issued_at:
+                    type: string
+                    format: date-time
+                  pdf_url:
+                    type: string
+        '400':
+          description: Requirements not met
+
+  /api/v3/tutor/certificates/verify/{verification_code}:
+    get:
+      tags: [Certificates]
+      summary: Verify certificate
+      description: Validates certificate authenticity
+      operationId: verifyCertificate
+      parameters:
+        - name: verification_code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Certificate is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  recipient_name:
+                    type: string
+                  completion_date:
+                    type: string
+                    format: date-time
+                  score:
+                    type: integer
+        '404':
+          description: Certificate not found or invalid
+
+  /api/v3/tutor/teacher/analytics:
+    get:
+      tags: [Teacher]
+      summary: Get teacher dashboard analytics
+      description: Overall statistics for teacher dashboard
+      operationId: getTeacherAnalytics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Analytics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherStats'
+        '403':
+          description: Teacher role required
+
+  /api/v3/tutor/teacher/students:
+    get:
+      tags: [Teacher]
+      summary: List all students
+      description: Detailed student list with progress
+      operationId: getTeacherStudents
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Student list retrieved
+          content:
+            application/json:
+              type: array
+              items:
+                $ref: '#/components/schemas/TeacherStudent'
+
+  /api/v3/tutor/teacher/engagement/at-risk:
+    get:
+      tags: [Teacher]
+      summary: Get at-risk students
+      description: Students needing intervention
+      operationId: getAtRiskStudents
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: At-risk students retrieved
+          content:
+            application/json:
+              type: array
+              items:
+                $ref: '#/components/schemas/AtRiskStudent'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ChapterListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        order:
+          type: integer
+        difficulty_level:
+          type: string
+          enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+        estimated_time:
+          type: integer
+          description: Estimated reading time in minutes
+        completed:
+          type: boolean
+        quiz_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    ChapterContent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        order:
+          type: integer
+        difficulty_level:
+          type: string
+        estimated_time:
+          type: integer
+        content:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        quiz_id:
+          type: string
+          format: uuid
+          nullable: true
+        completed:
+          type: boolean
+
+    ChapterNavigation:
+      type: object
+      properties:
+        current:
+          $ref: '#/components/schemas/ChapterListItem'
+        previous:
+          $ref: '#/components/schemas/ChapterListItem'
+        next:
+          $ref: '#/components/schemas/ChapterListItem'
+        can_continue:
+          type: boolean
+
+    SearchResult:
+      type: object
+      properties:
+        chapter_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        snippet:
+          type: string
+        relevance_score:
+          type: number
+
+    QuestionItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question_text:
+          type: string
+        options:
+          type: object
+          additionalProperties:
+            type: string
+        order:
+          type: integer
+        type:
+          type: string
+          enum: [multiple_choice, open_ended]
+
+    QuizDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        difficulty:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionItem'
+        total_questions:
+          type: integer
+        passing_score:
+          type: integer
+          default: 70
+
+    QuizSubmission:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: object
+        grading_mode:
+          type: string
+          enum: [auto, llm, hybrid]
+          default: auto
+
+    QuizGradingResult:
+      type: object
+      properties:
+        quiz_id:
+          type: string
+          format: uuid
+        attempt_id:
+          type: string
+          format: uuid
+        total_score:
+          type: integer
+        max_score:
+          type: integer
+        percentage:
+          type: number
+        passed:
+          type: boolean
+        grading_mode:
+          type: string
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: string
+              question_text:
+                type: string
+              selected_answer:
+                type: string
+              is_correct:
+                type: boolean
+              points_earned:
+                type: integer
+              max_points:
+                type: integer
+              explanation:
+                type: string
+                nullable: true
+              feedback:
+                type: string
+                nullable: true
+        summary:
+          type: string
+        completed_at:
+          type: string
+          format: date-time
+
+    QuizInsights:
+      type: object
+      properties:
+        attempts_analyzed:
+          type: integer
+        average_score:
+          type: number
+        best_score:
+          type: integer
+        improvement:
+          type: number
+        trend:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        focus_areas:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        encouragement:
+          type: string
+
+    ProgressSummary:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        completion_percentage:
+          type: number
+        completed_chapters:
+          type: array
+          items:
+            type: string
+        total_chapters:
+          type: integer
+        current_chapter_id:
+          type: string
+          format: uuid
+          nullable: true
+        last_activity:
+          type: string
+          format: date-time
+        total_quizzes_taken:
+          type: integer
+        average_score:
+          type: number
+        current_streak:
+          type: integer
+        longest_streak:
+          type: integer
+        total_achievements:
+          type: integer
+        unlocked_achievements:
+          type: integer
+
+    ChapterProgress:
+      type: object
+      properties:
+        chapter_id:
+          type: string
+          format: uuid
+        chapter_title:
+          type: string
+        chapter_order:
+          type: integer
+        completed:
+          type: boolean
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        quiz_taken:
+          type: boolean
+        best_quiz_score:
+          type: integer
+          nullable: true
+
+    StreakCalendar:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              active:
+                type: boolean
+              streak_day:
+                type: integer
+                nullable: true
+        current_streak:
+          type: integer
+        longest_streak:
+          type: integer
+        total_active_days:
+          type: integer
+
+    AchievementItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        unlocked_at:
+          type: string
+          format: date-time
+          nullable: true
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+
+    MentorChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        conversation_id:
+          type: string
+          format: uuid
+          nullable: true
+        context:
+          type: object
+          properties:
+            chapter_id:
+              type: string
+              format: uuid
+            quiz_id:
+              type: string
+              format: uuid
+
+    MentorChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        conversation_id:
+          type: string
+          format: uuid
+        suggestions:
+          type: array
+          items:
+            type: string
+        resources:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              url:
+                type: string
+        tokens_used:
+          type: integer
+
+    SubscriptionPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          enum: [FREE, PREMIUM, PRO]
+        price_monthly:
+          type: number
+        price_yearly:
+          type: number
+        features:
+          type: array
+          items:
+            type: string
+
+    SubscriptionInfo:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [FREE, PREMIUM, PRO]
+        billing_cycle:
+          type: string
+          enum: [monthly, yearly]
+        renews_at:
+          type: string
+          format: date-time
+          nullable: true
+        features:
+          type: array
+          items:
+            type: string
+
+    TeacherStats:
+      type: object
+      properties:
+        total_students:
+          type: integer
+        active_students:
+          type: integer
+        average_score:
+          type: number
+        completion_rate:
+          type: number
+        students_at_risk:
+          type: integer
+
+    TeacherStudent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        progress:
+          type: number
+        current_streak:
+          type: integer
+        last_activity:
+          type: string
+          format: date-time
+        tier:
+          type: string
+
+    AtRiskStudent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        risk_level:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        risk_factors:
+          type: array
+          items:
+            type: string
+        days_since_activity:
+          type: integer
+        completion_percentage:
+          type: number

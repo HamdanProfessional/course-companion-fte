@@ -1,23 +1,27 @@
 'use client';
 
 /**
- * Infinite Quiz Page - Unlimited procedurally generated practice problems
+ * Infinite Quiz Page - AI-powered unlimited practice problems
  *
  * Features:
  * - Select from multiple topics and subtopics
- * - Choose difficulty level
- * - Generate unlimited unique questions
+ * - Choose difficulty level (beginner, intermediate, advanced, mixed)
+ * - Generate unlimited unique questions using AI
  * - Real-time feedback and explanations
  * - Session tracking and statistics
+ * - Question limits: 3-10 per quiz session
  */
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
+import { useV3GenerateQuiz } from '@/hooks/useV3';
+import { addMistakesFromInfiniteQuiz } from '@/lib/mistakeBank';
 import {
   Infinity,
   Zap,
@@ -40,33 +44,39 @@ import {
   Beaker,
   Box,
   FileText,
+  AlertCircle,
+  Lock,
+  Crown,
 } from 'lucide-react';
-import {
-  getTopics,
-  getSubtopics,
-  generateQuestions,
-  generateMixedQuiz,
-  type GeneratedQuestion,
-  type Topic,
-} from '@/lib/infiniteQuiz';
 
 type QuizMode = 'practice' | 'timed' | 'exam';
 type Difficulty = 'beginner' | 'intermediate' | 'advanced' | 'mixed';
+
+interface AIQuestion {
+  id: string;
+  question_text: string;
+  options: Record<string, string>;
+  correct_answer: string;
+  explanation: string;
+  difficulty: string;
+  topic: string;
+  subtopic: string;
+}
 
 export default function InfiniteQuizPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
   // Quiz configuration
-  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<string>('AI Agents');
   const [selectedSubtopic, setSelectedSubtopic] = useState<string>('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
-  const [questionCount, setQuestionCount] = useState(10);
+  const [questionCount, setQuestionCount] = useState(5); // Default to 5, range 3-10
   const [mode, setMode] = useState<QuizMode>('practice');
 
   // Quiz state
   const [quizStarted, setQuizStarted] = useState(false);
-  const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
+  const [questions, setQuestions] = useState<AIQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showResults, setShowResults] = useState(false);
@@ -76,76 +86,151 @@ export default function InfiniteQuizPage() {
     streak: 0,
     bestStreak: 0,
   });
+  const [userTier, setUserTier] = useState<string>('FREE');
 
-  const topics = getTopics();
-  const availableSubtopics = selectedTopic ? getSubtopics(selectedTopic) : [];
+  // AI Quiz generation mutation
+  const generateQuiz = useV3GenerateQuiz();
+
+  const topics = [
+    { id: 'AI Agents', name: 'AI Agents', icon: 'Sparkles' },
+    { id: 'MCP Integration', name: 'MCP Integration', icon: 'Globe' },
+    { id: 'ChatGPT Apps', name: 'ChatGPT Apps', icon: 'Code' },
+    { id: 'React/Next.js', name: 'React/Next.js', icon: 'Activity' },
+    { id: 'TypeScript', name: 'TypeScript', icon: 'FileText' },
+    { id: 'API Development', name: 'API Development', icon: 'Package' },
+    { id: 'Database', name: 'Database', icon: 'Hash' },
+    { id: 'Testing', name: 'Testing', icon: 'Beaker' },
+  ];
+
+  const subtopics: Record<string, Array<{ id: string; name: string }>> = {
+    'AI Agents': [
+      { id: 'agent-architecture', name: 'Agent Architecture' },
+      { id: 'agent-tools', name: 'Agent Tools & Skills' },
+      { id: 'agent-memory', name: 'Agent Memory' },
+    ],
+    'MCP Integration': [
+      { id: 'mcp-basics', name: 'MCP Basics' },
+      { id: 'mcp-servers', name: 'MCP Servers' },
+      { id: 'mcp-clients', name: 'MCP Clients' },
+    ],
+    'ChatGPT Apps': [
+      { id: 'app-manifest', name: 'App Manifest' },
+      { id: 'conversation-flow', name: 'Conversation Flow' },
+      { id: 'api-integration', name: 'API Integration' },
+    ],
+    'React/Next.js': [
+      { id: 'components', name: 'Components' },
+      { id: 'state-management', name: 'State Management' },
+      { id: 'routing', name: 'Routing' },
+    ],
+    'TypeScript': [
+      { id: 'types', name: 'Types' },
+      { id: 'interfaces', name: 'Interfaces' },
+      { id: 'generics', name: 'Generics' },
+    ],
+    'API Development': [
+      { id: 'rest-api', name: 'REST API' },
+      { id: 'fastapi', name: 'FastAPI' },
+      { id: 'endpoints', name: 'Endpoints' },
+    ],
+    'Database': [
+      { id: 'sql', name: 'SQL' },
+      { id: 'postgresql', name: 'PostgreSQL' },
+      { id: 'orm', name: 'ORM' },
+    ],
+    'Testing': [
+      { id: 'unit-tests', name: 'Unit Tests' },
+      { id: 'integration-tests', name: 'Integration Tests' },
+      { id: 'e2e-tests', name: 'E2E Tests' },
+    ],
+  };
+
+  const availableSubtopics = selectedTopic ? subtopics[selectedTopic] || [] : [];
 
   useEffect(() => {
     const userId = localStorage.getItem('user_id');
+    const tier = localStorage.getItem('user_tier') || 'FREE';
+    setUserTier(tier.toUpperCase());
+
     if (!userId) {
       router.push('/login');
       return;
     }
-    setIsLoading(false);
-  }, [router]);
 
-  // Get topic icon
-  const getTopicIcon = (icon: string) => {
-    const icons: Record<string, React.ReactNode> = {
-      'JS': <Code className="w-6 h-6" />,
-      'python': <Braces className="w-6 h-6" />,
-      'react': <Sparkles className="w-6 h-6" />,
-      'api': <Globe className="w-6 h-6" />,
-      'sql': <Target className="w-6 h-6" />,
-      'git': <Package className="w-6 h-6" />,
-      'docker': <Zap className="w-6 h-6" />,
-      'typescript': <FileText className="w-6 h-6" />,
-      'nodejs': <Activity className="w-6 h-6" />,
-      'testing': <Beaker className="w-6 h-6" />,
-      'data-structures': <Box className="w-6 h-6" />,
-      'algorithms': <Zap className="w-6 h-6" />,
-    };
-    return icons[icon] || <BookOpen className="w-6 h-6" />;
-  };
-
-  // Start quiz
-  const handleStartQuiz = () => {
-    let generatedQuestions: GeneratedQuestion[];
-
-    if (difficulty === 'mixed') {
-      generatedQuestions = generateMixedQuiz(selectedTopic, selectedSubtopic, questionCount);
-    } else {
-      generatedQuestions = generateQuestions(selectedTopic, selectedSubtopic, questionCount, difficulty);
-    }
-
-    if (generatedQuestions.length === 0) {
-      alert('No questions available for this selection. Please try a different topic.');
+    // Check if user has premium access
+    if (tier.toUpperCase() === 'FREE') {
+      setIsLoading(false);
       return;
     }
 
-    setQuestions(generatedQuestions);
-    setCurrentQuestion(0);
-    setAnswers({});
-    setShowResults(false);
-    setSessionStats({ correct: 0, incorrect: 0, streak: 0, bestStreak: 0 });
-    setQuizStarted(true);
+    setIsLoading(false);
+  }, [router]);
+
+  // Get topic icon component
+  const getTopicIcon = (iconName: string) => {
+    const icons: Record<string, React.ReactNode> = {
+      'Sparkles': <Sparkles className="w-6 h-6" />,
+      'Globe': <Globe className="w-6 h-6" />,
+      'Code': <Code className="w-6 h-6" />,
+      'Activity': <Activity className="w-6 h-6" />,
+      'FileText': <FileText className="w-6 h-6" />,
+      'Package': <Package className="w-6 h-6" />,
+      'Hash': <Hash className="w-6 h-6" />,
+      'Beaker': <Beaker className="w-6 h-6" />,
+    };
+    return icons[iconName] || <BookOpen className="w-6 h-6" />;
   };
 
-  // Generate more questions (continue practice)
-  const handleGenerateMore = () => {
-    let newQuestions: GeneratedQuestion[];
+  // Start quiz with AI-generated questions
+  const handleStartQuiz = async () => {
+    try {
+      const count = Math.min(Math.max(questionCount, 3), 10); // Enforce 3-10 limit
 
-    if (difficulty === 'mixed') {
-      newQuestions = generateMixedQuiz(selectedTopic, selectedSubtopic, questionCount);
-    } else {
-      newQuestions = generateQuestions(selectedTopic, selectedSubtopic, questionCount, difficulty);
-    }
+      const result = await generateQuiz.mutateAsync({
+        topic: selectedTopic,
+        subtopic: selectedSubtopic || undefined,
+        difficulty,
+        num_questions: count,
+      });
 
-    if (newQuestions.length > 0) {
-      setQuestions(newQuestions);
+      if (result.questions.length === 0) {
+        alert('No questions generated. Please try again.');
+        return;
+      }
+
+      setQuestions(result.questions);
       setCurrentQuestion(0);
       setAnswers({});
       setShowResults(false);
+      setSessionStats({ correct: 0, incorrect: 0, streak: 0, bestStreak: 0 });
+      setQuizStarted(true);
+    } catch (error: any) {
+      console.error('Error generating quiz:', error);
+      alert(`Failed to generate quiz: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  // Generate more questions (continue practice)
+  const handleGenerateMore = async () => {
+    try {
+      const count = Math.min(Math.max(questionCount, 3), 10);
+
+      const result = await generateQuiz.mutateAsync({
+        topic: selectedTopic,
+        subtopic: selectedSubtopic || undefined,
+        difficulty,
+        num_questions: count,
+      });
+
+      if (result.questions.length > 0) {
+        setQuestions(result.questions);
+        setCurrentQuestion(0);
+        setAnswers({});
+        setShowResults(false);
+      }
+    } catch (error: any) {
+      console.error('Error generating more questions:', error);
+      alert(`Failed to generate more questions: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -156,7 +241,7 @@ export default function InfiniteQuizPage() {
 
     // Update session stats
     const question = questions[currentQuestion];
-    const isCorrect = optionKey === question.correctAnswer;
+    const isCorrect = optionKey === question.correct_answer;
 
     if (isCorrect) {
       setSessionStats(prev => ({
@@ -176,6 +261,8 @@ export default function InfiniteQuizPage() {
 
   // Submit quiz
   const handleSubmit = () => {
+    // Save mistakes to mistake bank before showing results
+    addMistakesFromInfiniteQuiz(questions, answers);
     setShowResults(true);
   };
 
@@ -183,7 +270,7 @@ export default function InfiniteQuizPage() {
   const calculateScore = () => {
     let correct = 0;
     questions.forEach((q, index) => {
-      if (answers[index] === q.correctAnswer) {
+      if (answers[index] === q.correct_answer) {
         correct++;
       }
     });
@@ -199,6 +286,158 @@ export default function InfiniteQuizPage() {
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
+    );
+  }
+
+  // Premium check - show upgrade prompt for FREE users
+  if (userTier === 'FREE') {
+    return (
+      <PageContainer>
+        <div className="max-w-2xl mx-auto text-center py-20">
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
+              <Lock className="w-12 h-12 text-accent-premium" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold text-text-primary mb-4">
+            Premium Feature
+          </h1>
+          <p className="text-xl text-text-secondary mb-8">
+            AI-Powered Infinite Quiz is available for PREMIUM and PRO subscribers
+          </p>
+
+          {/* Feature Highlights */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <Card className="border-accent-primary/30">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                    <Infinity className="w-5 h-5 text-cosmic-primary" />
+                  </div>
+                  <h3 className="font-semibold text-text-primary">Unlimited Questions</h3>
+                </div>
+                <p className="text-sm text-text-secondary">
+                  Generate unique AI questions anytime, never run out of practice material
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-accent-success/30">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-success/20 to-accent-success/10 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-accent-success" />
+                  </div>
+                  <h3 className="font-semibold text-text-primary">Targeted Practice</h3>
+                </div>
+                <p className="text-sm text-text-secondary">
+                  Focus on specific topics and subtopics where you need improvement
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-accent-warning/30">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-warning/20 to-accent-warning/10 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-accent-warning" />
+                  </div>
+                  <h3 className="font-semibold text-text-primary">Adaptive Difficulty</h3>
+                </div>
+                <p className="text-sm text-text-secondary">
+                  Choose your level: beginner, intermediate, advanced, or mixed
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Upgrade CTA */}
+          <Card className="bg-gradient-to-r from-accent-premium/10 to-accent-primary/10 border-accent-premium/30">
+            <CardContent className="p-8">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent-premium to-accent-primary flex items-center justify-center">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl font-bold text-text-primary mb-1">
+                    Upgrade to Access Infinite Quiz
+                  </h2>
+                  <p className="text-text-secondary">
+                    Get unlimited AI-generated questions along with all other premium features
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Link href="/profile" className="block">
+                  <Button variant="primary" size="lg">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Upgrade Now
+                  </Button>
+                </Link>
+                <Link href="/chapters" className="block">
+                  <Button variant="outline" size="lg">
+                    <BookOpen className="w-5 h-5 mr-2" />
+                    Browse Chapters
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // Loading state during AI generation
+  if (generateQuiz.isPending) {
+    return (
+      <PageContainer>
+        <div className="max-w-2xl mx-auto text-center py-20">
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                <Sparkles className="w-10 h-10 text-cosmic-primary animate-pulse" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-accent-primary flex items-center justify-center">
+                <div className="w-3 h-3 bg-white rounded-full animate-ping" />
+              </div>
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary mb-3">
+            Generating Quiz Questions...
+          </h2>
+          <p className="text-text-secondary mb-6">
+            Our AI is creating {questionCount} unique {difficulty} questions on {selectedTopic}
+            {selectedSubtopic && ` (${selectedSubtopic})`}
+          </p>
+          <LoadingSpinner size="md" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // Error state
+  if (generateQuiz.error) {
+    return (
+      <PageContainer>
+        <div className="max-w-2xl mx-auto text-center py-20">
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 rounded-xl bg-accent-danger/20 flex items-center justify-center">
+              <AlertCircle className="w-10 h-10 text-accent-danger" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary mb-3">
+            Failed to Generate Quiz
+          </h2>
+          <p className="text-text-secondary mb-6">
+            {generateQuiz.error.message || 'An error occurred while generating the quiz'}
+          </p>
+          <Button variant="primary" onClick={() => setQuizStarted(false)}>
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </PageContainer>
     );
   }
 
@@ -228,7 +467,7 @@ export default function InfiniteQuizPage() {
               {passed ? 'Great Job!' : 'Keep Practicing!'}
             </h1>
             <p className="text-text-secondary">
-              Infinite Quiz Session Complete
+              AI-Generated Quiz Session Complete
             </p>
           </div>
 
@@ -290,7 +529,7 @@ export default function InfiniteQuizPage() {
               <div className="space-y-4">
                 {questions.map((q, index) => {
                   const userAnswer = answers[index];
-                  const isCorrect = userAnswer === q.correctAnswer;
+                  const isCorrect = userAnswer === q.correct_answer;
 
                   return (
                     <div
@@ -313,7 +552,7 @@ export default function InfiniteQuizPage() {
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-text-primary mb-2">
-                            Q{index + 1}: {q.question}
+                            Q{index + 1}: {q.question_text}
                           </p>
                           <div className="text-sm space-y-1">
                             <p className="text-text-secondary">
@@ -324,7 +563,7 @@ export default function InfiniteQuizPage() {
                             </p>
                             {!isCorrect && (
                               <p className="text-accent-success">
-                                Correct answer: {q.options[q.correctAnswer]}
+                                Correct answer: {q.options[q.correct_answer]}
                               </p>
                             )}
                             <p className="text-text-muted italic text-xs mt-2 flex items-start gap-1">
@@ -351,7 +590,11 @@ export default function InfiniteQuizPage() {
               <Target className="w-4 h-4 mr-2" />
               Change Settings
             </Button>
-            <Button variant="secondary" onClick={() => router.push('/chapters')}>
+            <Button variant="secondary" onClick={() => router.push('/mistake-bank')}>
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Review Mistakes
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/chapters')}>
               <BookOpen className="w-4 h-4 mr-2" />
               Back to Chapters
             </Button>
@@ -374,7 +617,7 @@ export default function InfiniteQuizPage() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <Badge variant="info">{question.topic}</Badge>
-              <Badge variant="secondary">{question.subtopic}</Badge>
+              {question.subtopic && <Badge variant="secondary">{question.subtopic}</Badge>}
               <Badge variant={question.difficulty === 'beginner' ? 'success' : question.difficulty === 'intermediate' ? 'warning' : 'danger'}>
                 {question.difficulty}
               </Badge>
@@ -424,13 +667,13 @@ export default function InfiniteQuizPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-lg text-text-primary leading-relaxed mb-6">{question.question}</p>
+              <p className="text-lg text-text-primary leading-relaxed mb-6">{question.question_text}</p>
 
               {/* Answer Options */}
               <div className="space-y-3" role="radiogroup">
                 {Object.entries(question.options).map(([key, value]) => {
                   const isSelected = answered === key;
-                  const isCorrect = key === question.correctAnswer;
+                  const isCorrect = key === question.correct_answer;
 
                   return (
                     <button
@@ -527,8 +770,8 @@ export default function InfiniteQuizPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Infinite Quiz Engine"
-        description="Generate unlimited, unique practice problems - never run out of review material!"
+        title="AI-Powered Infinite Quiz"
+        description="Generate unlimited, unique practice questions using AI - never run out of review material!"
       />
 
       {/* Feature Highlights */}
@@ -539,10 +782,10 @@ export default function InfiniteQuizPage() {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
                 <Infinity className="w-6 h-6 text-cosmic-primary" />
               </div>
-              <h3 className="text-lg font-bold text-text-primary">Unlimited Questions</h3>
+              <h3 className="text-lg font-bold text-text-primary">AI-Generated Questions</h3>
             </div>
             <p className="text-text-secondary text-sm">
-              Procedurally generated questions ensure you never see the same problem twice
+              Every quiz session generates unique questions using advanced AI technology
             </p>
           </CardContent>
         </Card>
@@ -585,7 +828,7 @@ export default function InfiniteQuizPage() {
             </div>
             Configure Your Quiz
           </CardTitle>
-          <CardDescription>Choose your topic, difficulty, and number of questions</CardDescription>
+          <CardDescription>Choose your topic, difficulty, and number of questions (3-10)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Topic Selection */}
@@ -620,9 +863,19 @@ export default function InfiniteQuizPage() {
           {selectedTopic && availableSubtopics.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-3">
-                Select Subtopic
+                Select Subtopic (Optional)
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <button
+                  onClick={() => setSelectedSubtopic('')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    selectedSubtopic === ''
+                      ? 'border-cosmic-primary bg-cosmic-primary/10'
+                      : 'border-border-default hover:border-cosmic-primary/50'
+                  }`}
+                >
+                  <span className="text-sm font-medium text-text-primary">All Subtopics</span>
+                </button>
                 {availableSubtopics.map((subtopic) => (
                   <button
                     key={subtopic.id}
@@ -669,16 +922,16 @@ export default function InfiniteQuizPage() {
             </label>
             <input
               type="range"
-              min="5"
-              max="50"
-              step="5"
+              min="3"
+              max="10"
+              step="1"
               value={questionCount}
               onChange={(e) => setQuestionCount(parseInt(e.target.value))}
               className="w-full"
             />
             <div className="flex justify-between text-xs text-text-muted mt-1">
-              <span>5</span>
-              <span>50</span>
+              <span>3 (minimum)</span>
+              <span>10 (maximum)</span>
             </div>
           </div>
 
@@ -717,10 +970,10 @@ export default function InfiniteQuizPage() {
             size="lg"
             className="w-full"
             onClick={handleStartQuiz}
-            disabled={!selectedTopic || !selectedSubtopic}
+            disabled={!selectedTopic}
           >
             <Play className="w-5 h-5 mr-2" />
-            Generate Quiz
+            Generate AI Quiz
           </Button>
         </CardContent>
       </Card>
@@ -734,7 +987,7 @@ export default function InfiniteQuizPage() {
             </div>
             <div>
               <h3 className="text-xl font-bold text-text-primary mb-2">
-                How Infinite Quiz Works
+                How AI Infinite Quiz Works
               </h3>
               <ul className="space-y-2 text-text-secondary">
                 <li className="flex items-start gap-2">
@@ -743,11 +996,15 @@ export default function InfiniteQuizPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent-primary mt-1">•</span>
-                  <span>Questions are procedurally generated for unlimited variety</span>
+                  <span>Questions are generated by AI based on your selections</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent-primary mt-1">•</span>
-                  <span>Get instant feedback with detailed explanations for each answer</span>
+                  <span>Each session generates 3-10 unique questions</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent-primary mt-1">•</span>
+                  <span>Get instant feedback with detailed AI-generated explanations</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent-primary mt-1">•</span>

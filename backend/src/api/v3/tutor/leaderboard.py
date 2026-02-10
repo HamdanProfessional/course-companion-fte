@@ -15,6 +15,8 @@ from src.models.schemas import (
     LeaderboardOptInCreate, LeaderboardOptInUpdate,
     LeaderboardOptIn, Leaderboard
 )
+from src.api.dependencies import get_current_user, get_optional_user
+from src.models.database import User
 
 router = APIRouter()
 
@@ -47,7 +49,7 @@ async def get_leaderboard(
 
 @router.get("/opt-in-status", response_model=Optional[LeaderboardOptIn])
 async def get_opt_in_status(
-    user_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -55,21 +57,20 @@ async def get_opt_in_status(
 
     Zero-LLM compliance: Simple database query.
 
-    Args:
-        user_id: User UUID
-
     Returns:
         Opt-in status or None if not opted in
+
+    **Authentication**: Required - Users must be logged in to check their opt-in status.
     """
     service = LeaderboardService(db)
-    opt_in = await service.get_opt_in_status(user_id)
+    opt_in = await service.get_opt_in_status(current_user.id)
     return opt_in
 
 
 @router.post("/opt-in", response_model=LeaderboardOptIn)
 async def opt_in_to_leaderboard(
-    user_id: UUID,
     opt_in_data: LeaderboardOptInCreate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -79,21 +80,19 @@ async def opt_in_to_leaderboard(
 
     Privacy: User chooses anonymous display name and what to show.
 
-    Args:
-        user_id: User UUID
-        opt_in_data: Display name and privacy settings
-
     Returns:
         Created/updated opt-in record
+
+    **Authentication**: Required - Users must be logged in to opt in.
     """
     service = LeaderboardService(db)
-    opt_in = await service.opt_in(user_id, opt_in_data)
+    opt_in = await service.opt_in(current_user.id, opt_in_data)
     return opt_in
 
 
 @router.post("/opt-out")
 async def opt_out_from_leaderboard(
-    user_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -103,14 +102,13 @@ async def opt_out_from_leaderboard(
 
     Privacy: User can leave leaderboard at any time.
 
-    Args:
-        user_id: User UUID
-
     Returns:
         Success message
+
+    **Authentication**: Required - Users must be logged in to opt out.
     """
     service = LeaderboardService(db)
-    success = await service.opt_out(user_id)
+    success = await service.opt_out(current_user.id)
 
     if not success:
         raise HTTPException(
@@ -123,8 +121,8 @@ async def opt_out_from_leaderboard(
 
 @router.put("/opt-in-settings", response_model=LeaderboardOptIn)
 async def update_opt_in_settings(
-    user_id: UUID,
     update_data: LeaderboardOptInUpdate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -132,18 +130,16 @@ async def update_opt_in_settings(
 
     Zero-LLM compliance: Updates privacy control fields.
 
-    Args:
-        user_id: User UUID
-        update_data: Fields to update
-
     Returns:
         Updated opt-in record
 
     Raises:
         HTTPException 404: If opt-in record not found
+
+    **Authentication**: Required - Users must be logged in to update their settings.
     """
     service = LeaderboardService(db)
-    opt_in = await service.update_opt_in(user_id, update_data)
+    opt_in = await service.update_opt_in(current_user.id, update_data)
 
     if not opt_in:
         raise HTTPException(
@@ -154,27 +150,23 @@ async def update_opt_in_settings(
     return opt_in
 
 
-@router.get("/rank/{user_id}")
-async def get_user_rank(
-    user_id: UUID,
+@router.get("/rank/me")
+async def get_my_rank(
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get user's current rank on the leaderboard.
+    Get current user's rank on the leaderboard.
 
     Zero-LLM compliance: Simple rank lookup.
-
-    Args:
-        user_id: User UUID
 
     Returns:
         User's rank or null if not opted in
 
-    Raises:
-        HTTPException 404: If user not eligible for leaderboard
+    **Authentication**: Required - Users must be logged in to check their rank.
     """
     service = LeaderboardService(db)
-    rank = await service.get_user_rank(user_id)
+    rank = await service.get_user_rank(current_user.id)
 
     if rank is None:
         raise HTTPException(
@@ -182,16 +174,16 @@ async def get_user_rank(
             detail="User not opted in to leaderboard"
         )
 
-    return {"user_id": str(user_id), "rank": rank}
+    return {"user_id": str(current_user.id), "rank": rank}
 
 
-@router.get("/stats/{user_id}")
-async def get_user_stats(
-    user_id: UUID,
+@router.get("/stats/me")
+async def get_my_stats(
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get user's stats for leaderboard calculation.
+    Get current user's stats for leaderboard calculation.
 
     Zero-LLM compliance: Returns raw stats data.
 
@@ -201,12 +193,11 @@ async def get_user_stats(
         - current_streak: From streak record
         - xp: Calculated using formula
 
-    Args:
-        user_id: User UUID
-
     Returns:
         User stats with XP breakdown
+
+    **Authentication**: Required - Users must be logged in to view their stats.
     """
     service = LeaderboardService(db)
-    stats = await service.get_user_stats(user_id)
+    stats = await service.get_user_stats(current_user.id)
     return stats

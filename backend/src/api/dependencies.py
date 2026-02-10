@@ -24,6 +24,9 @@ ALGORITHM = settings.jwt_algorithm
 # OAuth2 scheme for token extraction
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
+# Optional OAuth2 scheme for endpoints that work without authentication
+optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -129,7 +132,7 @@ async def require_student(
 
 
 async def get_optional_user(
-    token: Optional[str] = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(optional_oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
     """

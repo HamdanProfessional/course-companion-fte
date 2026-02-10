@@ -25,12 +25,6 @@ export default function CertificateVerifyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (certificateId) {
-      verifyCertificate();
-    }
-  }, [certificateId]);
-
   const verifyCertificate = async () => {
     try {
       setIsLoading(true);
@@ -44,6 +38,14 @@ export default function CertificateVerifyPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (certificateId) {
+      verifyCertificate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // verifyCertificate is defined outside useEffect intentionally
+  }, [certificateId]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

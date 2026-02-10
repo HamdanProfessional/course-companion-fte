@@ -3,7 +3,7 @@ Public Certificate Verification API - No authentication required.
 Zero-Backend-LLM: Public read-only endpoint for certificate verification.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db

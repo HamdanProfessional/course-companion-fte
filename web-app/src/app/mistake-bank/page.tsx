@@ -14,6 +14,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useV3Mistakes, useV3MistakeStats } from '@/hooks/useV3';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -50,13 +51,13 @@ import {
   importMistakes,
   getMistakesForReview,
   type Mistake,
+  type QuizSource,
 } from '@/lib/mistakeBank';
 
 export default function MistakeBankPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [mistakes, setMistakes] = useState<Mistake[]>([]);
-  const [stats, setStats] = useState(getMistakeStats());
+  const [localMistakes, setLocalMistakes] = useState<Mistake[]>([]);
   const [selectedMistake, setSelectedMistake] = useState<Mistake | null>(null);
 
   // Filter states
@@ -64,7 +65,45 @@ export default function MistakeBankPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [masteryFilter, setMasteryFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Backend API hooks
+  const { data: backendMistakes, isLoading: backendLoading } = useV3Mistakes();
+  const { data: backendStats } = useV3MistakeStats();
+
+  // Combine local storage and backend mistakes, avoiding duplicates
+  const allMistakes = [...localMistakes];
+  const seenQuestionIds = new Set(localMistakes.map(m => m.questionId));
+
+  if (backendMistakes) {
+    // Convert backend mistakes to local format, skipping duplicates
+    backendMistakes.forEach(m => {
+      if (!seenQuestionIds.has(m.question_id)) {
+        allMistakes.push({
+          id: m.id,
+          questionId: m.question_id,
+          quizId: m.quiz_id,
+          quizTitle: m.quiz_title,
+          questionText: m.question_text,
+          wrongAnswer: m.wrong_answer,
+          correctAnswer: m.correct_answer,
+          explanation: m.explanation,
+          feedback: m.feedback,
+          category: m.category,
+          difficulty: m.difficulty,
+          date: m.date,
+          mastered: m.mastered,
+          timesWrong: m.times_wrong,
+          lastReviewed: m.last_reviewed,
+          source: m.source,
+          topic: m.topic,
+          subtopic: m.subtopic,
+        } as Mistake);
+        seenQuestionIds.add(m.question_id);
+      }
+    });
+  }
 
   useEffect(() => {
     const userId = localStorage.getItem('user_id');
@@ -72,19 +111,19 @@ export default function MistakeBankPage() {
       router.push('/login');
       return;
     }
-    loadMistakes();
+    // Load local storage mistakes
+    loadLocalMistakes();
     setIsLoading(false);
   }, [router]);
 
-  const loadMistakes = () => {
-    const allMistakes = getMistakes();
-    setMistakes(allMistakes);
-    setStats(getMistakeStats());
+  const loadLocalMistakes = () => {
+    const local = getMistakes();
+    setLocalMistakes(local);
   };
 
   // Apply filters
   const getFilteredMistakes = () => {
-    let filtered = mistakes;
+    let filtered = allMistakes;
 
     // Search filter
     if (searchQuery) {
@@ -108,14 +147,40 @@ export default function MistakeBankPage() {
       filtered = filtered.filter(m => !m.mastered);
     }
 
+    // Source filter
+    if (sourceFilter === 'infinite') {
+      filtered = filtered.filter(m => m.source === 'infinite');
+    } else if (sourceFilter === 'chapter') {
+      filtered = filtered.filter(m => m.source === 'chapter');
+    }
+
     return filtered;
   };
 
   const filteredMistakes = getFilteredMistakes();
 
   // Get unique categories and difficulties
-  const categories = ['all', ...Array.from(new Set(mistakes.map(m => m.category || 'General')))];
-  const difficulties = ['all', ...Array.from(new Set(mistakes.map(m => m.difficulty)))];
+  const categories = ['all', ...Array.from(new Set(allMistakes.map(m => m.category || 'General')))];
+  const difficulties = ['all', ...Array.from(new Set(allMistakes.map(m => m.difficulty)))];
+
+  // Calculate stats from combined data
+  const stats = {
+    total: allMistakes.length,
+    mastered: allMistakes.filter(m => m.mastered).length,
+    remaining: allMistakes.filter(m => !m.mastered).length,
+    byCategory: {} as Record<string, number>,
+    byDifficulty: {} as Record<string, number>,
+    repeatMistakes: allMistakes.filter(m => m.timesWrong > 1)
+      .sort((a, b) => b.timesWrong - a.timesWrong)
+      .slice(0, 5),
+  };
+
+  // Count by category and difficulty
+  allMistakes.forEach(m => {
+    const cat = m.category || 'General';
+    stats.byCategory[cat] = (stats.byCategory[cat] || 0) + 1;
+    stats.byDifficulty[m.difficulty] = (stats.byDifficulty[m.difficulty] || 0) + 1;
+  });
 
   // Handle mastery toggle
   const handleToggleMastery = (mistake: Mistake) => {
@@ -124,14 +189,14 @@ export default function MistakeBankPage() {
     } else {
       markAsMastered(mistake.id);
     }
-    loadMistakes();
+    loadLocalMistakes();
   };
 
   // Handle delete
   const handleDelete = (mistakeId: string) => {
     if (confirm('Are you sure you want to delete this mistake?')) {
       deleteMistake(mistakeId);
-      loadMistakes();
+      loadLocalMistakes();
     }
   };
 
@@ -139,7 +204,7 @@ export default function MistakeBankPage() {
   const handleClearMastered = () => {
     if (confirm('Remove all mastered mistakes from the bank?')) {
       clearMastered();
-      loadMistakes();
+      loadLocalMistakes();
     }
   };
 
@@ -147,7 +212,7 @@ export default function MistakeBankPage() {
   const handleClearAll = () => {
     if (confirm('Are you sure you want to delete ALL mistakes? This cannot be undone.')) {
       clearAllMistakes();
-      loadMistakes();
+      loadLocalMistakes();
     }
   };
 
@@ -176,7 +241,7 @@ export default function MistakeBankPage() {
           const content = event.target?.result as string;
           if (importMistakes(content)) {
             alert('Mistakes imported successfully!');
-            loadMistakes();
+            loadLocalMistakes();
           } else {
             alert('Failed to import mistakes. Please check the file format.');
           }
@@ -310,7 +375,7 @@ export default function MistakeBankPage() {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-border-default">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-border-default">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">
                   Category
@@ -359,6 +424,21 @@ export default function MistakeBankPage() {
                   <option value="mastered">Mastered</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Source
+                </label>
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-border-default bg-bg-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-cosmic-primary"
+                >
+                  <option value="all">All Sources</option>
+                  <option value="infinite">Infinite Quiz (AI)</option>
+                  <option value="chapter">Chapter Quizzes</option>
+                </select>
+              </div>
             </div>
           )}
         </CardContent>
@@ -395,7 +475,7 @@ export default function MistakeBankPage() {
             </div>
             <h3 className="text-2xl font-bold text-text-primary mb-2">No Mistakes Found!</h3>
             <p className="text-text-secondary mb-6">
-              {searchQuery || categoryFilter !== 'all' || difficultyFilter !== 'all' || masteryFilter !== 'all'
+              {searchQuery || categoryFilter !== 'all' || difficultyFilter !== 'all' || masteryFilter !== 'all' || sourceFilter !== 'all'
                 ? 'Try adjusting your filters or search query.'
                 : 'Great job! Keep taking quizzes to build your mistake bank.'}
             </p>
@@ -450,6 +530,9 @@ export default function MistakeBankPage() {
                           </Badge>
                           <Badge variant="info" className="text-xs">
                             {mistake.difficulty}
+                          </Badge>
+                          <Badge variant={mistake.source === 'infinite' ? 'secondary' : 'primary'} className="text-xs">
+                            {mistake.source === 'infinite' ? 'AI Quiz' : 'Chapter Quiz'}
                           </Badge>
                           {mistake.timesWrong > 1 && (
                             <Badge variant="warning" className="text-xs">

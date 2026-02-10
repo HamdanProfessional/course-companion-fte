@@ -3,6 +3,8 @@
  * Automatically catalogs every wrong answer into a "Review Later" folder
  */
 
+export type QuizSource = 'infinite' | 'chapter';
+
 export interface Mistake {
   id: string;
   questionId: string;
@@ -19,6 +21,9 @@ export interface Mistake {
   mastered: boolean;
   timesWrong: number;
   lastReviewed?: string;
+  source: QuizSource; // 'infinite' for AI-generated, 'chapter' for course content
+  topic?: string; // For infinite quiz mistakes
+  subtopic?: string; // For infinite quiz mistakes
 }
 
 const MISTAKE_BANK_KEY = 'mistake_bank';
@@ -55,7 +60,7 @@ const saveMistakes = (mistakes: Mistake[]): void => {
  * Add a new mistake to the bank
  * If the same question was already wrong before, increment the counter
  */
-export const addMistake = (mistake: Omit<Mistake, 'id' | 'date' | 'mastered' | 'timesWrong'>): void => {
+export const addMistake = (mistake: Omit<Mistake, 'id' | 'date' | 'mastered' | 'timesWrong' | 'source'> & { source?: QuizSource }): void => {
   const mistakes = getMistakes();
 
   // Check if this question was already wrong before
@@ -77,11 +82,53 @@ export const addMistake = (mistake: Omit<Mistake, 'id' | 'date' | 'mastered' | '
       date: new Date().toISOString(),
       mastered: false,
       timesWrong: 1,
+      source: mistake.source || 'chapter',
+      topic: mistake.topic,
+      subtopic: mistake.subtopic,
     };
     mistakes.push(newMistake);
   }
 
   saveMistakes(mistakes);
+};
+
+/**
+ * Add mistakes from infinite quiz (AI-generated questions)
+ */
+export const addMistakesFromInfiniteQuiz = (
+  questions: Array<{
+    id: string;
+    question_text: string;
+    options: Record<string, string>;
+    correct_answer: string;
+    explanation: string;
+    difficulty: string;
+    topic: string;
+    subtopic: string;
+  }>,
+  userAnswers: Record<number, string>
+): void => {
+  questions.forEach((question, index) => {
+    const userAnswer = userAnswers[index];
+
+    // Check if user answered incorrectly
+    if (userAnswer && userAnswer !== question.correct_answer) {
+      addMistake({
+        questionId: question.id,
+        quizId: 'infinite-quiz',
+        quizTitle: `AI Quiz: ${question.topic}${question.subtopic ? ` - ${question.subtopic}` : ''}`,
+        questionText: question.question_text,
+        wrongAnswer: question.options[userAnswer] || userAnswer,
+        correctAnswer: question.options[question.correct_answer] || question.correct_answer,
+        explanation: question.explanation,
+        category: question.topic,
+        difficulty: question.difficulty,
+        source: 'infinite',
+        topic: question.topic,
+        subtopic: question.subtopic,
+      });
+    }
+  });
 };
 
 /**
@@ -122,6 +169,7 @@ export const addMistakesFromQuiz = (
         feedback: result.feedback,
         category,
         difficulty,
+        source: 'chapter',
       });
     }
   });
@@ -220,12 +268,13 @@ export const getMistakeStats = () => {
 };
 
 /**
- * Filter mistakes by category, difficulty, or mastery status
+ * Filter mistakes by category, difficulty, mastery status, or source
  */
 export const filterMistakes = (
   category?: string,
   difficulty?: string,
-  mastered?: boolean
+  mastered?: boolean,
+  source?: QuizSource
 ): Mistake[] => {
   const mistakes = getMistakes();
 
@@ -233,6 +282,7 @@ export const filterMistakes = (
     if (category && m.category !== category) return false;
     if (difficulty && m.difficulty !== difficulty) return false;
     if (mastered !== undefined && m.mastered !== mastered) return false;
+    if (source && m.source !== source) return false;
     return true;
   });
 };

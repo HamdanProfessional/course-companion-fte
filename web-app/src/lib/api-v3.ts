@@ -250,12 +250,22 @@ class TutorV3Client {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
+    // Get token from localStorage for authenticated requests
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers as Record<string, string>,
+    };
+
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -364,7 +374,7 @@ class TutorV3Client {
     const params = new URLSearchParams({ user_id: userId });
 
     return this.request<QuizGradingResult>(
-      `/api/v1/quizzes/${quizId}/submit?${params}`,
+      `/api/v3/tutor/quizzes/${quizId}/submit?${params}`,
       {
         method: 'POST',
         body: JSON.stringify(submission),
@@ -514,7 +524,7 @@ class TutorV3Client {
   // =========================================================================
 
   /**
-   * Get AI features status
+   * Get AI features status from backend
    */
   async getAIStatus(): Promise<{
     phase: string;
@@ -524,59 +534,45 @@ class TutorV3Client {
     features: Record<string, boolean>;
     requirements: Record<string, string>;
   }> {
-    // Stub - Phase 2 features not available
-    return {
-      phase: '1',
-      llm_enabled: false,
-      llm_provider: null,
-      model: 'none',
-      features: {},
-      requirements: {},
-    };
+    return this.request<{
+      phase: string;
+      llm_enabled: boolean;
+      llm_provider: string | null;
+      model: string;
+      features: Record<string, boolean>;
+      requirements: Record<string, string>;
+    }>(
+      `/api/v3/tutor/ai/status`,
+      {
+        method: 'GET',
+      }
+    );
   }
 
   /**
-   * Get knowledge gap analysis (stub)
+   * Get knowledge gap analysis from backend
    */
   async getKnowledgeAnalysis(): Promise<AdaptiveAnalysis> {
-    // Stub - Return demo analysis with correct chapter UUIDs
-    return {
-      weak_topics: [
-        'State Management',
-        'Error Handling',
-      ],
-      strong_topics: [
-        'MCP Integration',
-        'Agent Development',
-      ],
-      recommended_review: [
-        '2912d135-f34f-40af-a297-5f8acfdca3f6', // Chapter 1
-        '4d595b4d-ac38-4a35-9699-265009f430e9', // Chapter 2
-      ],
-      confidence_score: 0.75,
-      explanation: 'Based on your quiz performance, you show strong understanding of MCP integration concepts. For best results, we recommend reviewing state management patterns and error handling strategies before moving to advanced topics.',
-    };
+    const userId = this.getUserId();
+    return this.request<AdaptiveAnalysis>(
+      `/api/v3/tutor/ai/adaptive/analysis?user_id=${userId}`,
+      {
+        method: 'GET',
+      }
+    );
   }
 
   /**
-   * Get personalized chapter recommendations (stub)
+   * Get personalized chapter recommendations from backend
    */
   async getRecommendations(): Promise<ChapterRecommendation> {
-    // Stub - Return demo recommendation with correct chapter UUIDs
-    return {
-      next_chapter_id: '91a1e219-c7ff-4677-8a1a-ace4b58787c5', // Chapter 3: Creating Your First Agent
-      next_chapter_title: 'Creating Your First Agent',
-      reason: 'Based on your progress in Chapter 2, we recommend continuing with agent creation. This chapter will help you build your first functional AI agent using MCP.',
-      estimated_completion_minutes: 30,
-      difficulty_match: 'Perfect Match',
-      alternative_paths: [
-        {
-          chapter_id: '56aa5028-8ddd-4e21-b00a-e935147079cc', // Chapter 4: Building Reusable Skills
-          title: 'Building Reusable Skills',
-          reason: 'Alternative path if you want to focus on skill architecture first',
-        },
-      ],
-    };
+    const userId = this.getUserId();
+    return this.request<ChapterRecommendation>(
+      `/api/v3/tutor/ai/adaptive/recommendations?user_id=${userId}`,
+      {
+        method: 'GET',
+      }
+    );
   }
 
   /**
@@ -642,6 +638,49 @@ class TutorV3Client {
   }> {
     // Stub - Phase 2 features not available
     throw new Error('LLM Costs tracking not available in v1 API');
+  }
+
+  /**
+   * Generate quiz questions using AI
+   */
+  async generateQuizWithAI(request: {
+    topic: string;
+    subtopic?: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced' | 'mixed';
+    num_questions: number;
+  }): Promise<{
+    quiz_id: string;
+    questions: Array<{
+      id: string;
+      question_text: string;
+      options: Record<string, string>;
+      correct_answer: string;
+      explanation: string;
+      difficulty: string;
+      topic: string;
+      subtopic: string;
+    }>;
+    total_questions: number;
+    topic: string;
+    subtopic: string | null;
+    difficulty: string;
+    generated_at: string;
+  }> {
+    const userId = this.getUserId();
+    const params = new URLSearchParams({ user_id: userId });
+
+    return this.request(
+      `/api/v3/tutor/ai/generate-quiz?${params}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          topic: request.topic,
+          subtopic: request.subtopic || null,
+          difficulty: request.difficulty,
+          num_questions: Math.min(Math.max(request.num_questions, 3), 10), // Enforce 3-10 limit
+        }),
+      }
+    );
   }
 
   // =========================================================================
@@ -808,7 +847,7 @@ class TutorV3Client {
 
     const queryString = queryParams.toString();
     return this.request(
-      `/api/v3/tutor/leaderboard/${queryString ? `?${queryString}` : ''}`
+      `/api/v3/tutor/leaderboard/${queryString ? `?${queryString}` : ''}/`
     );
   }
 
@@ -901,10 +940,9 @@ class TutorV3Client {
    */
   async checkCertificateEligibility(userId: string): Promise<CertificateEligibility> {
     return this.request(
-      `/api/v3/tutor/certificates/check-eligibility`,
+      `/api/v3/tutor/certificates/check-eligibility?user_id=${userId}`,
       {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId }),
       }
     );
   }
@@ -930,7 +968,10 @@ class TutorV3Client {
    */
   async getUserCertificates(userId: string): Promise<{ certificates: CertificateItem[]; total: number }> {
     return this.request(
-      `/api/v3/tutor/certificates?user_id=${userId}`
+      `/api/v3/tutor/certificates/?user_id=${userId}`,
+      {
+        method: 'GET',
+      }
     );
   }
 
@@ -940,6 +981,185 @@ class TutorV3Client {
   async verifyCertificate(certificateId: string): Promise<CertificateVerification> {
     return this.request(
       `/api/v3/certificate/verify/${certificateId}`
+    );
+  }
+
+  // =========================================================================
+  // Chat History API
+  // =========================================================================
+
+  /**
+   * List all chat conversations for a user
+   */
+  async listConversations(userId?: string): Promise<ChatConversation[]> {
+    const uid = userId || this.getUserId();
+    return this.request<ChatConversation[]>(
+      `/api/v3/tutor/chat/conversations?user_id=${uid}`
+    );
+  }
+
+  /**
+   * Create a new chat conversation
+   */
+  async createConversation(data: CreateConversationRequest = {}): Promise<ChatConversation> {
+    const userId = this.getUserId();
+    const queryParams = new URLSearchParams();
+    queryParams.append('user_id', userId);
+
+    return this.request<ChatConversation>(
+      `/api/v3/tutor/chat/conversations?${queryParams}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ title: data.title || 'New Chat' }),
+      }
+    );
+  }
+
+  /**
+   * Get a conversation with all its messages
+   */
+  async getConversation(conversationId: string): Promise<ChatConversationDetail> {
+    const userId = this.getUserId();
+    return this.request<ChatConversationDetail>(
+      `/api/v3/tutor/chat/conversations/${conversationId}?user_id=${userId}`
+    );
+  }
+
+  /**
+   * Update conversation title
+   */
+  async updateConversation(conversationId: string, data: UpdateConversationRequest): Promise<ChatConversation> {
+    const userId = this.getUserId();
+    return this.request<ChatConversation>(
+      `/api/v3/tutor/chat/conversations/${conversationId}?user_id=${userId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  /**
+   * Delete a conversation
+   */
+  async deleteConversation(conversationId: string): Promise<void> {
+    const userId = this.getUserId();
+    return this.request<void>(
+      `/api/v3/tutor/chat/conversations/${conversationId}?user_id=${userId}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Add a message to a conversation
+   */
+  async createMessage(conversationId: string, data: CreateMessageRequest): Promise<ChatMessage> {
+    const userId = this.getUserId();
+    return this.request<ChatMessage>(
+      `/api/v3/tutor/chat/conversations/${conversationId}/messages?user_id=${userId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  /**
+   * Chat with AI mentor and save to conversation history
+   */
+  async mentorChatWithHistory(
+    request: MentorChatRequest,
+    conversationId?: string
+  ): Promise<MentorChatResponse> {
+    const userId = this.getUserId();
+    const params = new URLSearchParams();
+    params.append('user_id', userId);
+    if (conversationId) {
+      params.append('conversation_id', conversationId);
+    }
+
+    return this.request<MentorChatResponse>(
+      `/api/v3/tutor/ai/mentor/chat?${params}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+  }
+
+  // =========================================================================
+  // Mistake Bank API
+  // =========================================================================
+
+  /**
+   * Get user's mistakes from both chapter and infinite quizzes
+   */
+  async getMistakes(params?: {
+    source?: 'chapter' | 'infinite';
+    category?: string;
+    difficulty?: string;
+    mastered?: boolean;
+    limit?: number;
+  }): Promise<MistakeItem[]> {
+    const userId = this.getUserId();
+    const queryParams = new URLSearchParams({ user_id: userId });
+
+    if (params?.source) queryParams.append('source', params.source);
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.difficulty) queryParams.append('difficulty', params.difficulty);
+    if (params?.mastered !== undefined) queryParams.append('mastered', String(params.mastered));
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+
+    return this.request<MistakeItem[]>(
+      `/api/v3/tutor/mistakes?${queryParams}`
+    );
+  }
+
+  /**
+   * Get mistake statistics
+   */
+  async getMistakeStats(): Promise<{
+    total_attempts: number;
+    average_score: number;
+    mistakes_count: number;
+    by_category: Record<string, number>;
+    by_difficulty: Record<string, number>;
+  }> {
+    const userId = this.getUserId();
+    return this.request(
+      `/api/v3/tutor/mistakes/stats?user_id=${userId}`
+    );
+  }
+
+  /**
+   * Add a mistake from infinite quiz
+   */
+  async addInfiniteQuizMistake(data: {
+    question_data: Record<string, any>;
+    wrong_answer: string;
+  }): Promise<{ message: string; mistake: Record<string, any> }> {
+    const userId = this.getUserId();
+    return this.request(
+      `/api/v3/tutor/mistakes/infinite?user_id=${userId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  /**
+   * Export mistakes for backup
+   */
+  async exportMistakes(): Promise<{
+    user_id: string;
+    export_date: string;
+    total_mistakes: number;
+    mistakes: Record<string, any>[];
+  }> {
+    const userId = this.getUserId();
+    return this.request(
+      `/api/v3/tutor/mistakes/export?user_id=${userId}`
     );
   }
 }
@@ -1028,6 +1248,69 @@ export interface CertificateVerification {
   issued_at: string;
   verified_at: string;
   verification_url: string | null;
+}
+
+// =============================================================================
+// Chat History Types
+// =============================================================================
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+  extra_data?: Record<string, any> | null;
+}
+
+export interface ChatConversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export interface ChatConversationDetail extends ChatConversation {
+  messages: ChatMessage[];
+}
+
+export interface CreateConversationRequest {
+  title?: string;
+}
+
+export interface UpdateConversationRequest {
+  title: string;
+}
+
+export interface CreateMessageRequest {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  extra_data?: Record<string, any> | null;
+}
+
+// =============================================================================
+// Mistake Bank Types
+// =============================================================================
+
+export interface MistakeItem {
+  id: string;
+  question_id: string;
+  quiz_id: string;
+  quiz_title: string;
+  question_text: string;
+  wrong_answer: string;
+  correct_answer: string;
+  explanation?: string;
+  feedback?: string;
+  category?: string;
+  difficulty: string;
+  date: string;
+  mastered: boolean;
+  times_wrong: number;
+  last_reviewed?: string;
+  source: 'chapter' | 'infinite';
+  topic?: string;
+  subtopic?: string;
 }
 
 // Export singleton instance

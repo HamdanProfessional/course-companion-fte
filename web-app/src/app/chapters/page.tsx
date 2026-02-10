@@ -219,7 +219,7 @@ export default function ChaptersPage() {
                     </div>
                   ) : (
                     <>
-                      <Link href={`/chapters/${chapter.id}`}>
+                      <Link href={`/chapters/${chapter.id}`} className="block">
                         <Button
                           variant={isCompleted ? 'outline' : 'primary'}
                           className="w-full gap-2"
@@ -229,7 +229,7 @@ export default function ChaptersPage() {
                       </Link>
 
                       {chapter.quiz_id && (
-                        <Link href={`/quizzes/${chapter.quiz_id}`}>
+                        <Link href={`/quizzes/${chapter.quiz_id}`} className="block">
                           <Button
                             variant="secondary"
                             className="w-full gap-2"

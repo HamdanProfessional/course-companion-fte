@@ -1,0 +1,62 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e37] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e38]:
+    - navigation "Global" [ref=e39]:
+      - link "Course Companion" [ref=e40] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e42]
+        - heading "Course Companion" [level=1] [ref=e45]
+      - generic [ref=e46]:
+        - link "Dashboard" [ref=e48] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e49]
+          - text: Dashboard
+        - link "Chapters" [ref=e53] [cursor=pointer]:
+          - /url: /chapters
+          - img [ref=e54]
+          - text: Chapters
+        - link "Quizzes" [ref=e58] [cursor=pointer]:
+          - /url: /quizzes
+          - img [ref=e59]
+          - text: Quizzes
+        - link "Adaptive Learning AI" [ref=e64] [cursor=pointer]:
+          - /url: /adaptive-learning
+          - img [ref=e65]
+          - generic [ref=e73]: Adaptive Learning
+          - generic [ref=e74]: AI
+        - link "AI Mentor AI" [ref=e76] [cursor=pointer]:
+          - /url: /ai-mentor
+          - img [ref=e77]
+          - generic [ref=e80]: AI Mentor
+          - generic [ref=e81]: AI
+        - button [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+      - generic [ref=e88]:
+        - link "Profile" [ref=e89] [cursor=pointer]:
+          - /url: /profile
+          - button "Profile" [ref=e90]:
+            - img [ref=e91]
+            - generic [ref=e94]: Profile
+        - button "Logout" [ref=e95] [cursor=pointer]:
+          - img [ref=e96]
+          - generic [ref=e99]: Logout
+  - main [ref=e100]:
+    - generic [ref=e101]:
+      - generic [ref=e104]:
+        - heading "Quizzes" [level=1] [ref=e105]
+        - paragraph [ref=e106]: Test your knowledge with interactive assessments
+      - generic [ref=e109]:
+        - img [ref=e112]
+        - heading "No quizzes available yet" [level=3] [ref=e116]
+        - paragraph [ref=e117]: Quizzes will be added as you complete chapters.
+  - contentinfo [ref=e118]:
+    - paragraph [ref=e120]:
+      - text: © 2026 Course Companion FTE. Built with
+      - img [ref=e121]
+      - text: for Panaversity Hackathon IV.
+  - alert [ref=e123]
+```

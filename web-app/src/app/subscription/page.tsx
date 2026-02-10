@@ -37,32 +37,15 @@ export default function SubscriptionPage() {
   const { data: plans, isLoading: plansLoading, error: plansError } = useV3SubscriptionPlans();
   const upgradeTier = useV3UpgradeTier();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Subscription page - subscription data:', subscription);
-    console.log('Subscription page - plans data:', plans);
-    console.log('Subscription page - subLoading:', subLoading);
-    console.log('Subscription page - plansLoading:', plansLoading);
-    if (subError) console.error('Subscription error:', subError);
-    if (plansError) console.error('Plans error:', plansError);
-  }, [subscription, plans, subLoading, plansLoading, subError, plansError]);
-
   const handleUpgrade = async (tier: 'PREMIUM' | 'PRO') => {
-    console.log('Upgrade button clicked for tier:', tier);
-    console.log('Current billing cycle:', billingCycle);
-
     try {
-      console.log('Calling upgradeTier mutation...');
       const result = await upgradeTier.mutateAsync({
         newTier: tier,
         billingCycle,
       });
 
-      console.log('Upgrade result:', result);
-
       // Update localStorage with new tier for immediate UI update
       localStorage.setItem('user_tier', result.new_tier);
-      console.log('Updated localStorage with tier:', result.new_tier);
 
       setSelectedTier(null);
 
@@ -259,10 +242,7 @@ export default function SubscriptionPage() {
                   <Button
                     variant={isPopular ? 'primary' : 'outline'}
                     className="w-full"
-                    onClick={() => {
-                      console.log('Button clicked, plan tier:', plan.tier);
-                      handleUpgrade(plan.tier as 'PREMIUM' | 'PRO');
-                    }}
+                    onClick={() => handleUpgrade(plan.tier as 'PREMIUM' | 'PRO')}
                     disabled={upgradeTier.isPending}
                   >
                     {upgradeTier.isPending ? (
