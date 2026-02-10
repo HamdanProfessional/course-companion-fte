@@ -1,20 +1,26 @@
 'use client';
 
 /**
- * User profile and settings page with Professional/Modern SaaS theme.
+ * User profile and settings page with subscription management.
  */
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input, Textarea } from '@/components/ui/Input';
+import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useAuth } from '@/hooks';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { tutorApi, CertificateItem, CertificateEligibility } from '@/lib/api-v3';
+import { useV3SubscriptionInfo, useV3SubscriptionPlans, useV3UpgradeTier } from '@/hooks/useV3';
 import Link from 'next/link';
-import { User, AlertTriangle, Lock, Gem, Download, Check, X, Award, ExternalLink } from 'lucide-react';
+import { User, Lock, Gem, Download, Check, X, Award, ExternalLink, ClipboardList, Loader, Sparkles } from 'lucide-react';
+
+const BILLING_CYCLES = {
+  monthly: { label: 'Monthly', discount: 0 },
+  yearly: { label: 'Yearly', discount: 0.17 },
+};
 
 export default function ProfilePage() {
   const { data: user } = useAuth();
@@ -22,22 +28,22 @@ export default function ProfilePage() {
   const [certificates, setCertificates] = useState<CertificateItem[]>([]);
   const [eligibility, setEligibility] = useState<CertificateEligibility | null>(null);
   const [isLoadingCertificates, setIsLoadingCertificates] = useState(true);
+  const [billingCycle, setBillingCycle] = useState<keyof typeof BILLING_CYCLES>('monthly');
+
+  // Subscription hooks
+  const { data: subscription, isLoading: subLoading, refetch: refetchSubscription } = useV3SubscriptionInfo();
+  const { data: plans, isLoading: plansLoading } = useV3SubscriptionPlans();
+  const upgradeTier = useV3UpgradeTier();
 
   const isFree = !user || user.tier === 'free';
-
-  useEffect(() => {
-    if (userId) {
-      fetchCertificates();
-      fetchEligibility();
-    }
-  }, [userId]);
+  const currentTier = subscription?.current_tier || 'FREE';
 
   const fetchCertificates = async () => {
     try {
       const data = await tutorApi.getUserCertificates(userId);
       setCertificates(data.certificates);
     } catch (error) {
-      console.error('Failed to fetch certificates:', error);
+      // Ignore errors
     } finally {
       setIsLoadingCertificates(false);
     }
@@ -48,25 +54,75 @@ export default function ProfilePage() {
       const data = await tutorApi.checkCertificateEligibility(userId);
       setEligibility(data);
     } catch (error) {
-      console.error('Failed to check eligibility:', error);
+      // Ignore errors
     }
   };
+
+  useEffect(() => {
+    if (userId) {
+      fetchCertificates();
+      fetchEligibility();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const handleGenerateCertificate = async () => {
     if (!userId) return;
 
-    const studentName = prompt('Enter your full name for the certificate:');
-    if (!studentName || !studentName.trim()) return;
+    const studentName = prompt('Enter your full name for the certificate (min 2 characters):');
+    if (!studentName || !studentName.trim()) {
+      alert('Please enter your name to generate the certificate.');
+      return;
+    }
+
+    const trimmedName = studentName.trim();
+    if (trimmedName.length < 2) {
+      alert('Name must be at least 2 characters long.');
+      return;
+    }
+
+    if (trimmedName.length > 100) {
+      alert('Name is too long. Please use a shorter version (max 100 characters).');
+      return;
+    }
 
     try {
-      await tutorApi.generateCertificate({ user_id: userId, student_name: studentName.trim() });
+      await tutorApi.generateCertificate({ user_id: userId, student_name: trimmedName });
       await fetchCertificates();
       await fetchEligibility();
       alert('Certificate generated successfully!');
     } catch (error: any) {
-      console.error('Failed to generate certificate:', error);
-      alert(error.message || 'Failed to generate certificate. Please ensure you meet all requirements.');
+      alert(error.message || 'Failed to generate certificate. Please ensure you meet all requirements (100% completion, 70%+ quiz average).');
     }
+  };
+
+  const handleUpgrade = async (tier: 'PREMIUM' | 'PRO') => {
+    try {
+      const result = await upgradeTier.mutateAsync({
+        newTier: tier,
+        billingCycle,
+      });
+
+      localStorage.setItem('user_tier', result.new_tier);
+      await refetchSubscription();
+
+      alert(`Successfully upgraded to ${tier}!`);
+      window.location.reload();
+    } catch (error) {
+      alert(`Upgrade failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const getPrice = (basePrice: number) => {
+    if (billingCycle === 'yearly') {
+      const monthlyPrice = basePrice * (1 - BILLING_CYCLES.yearly.discount);
+      return Math.round(monthlyPrice * 100) / 100;
+    }
+    return basePrice;
+  };
+
+  const getYearlyPrice = (basePrice: number) => {
+    return basePrice * 12 * (1 - BILLING_CYCLES.yearly.discount);
   };
 
   return (
@@ -74,12 +130,12 @@ export default function ProfilePage() {
       {/* Page Header */}
       <PageHeader
         title="Profile & Settings"
-        description="Manage your account and preferences"
+        description="Manage your account, subscription, and preferences"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Account Info & Password */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6">
+        {/* Account Information and Password - Side by Side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Account Information */}
           <Card>
             <CardHeader>
@@ -154,108 +210,126 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        {/* Right Column - Subscription */}
-        <div className="space-y-6">
-          <Card variant={isFree ? 'default' : 'elevated'}>
+        {/* Subscription Plans (Always Visible) */}
+        <Card className="bg-gradient-to-r from-accent-premium/5 to-accent-primary/5 border-accent-premium/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-premium/20 to-accent-premium/10 flex items-center justify-center">
-                  <Gem className="w-5 h-5 text-accent-premium" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-premium to-accent-primary flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                Subscription
+                Upgrade Your Plan
               </CardTitle>
-              <CardDescription>Your current plan</CardDescription>
+              <CardDescription>Choose the plan that fits your learning goals</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className={`p-4 rounded-lg border ${
-                isFree
-                  ? 'bg-bg-elevated/50 border-border-default'
-                  : 'bg-accent-premium/10 border-accent-premium/30'
-              }`}>
-                <div className="text-sm font-medium text-text-secondary mb-1">
-                  Current Tier
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-2xl font-bold capitalize">
-                    {user?.tier || 'free'}
-                  </div>
-                  {isFree ? (
-                    <Badge variant="default">Free</Badge>
-                  ) : (
-                    <Badge variant="premium">PRO</Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="font-semibold text-text-primary">
-                  {isFree ? 'Free Plan Benefits' : 'Premium Benefits'}
-                </h3>
-                <ul className="text-sm text-text-secondary space-y-2">
-                  {(isFree ? [
-                    { benefit: 'First 3 chapters', included: true },
-                    { benefit: 'Basic quizzes', included: true },
-                    { benefit: 'Progress tracking', included: true },
-                    { benefit: 'All 10 chapters', included: false },
-                    { benefit: 'Advanced quizzes', included: false },
-                    { benefit: 'AI Mentor (Phase 2)', included: false },
-                  ] : [
-                    { benefit: 'All 10 chapters', included: true },
-                    { benefit: 'Advanced quizzes', included: true },
-                    { benefit: 'AI-powered features', included: true },
-                    { benefit: 'Progress tracking', included: true },
-                    { benefit: 'Priority support', included: true },
-                    { benefit: 'Certificates', included: true },
-                  ]).map((item, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span className={item.included ? 'text-accent-success' : 'text-text-muted'}>
-                        {item.included ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                      </span>
-                      <span className={item.included ? 'text-text-primary' : 'text-text-muted'}>
-                        {item.benefit}
-                      </span>
-                    </li>
+            <CardContent>
+              {/* Billing Cycle Toggle */}
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex items-center bg-bg-elevated rounded-lg p-1">
+                  {Object.entries(BILLING_CYCLES).map(([key, value]) => (
+                    <button
+                      key={key}
+                      onClick={() => setBillingCycle(key as keyof typeof BILLING_CYCLES)}
+                      className={`px-6 py-2 rounded-md font-medium transition-all ${
+                        billingCycle === key
+                          ? 'bg-accent-primary text-white shadow-lg'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      {value.label}
+                      {value.discount > 0 && (
+                        <span className="ml-2 text-xs opacity-75">
+                          Save {Math.round(value.discount * 100)}%
+                        </span>
+                      )}
+                    </button>
                   ))}
-                </ul>
+                </div>
               </div>
 
-              {isFree && (
-                <Button variant="primary" className="w-full">
-                  Upgrade to Premium - $9.99/mo
-                </Button>
-              )}
+              {/* Pricing Plans */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {plans?.map((plan) => {
+                  const isCurrentPlan = plan.tier === currentTier;
+                  const isPopular = plan.tier === 'PREMIUM';
+
+                  return (
+                    <Card
+                      key={plan.tier}
+                      className={`relative ${isPopular ? 'ring-2 ring-accent-primary' : ''} ${
+                        isCurrentPlan ? 'bg-accent-primary/5' : ''
+                      }`}
+                    >
+                      {isPopular && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                          <Badge variant="info" className="px-3 py-1">Most Popular</Badge>
+                        </div>
+                      )}
+
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center justify-between text-base">
+                          <span>{plan.name}</span>
+                          {isCurrentPlan && <Badge variant="success">Current</Badge>}
+                        </CardTitle>
+                        <div className="mt-2">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-bold text-text-primary">
+                              ${getPrice(plan.price_monthly)}
+                            </span>
+                            <span className="text-text-secondary text-sm">/month</span>
+                          </div>
+                          {billingCycle === 'yearly' && (
+                            <p className="text-xs text-text-secondary mt-1">
+                              Billed ${getYearlyPrice(plan.price_yearly)} yearly
+                            </p>
+                          )}
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="pt-0">
+                        <ul className="space-y-2 mb-4">
+                          {plan.features.map((feature, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm">
+                              <Check className="text-accent-success w-4 h-4 flex-shrink-0 mt-0.5" />
+                              <span className="text-text-secondary">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {!isCurrentPlan && plan.tier !== 'FREE' && (
+                          <Button
+                            variant={isPopular ? 'primary' : 'outline'}
+                            className="w-full"
+                            onClick={() => handleUpgrade(plan.tier as 'PREMIUM' | 'PRO')}
+                            disabled={upgradeTier.isPending}
+                            size="sm"
+                          >
+                            {upgradeTier.isPending ? (
+                              <span className="flex items-center gap-2">
+                                <Loader className="w-4 h-4 animate-spin" />
+                                Processing...
+                              </span>
+                            ) : (
+                              <span>Upgrade to {plan.tier}</span>
+                            )}
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
-        </div>
       </div>
 
-      {/* Data Export */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary/20 to-accent-primary/10 flex items-center justify-center">
-              <Download className="w-5 h-5 text-accent-primary" />
-            </div>
-            Data Export
-          </CardTitle>
-          <CardDescription>Download your learning data (GDPR compliance)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="secondary">Export All Data (JSON)</Button>
-            <Button variant="outline">Export Progress (CSV)</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Certificates Section - Gamification Feature */}
+      {/* All Certificates Section */}
       <GlassCard className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cosmic-primary to-cosmic-purple flex items-center justify-center">
               <Award className="w-5 h-5 text-white" />
             </div>
-            Certificates
+            All Certificates
           </CardTitle>
           <CardDescription>
             Course completion certificates (Requirements: 100% completion, 70%+ average score)
@@ -274,18 +348,12 @@ export default function ProfilePage() {
                   {eligibility.eligible ? (
                     <Check className="w-5 h-5 text-green-500" />
                   ) : (
-                    <AlertTriangle className="w-5 h-5 text-orange-500" />
+                    <X className="w-5 h-5 text-orange-500" />
                   )}
                   <span className="font-semibold text-text-primary">
-                    {eligibility.eligible ? 'Eligible for Certificate!' : 'Not Yet Eligible'}
+                    {eligibility.eligible ? 'Eligible for Certificate!' : 'Requirements Not Met'}
                   </span>
                 </div>
-                {eligibility.eligible && (
-                  <Button variant="primary" onClick={handleGenerateCertificate}>
-                    <Award className="w-4 h-4 mr-1" />
-                    Generate Certificate
-                  </Button>
-                )}
               </div>
               {!eligibility.eligible && (
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -304,6 +372,14 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Generate Certificate Button */}
+          {eligibility && eligibility.eligible && (
+            <Button variant="primary" onClick={handleGenerateCertificate} className="w-full mb-4">
+              <Award className="w-4 h-4 mr-2" />
+              Generate Certificate
+            </Button>
           )}
 
           {/* Certificates List */}
@@ -358,7 +434,7 @@ export default function ProfilePage() {
       <Card className="mt-6 border-accent-danger/30">
         <CardHeader>
           <CardTitle className="text-accent-danger flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
+            <X className="w-5 h-5" />
             Danger Zone
           </CardTitle>
           <CardDescription>Irreversible actions</CardDescription>
