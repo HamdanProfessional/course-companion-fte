@@ -39,10 +39,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     Dependency for FastAPI to get database session.
     Usage in endpoints:
         db: AsyncSession = Depends(get_db)
+
+    Note: This auto-commits on success and rolls back on exception.
+    For complex multi-step operations, consider managing transactions manually.
     """
     async with async_session_maker() as session:
         try:
             yield session
+            # Flush before commit to detect any constraint violations early
+            await session.flush()
             await session.commit()
         except Exception:
             await session.rollback()

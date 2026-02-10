@@ -9,9 +9,13 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.exceptions import RequestValidationError
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+import logging
+
+logger = logging.getLogger(__name__)
 
 from src.core.config import settings
 from src.core.database import init_db, close_db
@@ -77,9 +81,25 @@ async def shutdown_event():
 # Exception Handlers
 # =============================================================================
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors (422) with detailed logging."""
+    logger.error(f"Validation error on {request.method} {request.url.path}: {exc.errors()}")
+    logger.error(f"Request body: {exc.body}")
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": "Validation error",
+            "errors": exc.errors(),
+            "body": exc.body
+        }
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler."""
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": f"Internal server error: {str(exc)}"} if settings.debug else {"detail": "Internal server error"},
@@ -116,9 +136,17 @@ async def options_handler(request: Request, path: str):
     if origin in settings.cors_origins:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        # Specific headers instead of wildcard for security
+        response.headers["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, X-Requested-With, "
+            "Accept, Origin, Access-Control-Request-Method, "
+            "Access-Control-Request-Headers"
+        )
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Expose-Headers"] = "*"
+        # Only expose specific headers that are safe to expose
+        response.headers["Access-Control-Expose-Headers"] = (
+            "Content-Length, Content-Type, X-Total-Count"
+        )
     return response
 
 
@@ -243,11 +271,27 @@ async def ui_index():
 @app.get("/ui/{file_path:path}", tags=["ChatGPT UI"])
 async def ui_static_files(file_path: str):
     """Serve ChatGPT App UI static files"""
+    # Normalize path to prevent directory traversal attacks
+    # Remove any leading slashes and normalize the path
     file_path = file_path.lstrip("/")
+    # Use PurePath for cross-platform path normalization
+    from pathlib import PurePath
+    normalized_path = PurePath(file_path).as_posix()
+
+    # Check for directory traversal attempts (both Unix and Windows style)
+    if ".." in normalized_path or "\\" in normalized_path:
+        return JSONResponse(status_code=403, content={"detail": "Access denied"})
+
     static_path = UI_DIR / file_path
 
-    # Security: Prevent directory traversal
-    if ".." in file_path or not static_path.resolve().is_relative_to(UI_DIR.resolve()):
+    # Security: Double-check that resolved path is within UI_DIR
+    try:
+        resolved_path = static_path.resolve()
+        ui_dir_resolved = UI_DIR.resolve()
+        if not resolved_path.is_relative_to(ui_dir_resolved):
+            return JSONResponse(status_code=403, content={"detail": "Access denied"})
+    except (ValueError, RuntimeError):
+        # Handle cases where paths are on different drives (Windows) or other edge cases
         return JSONResponse(status_code=403, content={"detail": "Access denied"})
 
     if static_path.exists() and static_path.is_file():

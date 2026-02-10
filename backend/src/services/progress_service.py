@@ -8,6 +8,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 
 from src.models.database import Progress, Chapter, Streak
 from src.models.schemas import Progress as ProgressSchema, Streak as StreakSchema
@@ -38,16 +39,28 @@ class ProgressService:
         progress = result.scalar_one_or_none()
 
         if not progress:
-            # Create initial progress record
-            progress = Progress(
-                user_id=user_id,
-                completed_chapters=[],
-                current_chapter_id=None,
-                last_activity=datetime.utcnow(),
-            )
-            self.db.add(progress)
-            await self.db.commit()
-            await self.db.refresh(progress)
+            # Create initial progress record with race condition handling
+            # Use INSERT with ON CONFLICT to handle concurrent creation attempts
+            try:
+                progress = Progress(
+                    user_id=user_id,
+                    completed_chapters=[],
+                    current_chapter_id=None,
+                    last_activity=datetime.utcnow(),
+                )
+                self.db.add(progress)
+                await self.db.flush()  # Check for constraint violations before commit
+                await self.db.commit()
+                await self.db.refresh(progress)
+            except IntegrityError:
+                # Another request created the progress record, retry fetching it
+                await self.db.rollback()
+                result = await self.db.execute(
+                    select(Progress)
+                    .options(selectinload(Progress.current_chapter))
+                    .where(Progress.user_id == user_id)
+                )
+                progress = result.scalar_one()
 
         # Get total chapter count
         total_chapters_result = await self.db.execute(

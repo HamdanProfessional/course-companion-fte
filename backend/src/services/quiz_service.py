@@ -3,7 +3,9 @@ Quiz service business logic.
 Zero-LLM compliance: Rule-based grading only, no LLM evaluation.
 """
 
+from datetime import datetime
 from typing import List, Dict
+from uuid import UUID as UUIDType
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -122,18 +124,29 @@ class QuizService:
         for question in quiz.questions:
             question_id_str = str(question.id)
             selected_answer = submission.answers.get(question_id_str)
-            correct_answer = question.correct_answer
+            correct_answer = question.correct_answer  # String like "A"
 
             # Determine if correct
             is_correct = selected_answer == correct_answer if selected_answer else False
             if is_correct:
                 correct_count += 1
 
+            # Convert string answers to AnswerChoice enum for schema
+            # Validate that answers are valid enum values
+            valid_choices = {"A", "B", "C", "D"}
+            if selected_answer and selected_answer not in valid_choices:
+                selected_answer = "A"  # Default fallback
+            if correct_answer not in valid_choices:
+                correct_answer = "A"  # Default fallback for corrupted data
+
+            selected_choice = AnswerChoice(selected_answer) if selected_answer else AnswerChoice.A
+            correct_choice = AnswerChoice(correct_answer)
+
             results.append(QuizResultItem(
-                question_id=question_id_str,
+                question_id=question.id,  # Keep as UUID
                 question_text=question.question_text,
-                selected_answer=selected_answer or AnswerChoice.A,  # Default if not answered
-                correct_answer=correct_answer,
+                selected_answer=selected_choice,  # Now an AnswerChoice enum
+                correct_answer=correct_choice,  # Now an AnswerChoice enum
                 is_correct=is_correct,
                 explanation=question.explanation,
             ))
@@ -145,13 +158,15 @@ class QuizService:
 
         # Record attempt
         attempt = QuizAttempt(
-            user_id=user_id,
-            quiz_id=quiz_id,
+            user_id=UUIDType(user_id) if isinstance(user_id, str) else user_id,
+            quiz_id=UUIDType(quiz_id) if isinstance(quiz_id, str) else quiz_id,
             score=score,
             answers=submission.answers,
+            completed_at=datetime.utcnow()
         )
         self.db.add(attempt)
         await self.db.commit()
+        await self.db.refresh(attempt)
 
         return QuizResult(
             quiz_id=quiz_id,

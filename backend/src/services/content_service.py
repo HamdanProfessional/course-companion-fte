@@ -56,15 +56,22 @@ class ContentService:
                 content = r2_content
 
         # Build response
+        # Normalize difficulty_level: ensure it's a valid DifficultyLevel enum
+        difficulty_value = chapter.difficulty_level
+        if isinstance(difficulty_value, str):
+            difficulty_value = difficulty_value.upper()
+        else:
+            difficulty_value = str(difficulty_value).upper()
+
         chapter_detail = ChapterDetail(
             id=str(chapter.id),
             title=chapter.title,
             content=content,
             order=chapter.order,
-            difficulty_level=chapter.difficulty_level.upper(),  # Normalize to uppercase
+            difficulty_level=difficulty_value,  # Pydantic validator will convert to enum
             estimated_time=chapter.estimated_time,
             r2_content_key=chapter.r2_content_key,
-            quiz_id=str(chapter.quiz.id) if chapter.quiz else None,
+            quiz_id=str(chapter.quiz.id) if chapter.quiz and chapter.quiz.id else None,
         )
 
         # Cache for 5 minutes
@@ -92,20 +99,19 @@ class ContentService:
 
         chapter_list = []
         for chapter in chapters:
-            # Debug print to stdout
-            print(f"DEBUG: Processing chapter '{chapter.title}'")
-            print(f"DEBUG: chapter.difficulty_level = {repr(chapter.difficulty_level)}")
-            print(f"DEBUG: type = {type(chapter.difficulty_level)}")
-            print(f"DEBUG: .upper() = {repr(chapter.difficulty_level.upper())}")
-            import sys
-            sys.stdout.flush()
+            # Normalize difficulty_level
+            difficulty_value = chapter.difficulty_level
+            if isinstance(difficulty_value, str):
+                difficulty_value = difficulty_value.upper()
+            else:
+                difficulty_value = str(difficulty_value).upper()
 
             chapter_list.append(ChapterDetail(
                 id=str(chapter.id),
                 title=chapter.title,
                 content=None,  # Exclude content from list view
                 order=chapter.order,
-                difficulty_level=chapter.difficulty_level.upper(),  # Normalize to uppercase
+                difficulty_level=difficulty_value,  # Pydantic validator will convert to enum
                 estimated_time=chapter.estimated_time,
                 r2_content_key=chapter.r2_content_key,
             ))
