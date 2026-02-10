@@ -28,6 +28,7 @@ from src.services.quiz_service import QuizService
 from src.services.quiz_llm_service import grade_quiz_with_llm, generate_quiz_insights, QuizLLMServiceError
 from src.models.database import Quiz, Question, QuizAttempt, User
 from src.models.schemas import QuizWithQuestions, Question as QuestionSchema
+from src.api.dependencies import get_current_user, get_optional_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -123,10 +124,18 @@ class QuizHistoryItem(BaseModel):
 # =============================================================================
 
 
-async def check_quiz_access(quiz_id: str, user_id: UUID, db: AsyncSession) -> Quiz:
-    """Check if user can access quiz (exists and has access)."""
+async def check_quiz_access(quiz_id: str, user: User, db: AsyncSession) -> Quiz:
+    """Check if user can access quiz (exists and has access). Returns the quiz if valid."""
+    try:
+        quiz_uuid = UUID(quiz_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid quiz ID format: '{quiz_id}'. Expected UUID format."
+        )
+
     result = await db.execute(
-        select(Quiz).where(Quiz.id == UUID(quiz_id))
+        select(Quiz).where(Quiz.id == quiz_uuid)
     )
     quiz = result.scalar_one_or_none()
 
@@ -141,20 +150,15 @@ async def check_quiz_access(quiz_id: str, user_id: UUID, db: AsyncSession) -> Qu
     content_service = ContentService(db)
     chapter = await content_service.get_chapter_content(str(quiz.chapter_id))
 
-    if chapter and chapter.order >= 4:
-        # Check user tier
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-
-        if user and user.tier == "FREE":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "detail": "Premium subscription required for this quiz",
-                    "tier": user.tier,
-                    "required_chapter_order": chapter.order
-                }
-            )
+    if chapter and chapter.order >= 4 and user.tier == "FREE":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "detail": "Premium subscription required for this quiz",
+                "tier": user.tier,
+                "required_chapter_order": chapter.order
+            }
+        )
 
     return quiz
 
@@ -167,7 +171,7 @@ async def check_quiz_access(quiz_id: str, user_id: UUID, db: AsyncSession) -> Qu
 @router.get("/by-chapter/{chapter_id}", response_model=QuizDetail)
 async def get_quiz_by_chapter(
     chapter_id: str,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -177,10 +181,20 @@ async def get_quiz_by_chapter(
     Does not include correct answers (to prevent cheating).
 
     **Phase 3 Enhancement**: Includes question types and metadata.
+
+    **Authentication**: Optional - Guest users can view quiz questions but need auth to submit.
     """
     try:
+        chapter_uuid = UUID(chapter_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid chapter ID format: '{chapter_id}'. Expected UUID format."
+        )
+
+    try:
         result = await db.execute(
-            select(Quiz).where(Quiz.chapter_id == UUID(chapter_id))
+            select(Quiz).where(Quiz.chapter_id == chapter_uuid)
         )
         quiz = result.scalar_one_or_none()
 
@@ -233,7 +247,7 @@ async def get_quiz_by_chapter(
 async def submit_quiz(
     quiz_id: str,
     submission: QuizSubmission,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -257,17 +271,14 @@ async def submit_quiz(
        - Partial credit for nuanced answers
 
     **Phase 3 Enhancement**: LLM grading is the default for premium users.
+
+    **Authentication**: Required - Users must be logged in to submit quizzes.
     """
     try:
-        # Check access
-        await check_quiz_access(quiz_id, user_id, db)
+        # Check access and get quiz (includes UUID validation)
+        quiz = await check_quiz_access(quiz_id, current_user, db)
 
-        # Get quiz and questions
-        result = await db.execute(
-            select(Quiz).where(Quiz.id == UUID(quiz_id))
-        )
-        quiz = result.scalar_one_or_none()
-
+        # Get questions
         result = await db.execute(
             select(Question)
             .where(Question.quiz_id == quiz.id)
@@ -283,10 +294,7 @@ async def submit_quiz(
 
         if use_llm:
             # Check premium access for LLM features
-            result = await db.execute(select(User).where(User.id == user_id))
-            user = result.scalar_one_or_none()
-
-            if user.tier == "FREE":
+            if current_user.tier == "FREE":
                 # Downgrade to auto for free users
                 grading_mode = "auto"
                 use_llm = False
@@ -296,7 +304,7 @@ async def submit_quiz(
             # Use LLM grading service
             llm_result = await grade_quiz_with_llm(
                 quiz_id,
-                str(user_id),
+                str(current_user.id),
                 submission.answers,
                 db
             )
@@ -305,8 +313,8 @@ async def submit_quiz(
             attempt_id = uuid.uuid4()
             attempt = QuizAttempt(
                 id=attempt_id,
-                user_id=user_id,
-                quiz_id=UUID(quiz_id),
+                user_id=current_user.id,
+                quiz_id=quiz.id,  # Use quiz.id instead of parsing UUID again
                 score=int(llm_result.percentage),
                 answers=submission.answers,
                 completed_at=datetime.utcnow()
@@ -345,42 +353,51 @@ async def submit_quiz(
         else:
             # Rule-based grading (Phase 1 method)
             service = QuizService(db)
-            result = await service.submit_quiz(
-                UUID(quiz_id),
-                user_id,
-                submission.answers
+
+            # Create submission object
+            from src.models.schemas import QuizSubmission as QuizSubmissionSchema
+            quiz_submission = QuizSubmissionSchema(
+                answers=submission.answers
+            )
+
+            result = await service.grade_quiz(
+                quiz_id,
+                str(current_user.id),
+                quiz_submission
             )
 
             # Get question details for results
             question_map = {str(q.id): q for q in questions}
 
             results = []
-            for q_id, q_result in result.results.items():
-                q = question_map.get(q_id)
-                if q:
-                    results.append(QuestionResult(
-                        question_id=q_id,
-                        question_text=q.question_text,
-                        selected_answer=q_result.get("selected_answer", ""),
-                        correct_answer=q.correct_answer.value,
-                        is_correct=q_result.get("is_correct", False),
-                        points_earned=10 if q_result.get("is_correct") else 0,
-                        max_points=10,
-                        explanation=q.explanation
-                    ))
+            for q_result in result.results:
+                # Convert AnswerChoice enum to string for frontend
+                selected_str = q_result.selected_answer.value if q_result.selected_answer else ""
+                correct_str = q_result.correct_answer.value if q_result.correct_answer else None
+
+                results.append(QuestionResult(
+                    question_id=str(q_result.question_id),
+                    question_text=q_result.question_text,
+                    selected_answer=selected_str,
+                    correct_answer=correct_str,
+                    is_correct=q_result.is_correct,
+                    points_earned=10 if q_result.is_correct else 0,
+                    max_points=10,
+                    explanation=q_result.explanation
+                ))
 
             # Get attempt ID
             attempt_result = await db.execute(
                 select(QuizAttempt)
-                .where(QuizAttempt.user_id == user_id)
-                .where(QuizAttempt.quiz_id == UUID(quiz_id))
+                .where(QuizAttempt.user_id == current_user.id)
+                .where(QuizAttempt.quiz_id == quiz.id)  # Use quiz.id
                 .order_by(QuizAttempt.completed_at.desc())
                 .limit(1)
             )
             attempt = attempt_result.scalar_one_or_none()
 
             return QuizGradingResult(
-                quiz_id=quiz_id,
+                quiz_id=str(result.quiz_id),
                 attempt_id=str(attempt.id) if attempt else "",
                 total_score=result.score,
                 max_score=100,
@@ -388,7 +405,7 @@ async def submit_quiz(
                 passed=result.passed,
                 grading_mode="auto",
                 results=results,
-                summary="Quiz completed successfully." if result.passed else "Keep practicing! Review the material and try again.",
+                summary="Quiz completed successfully!" if result.passed else "Keep practicing! Review the material and try again.",
                 completed_at=attempt.completed_at if attempt else datetime.utcnow()
             )
 
@@ -411,7 +428,7 @@ async def submit_quiz(
 @router.get("/{quiz_id}/insights", response_model=QuizInsights)
 async def get_quiz_insights(
     quiz_id: str,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -424,13 +441,24 @@ async def get_quiz_insights(
     - Encouragement
 
     **Phase 3 Feature**: Requires at least 2 attempts and LLM enabled.
+
+    **Authentication**: Required - Users must be logged in to view their insights.
     """
     try:
+        # Validate quiz_id format
+        try:
+            quiz_uuid = UUID(quiz_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid quiz ID format: '{quiz_id}'. Expected UUID format."
+            )
+
         # Get attempts
         result = await db.execute(
             select(QuizAttempt)
-            .where(QuizAttempt.user_id == user_id)
-            .where(QuizAttempt.quiz_id == UUID(quiz_id))
+            .where(QuizAttempt.user_id == current_user.id)
+            .where(QuizAttempt.quiz_id == quiz_uuid)
             .order_by(QuizAttempt.completed_at)
         )
         attempts = result.scalars().all()
@@ -490,7 +518,7 @@ async def get_quiz_insights(
 @router.get("/{quiz_id}/history", response_model=List[QuizHistoryItem])
 async def get_quiz_history(
     quiz_id: str,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     limit: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_db)
 ):
@@ -498,12 +526,23 @@ async def get_quiz_history(
     Get user's quiz attempt history.
 
     **Phase 3 Enhancement**: Shows score progression over time.
+
+    **Authentication**: Required - Users must be logged in to view their history.
     """
     try:
+        # Validate quiz_id format
+        try:
+            quiz_uuid = UUID(quiz_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid quiz ID format: '{quiz_id}'. Expected UUID format."
+            )
+
         result = await db.execute(
             select(QuizAttempt)
-            .where(QuizAttempt.user_id == user_id)
-            .where(QuizAttempt.quiz_id == UUID(quiz_id))
+            .where(QuizAttempt.user_id == current_user.id)
+            .where(QuizAttempt.quiz_id == quiz_uuid)
             .order_by(QuizAttempt.completed_at.desc())
             .limit(limit)
         )

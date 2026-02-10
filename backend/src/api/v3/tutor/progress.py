@@ -24,8 +24,9 @@ from sqlalchemy import select, func
 
 from src.core.database import get_db
 from src.services.progress_service import ProgressService
-from src.models.database import Progress as UserProgress, Streak as UserStreak, QuizAttempt
+from src.models.database import Progress as UserProgress, Streak as UserStreak, QuizAttempt, User
 from src.models.schemas import Progress
+from src.api.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -138,70 +139,70 @@ ACHIEVEMENTS = {
         id="first_chapter",
         name="First Steps",
         description="Complete your first chapter",
-        icon="📖",
+        icon="Book",
         rarity="common"
     ),
     "first_quiz": AchievementItem(
         id="first_quiz",
         name="Quiz Novice",
         description="Complete your first quiz",
-        icon="✏️",
+        icon="Edit",
         rarity="common"
     ),
     "streak_3": AchievementItem(
         id="streak_3",
         name="On Fire",
         description="Maintain a 3-day learning streak",
-        icon="🔥",
+        icon="Flame",
         rarity="common"
     ),
     "streak_7": AchievementItem(
         id="streak_7",
         name="Dedicated Learner",
         description="Maintain a 7-day learning streak",
-        icon="💪",
+        icon="Trophy",
         rarity="rare"
     ),
     "streak_30": AchievementItem(
         id="streak_30",
         name="Month Master",
         description="Maintain a 30-day learning streak",
-        icon="🏆",
+        icon="Award",
         rarity="epic"
     ),
     "perfect_score": AchievementItem(
         id="perfect_score",
         name="Perfectionist",
         description="Score 100% on any quiz",
-        icon="💯",
+        icon="Star",
         rarity="rare"
     ),
     "half_course": AchievementItem(
         id="half_course",
         name="Halfway There",
         description="Complete 50% of the course",
-        icon="🎯",
+        icon="Target",
         rarity="rare"
     ),
     "full_course": AchievementItem(
         id="full_course",
         name="Course Master",
         description="Complete 100% of the course",
-        icon="🎓",
+        icon="GraduationCap",
         rarity="legendary"
     ),
     "speed_demon": AchievementItem(
         id="speed_demon",
         name="Speed Demon",
         description="Complete a chapter in under 10 minutes",
-        icon="⚡",
+        icon="Zap",
         rarity="rare"
     ),
     "knowledge_seeker": AchievementItem(
         id="knowledge_seeker",
         name="Knowledge Seeker",
         description="Take 10 quizzes",
-        icon="🧠",
+        icon="Lightbulb",
         rarity="rare"
     ),
 }
@@ -274,7 +275,7 @@ async def check_and_unlock_achievements(
 
 @router.get("/summary", response_model=ProgressSummary)
 async def get_progress_summary(
-    user_id: str = Query(description="User UUID (as string)"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -288,19 +289,15 @@ async def get_progress_summary(
     - Achievement progress
 
     **Phase 3 Enhancement**: Comprehensive progress dashboard.
+
+    **Authentication**: Required - Users must be logged in to view their progress.
     """
     try:
-        # Convert string to UUID
-        try:
-            user_uuid = UUID(user_id)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid user_id format: {user_id}"
-            )
+        user_uuid = current_user.id
+
         # Get user progress
         result = await db.execute(
-            select(UserProgress).where(UserProgress.user_id == user_id)
+            select(UserProgress).where(UserProgress.user_id == user_uuid)
         )
         user_progress = result.scalar_one_or_none()
 
@@ -311,14 +308,14 @@ async def get_progress_summary(
 
         # Get streak
         result = await db.execute(
-            select(UserStreak).where(UserStreak.user_id == user_id)
+            select(UserStreak).where(UserStreak.user_id == user_uuid)
         )
         user_streak = result.scalar_one_or_none()
 
         # Get quiz stats
         result = await db.execute(
             select(func.count(QuizAttempt.id), func.avg(QuizAttempt.score))
-            .where(QuizAttempt.user_id == user_id)
+            .where(QuizAttempt.user_id == user_uuid)
         )
         quiz_stats = result.first()
         total_quizzes = quiz_stats[0] or 0
@@ -331,7 +328,8 @@ async def get_progress_summary(
 
         if user_progress:
             completed_chapters = user_progress.completed_chapters or []
-            completion_pct = user_progress.completion_percentage
+            # Calculate completion percentage dynamically
+            completion_pct = (len(completed_chapters) / total_chapters * 100) if total_chapters > 0 else 0.0
             current_chapter = str(user_progress.current_chapter_id) if user_progress.current_chapter_id else None
             last_activity = user_progress.last_activity
 
@@ -339,7 +337,7 @@ async def get_progress_summary(
         longest_streak = user_streak.longest_streak if user_streak else 0
 
         return ProgressSummary(
-            user_id=str(user_id),
+            user_id=str(current_user.id),
             completion_percentage=completion_pct,
             completed_chapters=completed_chapters,
             total_chapters=total_chapters,
@@ -363,7 +361,7 @@ async def get_progress_summary(
 
 @router.get("/chapters", response_model=List[ChapterProgress])
 async def get_chapters_progress(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -372,8 +370,12 @@ async def get_chapters_progress(
     Returns completion status and quiz performance for each chapter.
 
     **Phase 3 Enhancement**: Detailed chapter-by-chapter progress.
+
+    **Authentication**: Required - Users must be logged in to view their progress.
     """
     try:
+        user_uuid = current_user.id
+
         from src.models.database import Chapter, Quiz
 
         # Get all chapters
@@ -384,7 +386,7 @@ async def get_chapters_progress(
 
         # Get user progress
         result = await db.execute(
-            select(UserProgress).where(UserProgress.user_id == user_id)
+            select(UserProgress).where(UserProgress.user_id == user_uuid)
         )
         user_progress = result.scalar_one_or_none()
 
@@ -411,7 +413,7 @@ async def get_chapters_progress(
                 result = await db.execute(
                     select(func.max(QuizAttempt.score))
                     .where(QuizAttempt.quiz_id == quiz.id)
-                    .where(QuizAttempt.user_id == user_id)
+                    .where(QuizAttempt.user_id == user_uuid)
                 )
                 score = result.scalar()
                 quiz_taken = score is not None
@@ -440,7 +442,7 @@ async def get_chapters_progress(
 @router.post("/update", response_model=Progress)
 async def update_progress(
     request: ProgressUpdateRequest,
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -452,21 +454,34 @@ async def update_progress(
     - Celebration if new achievement unlocked
 
     **Phase 3 Enhancement**: Gamification triggers on progress update.
+
+    **Authentication**: Required - Users must be logged in to update progress.
     """
     try:
         service = ProgressService(db)
 
+        # Validate chapter_id format
+        try:
+            chapter_uuid = UUID(request.chapter_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid chapter ID format: '{request.chapter_id}'. Expected UUID format."
+            )
+
         # Update progress
         progress = await service.mark_chapter_complete(
-            user_id,
-            UUID(request.chapter_id)
+            current_user.id,
+            chapter_uuid
         )
 
         # Check for achievements
-        new_achievements = await check_and_unlock_achievements(user_id, db)
+        new_achievements = await check_and_unlock_achievements(current_user.id, db)
 
         return progress
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating progress: {e}")
         raise HTTPException(
@@ -477,7 +492,7 @@ async def update_progress(
 
 @router.get("/streak/calendar", response_model=StreakCalendar)
 async def get_streak_calendar(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     year: int = Query(default=None, description="Year (default current)"),
     month: int = Query(default=None, description="Month (default current)"),
     db: AsyncSession = Depends(get_db)
@@ -488,8 +503,12 @@ async def get_streak_calendar(
     Shows active learning days and streak information.
 
     **Phase 3 Enhancement**: Visual calendar for gamification.
+
+    **Authentication**: Required - Users must be logged in to view their streak.
     """
     try:
+        user_uuid = current_user.id
+
         from datetime import date
         import calendar
 
@@ -500,7 +519,7 @@ async def get_streak_calendar(
 
         # Get user streak
         result = await db.execute(
-            select(UserStreak).where(UserStreak.user_id == user_id)
+            select(UserStreak).where(UserStreak.user_id == user_uuid)
         )
         user_streak = result.scalar_one_or_none()
 
@@ -539,7 +558,7 @@ async def get_streak_calendar(
 
 @router.get("/quiz-scores", response_model=List[ScoreHistoryItem])
 async def get_score_history(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     limit: int = Query(30, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ):
@@ -547,13 +566,17 @@ async def get_score_history(
     Get quiz score history for charts.
 
     **Phase 3 Enhancement**: Performance visualization data.
+
+    **Authentication**: Required - Users must be logged in to view their history.
     """
     try:
+        user_uuid = current_user.id
+
         from src.models.database import Quiz
 
         result = await db.execute(
             select(QuizAttempt)
-            .where(QuizAttempt.user_id == user_id)
+            .where(QuizAttempt.user_id == user_uuid)
             .join(Quiz, QuizAttempt.quiz_id == Quiz.id)
             .order_by(QuizAttempt.completed_at.desc())
             .limit(limit)
@@ -583,17 +606,19 @@ async def get_score_history(
 
 @router.get("/achievements", response_model=List[AchievementItem])
 async def get_achievements(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Get all achievements and their unlock status.
 
     **Phase 3 Enhancement**: Gamification achievement system.
+
+    **Authentication**: Required - Users must be logged in to view their achievements.
     """
     try:
         # Check which achievements are unlocked
-        unlocked = await check_and_unlock_achievements(user_id, db)
+        unlocked = await check_and_unlock_achievements(current_user.id, db)
 
         # Get all achievement definitions with unlock status
         achievements = []
@@ -620,20 +645,22 @@ async def get_achievements(
 
 @router.post("/checkin")
 async def daily_checkin(
-    user_id: UUID = Query(description="User UUID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Record daily checkin for streak tracking.
 
     **Phase 3 Enhancement**: Daily engagement tracking.
+
+    **Authentication**: Required - Users must be logged in to check in.
     """
     try:
         service = ProgressService(db)
-        streak = await service.update_streak(user_id)
+        streak = await service.update_streak(current_user.id)
 
         # Check for streak achievements
-        new_achievements = await check_and_unlock_achievements(user_id, db)
+        new_achievements = await check_and_unlock_achievements(current_user.id, db)
 
         return {
             "streak_updated": True,
