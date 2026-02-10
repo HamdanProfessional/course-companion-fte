@@ -167,8 +167,9 @@ class Settings(BaseSettings):
         """Validate JWT secret is not default in production."""
         # Check if using default insecure secret
         if v in ["change-this-secret-in-production", "change-this-secret", "secret"]:
-            # Allow default only in debug mode
-            if not os.getenv("DEBUG", "").lower() in ["true", "1", "yes"]:
+            # Allow default only in debug mode (case-insensitive check)
+            debug_value = os.getenv("DEBUG", "").strip().lower()
+            if debug_value not in ["true", "1", "yes", "on"]:
                 raise ValueError(
                     "Insecure JWT secret detected. Please set a strong JWT_SECRET "
                     "environment variable with at least 32 characters."

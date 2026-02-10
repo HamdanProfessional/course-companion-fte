@@ -4,10 +4,14 @@ Zero-LLM compliance: Static content storage only, no LLM services.
 """
 
 import boto3
+import logging
 from botocore.client import Config
+from botocore.exceptions import BotoCoreError, ClientError
 from typing import Optional
 
 from src.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class R2Client:
@@ -64,9 +68,10 @@ class R2Client:
             response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
             return response["Body"].read().decode("utf-8")
         except self.s3_client.exceptions.NoSuchKey:
+            logger.debug(f"Key not found in R2: {key}")
             return None
-        except Exception as e:
-            print(f"Error retrieving from R2: {e}")
+        except (ClientError, BotoCoreError) as e:
+            logger.error(f"R2 client error retrieving key '{key}': {e}")
             return None
 
     def put_object(self, key: str, content: str, content_type: str = "text/markdown") -> bool:
@@ -89,8 +94,8 @@ class R2Client:
                 ContentType=content_type
             )
             return True
-        except Exception as e:
-            print(f"Error storing to R2: {e}")
+        except (ClientError, BotoCoreError) as e:
+            logger.error(f"R2 client error storing key '{key}': {e}")
             return False
 
     def delete_object(self, key: str) -> bool:
@@ -106,8 +111,8 @@ class R2Client:
         try:
             self.s3_client.delete_object(Bucket=self.bucket_name, Key=key)
             return True
-        except Exception as e:
-            print(f"Error deleting from R2: {e}")
+        except (ClientError, BotoCoreError) as e:
+            logger.error(f"R2 client error deleting key '{key}': {e}")
             return False
 
     def list_objects(self, prefix: str = "") -> list:
@@ -126,8 +131,8 @@ class R2Client:
                 Prefix=prefix
             )
             return [obj["Key"] for obj in response.get("Contents", [])]
-        except Exception as e:
-            print(f"Error listing R2 objects: {e}")
+        except (ClientError, BotoCoreError) as e:
+            logger.error(f"R2 client error listing objects with prefix '{prefix}': {e}")
             return []
 
 

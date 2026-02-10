@@ -54,15 +54,22 @@ class AnswerChoice(str, Enum):
 class UserCreate(BaseModel):
     """Schema for user registration."""
     email: EmailStr
-    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="Password must be at least 8 characters with letters, numbers, and special characters"
+    )
 
     @validator("password")
     def validate_password(cls, v):
-        """Ensure password has at least one letter and one number."""
+        """Ensure password meets security requirements."""
         if not any(c.isalpha() for c in v):
             raise ValueError("Password must contain at least one letter")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
+        if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in v):
+            raise ValueError("Password must contain at least one special character")
         return v
 
 
