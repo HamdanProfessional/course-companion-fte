@@ -35,7 +35,7 @@ export default function ProfilePage() {
   const { data: plans, isLoading: plansLoading } = useV3SubscriptionPlans();
   const upgradeTier = useV3UpgradeTier();
 
-  const isFree = !user || user.tier === 'free';
+  const isFree = !user || user.tier === 'FREE';
   const currentTier = subscription?.current_tier || 'FREE';
 
   const fetchCertificates = async () => {
