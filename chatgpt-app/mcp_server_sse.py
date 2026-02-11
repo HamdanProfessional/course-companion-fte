@@ -234,7 +234,7 @@ async def list_tools() -> list[Tool]:
     return [
         Tool(
             name="list_chapters",
-            description="List all available course chapters with their IDs, titles, and difficulty levels. Use this to find chapter IDs for getting content or quizzes.",
+            description="Use this when the student asks to browse course content, see available chapters, or find learning materials. Returns chapter IDs, titles, difficulty levels, and estimated time.",
             inputSchema={
                 "type": "object",
                 "properties": {},
@@ -243,13 +243,13 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_chapter",
-            description="Get full chapter content including text, examples, and key concepts. Use chapter_id from list_chapters.",
+            description="Use this when the student asks to read a chapter, view content, or access learning materials for a specific topic. Returns full chapter content with text, examples, and key concepts.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "chapter_id": {
                         "type": "string",
-                        "description": "Chapter ID to get content for (e.g., from list_chapters)"
+                        "description": "Chapter ID to get content for (obtained from list_chapters)"
                     }
                 },
                 "required": ["chapter_id"]
@@ -257,13 +257,13 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_quiz",
-            description="Get quiz questions for a chapter and load interactive UI widget. Shows a React quiz component in ChatGPT. Use chapter_id from list_chapters or list_quizzes.",
+            description="Use this when the student asks to take a quiz, practice questions, or test their knowledge. Loads an interactive quiz widget in ChatGPT for immediate practice.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "chapter_id": {
                         "type": "string",
-                        "description": "Chapter ID to get quiz for"
+                        "description": "Chapter ID to get quiz for (obtained from list_chapters or list_quizzes)"
                     }
                 },
                 "required": ["chapter_id"]
@@ -271,7 +271,7 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="list_quizzes",
-            description="List all available quizzes organized by chapter. Returns chapter IDs that can be used with get_quiz.",
+            description="Use this when the student asks what quizzes are available or wants to see practice options. Returns chapter IDs with associated quizzes.",
             inputSchema={
                 "type": "object",
                 "properties": {},
@@ -280,13 +280,13 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_progress",
-            description="Get user's learning progress including completed chapters, quiz scores, and streak. Requires user_id.",
+            description="Use this when the student asks about their progress, learning stats, completion status, or streak information. Requires user ID from authenticated session.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "user_id": {
                         "type": "string",
-                        "description": "User ID (UUID format)"
+                        "description": "User ID (UUID format, obtained from authentication)"
                     }
                 },
                 "required": ["user_id"]
@@ -294,17 +294,17 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="search_content",
-            description="Search course content by keywords across all chapters.",
+            description="Use this when the student asks to find information about a specific topic across all course materials. Searches chapters, examples, and key concepts.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query (e.g., 'MCP', 'neural networks', 'FastAPI')"
+                        "description": "Search query topic (e.g., 'MCP', 'neural networks', 'FastAPI')"
                     },
                     "limit": {
                         "type": "number",
-                        "description": "Maximum results (default: 5)",
+                        "description": "Maximum results to return",
                         "default": 5
                     }
                 },
