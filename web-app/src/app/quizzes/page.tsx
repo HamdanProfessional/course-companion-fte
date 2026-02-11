@@ -55,18 +55,23 @@ export default function QuizzesPage() {
   }
 
   const completedChapters = new Set(progress?.completed_chapters || []);
-  const completedQuizzes = new Set(progress?.completed_quizzes || []);
 
-  // Get best score for each quiz
+  // Get best score for each quiz (score >= 70 is considered completed)
   const getQuizScore = (quizId: string) => {
     const attempt = progress?.quiz_attempts?.find((a: any) => a.quiz_id === quizId);
-    return attempt?.best_score || null;
+    return attempt?.score || null;
+  };
+
+  // Check if quiz is completed (attempt exists with score >= 70)
+  const isQuizCompleted = (quizId: string) => {
+    const attempt = progress?.quiz_attempts?.find((a: any) => a.quiz_id === quizId);
+    return attempt?.score >= 70;
   };
 
   // Filter quizzes
   const filteredQuizzes = quizzes?.filter((quiz) => {
     const chapter = chapters?.find((ch) => ch.id === quiz.chapter_id);
-    const isCompleted = completedQuizzes.has(quiz.id);
+    const isCompleted = isQuizCompleted(quiz.id);
     const isLocked = tier === 'FREE' && chapter && chapters.indexOf(chapter) >= 3;
     const matchesSearch = searchQuery === '' ||
       quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,9 +98,9 @@ export default function QuizzesPage() {
     return badges[level.toLowerCase() as keyof typeof badges] || badges.beginner;
   };
 
-  // Calculate quiz stats
+  // Calculate quiz stats (completed = quiz_taken with score >= 70)
   const totalQuizzes = quizzes?.length || 0;
-  const completedCount = completedQuizzes.size;
+  const completedCount = quizzes?.filter((quiz) => isQuizCompleted(quiz.id)).length || 0;
   const completionPercent = totalQuizzes > 0 ? Math.round((completedCount / totalQuizzes) * 100) : 0;
 
   return (
@@ -165,7 +170,7 @@ export default function QuizzesPage() {
             return (
               <Card
                 key={quiz.id}
-                variant={isCompleted ? 'elevated' : 'default'}
+                variant={isQuizCompleted(quiz.id) ? 'elevated' : 'default'}
                 className="group transition-all duration-300 hover:shadow-lg"
               >
                 <CardHeader>
@@ -175,7 +180,7 @@ export default function QuizzesPage() {
                         <span className="text-xs font-bold text-text-secondary bg-bg-elevated px-2 py-1 rounded-md">
                           #{chapterIndex + 1}
                         </span>
-                        {isCompleted && (
+                        {isQuizCompleted(quiz.id) && (
                           <Badge variant="success" className="gap-1">
                             <Check className="w-3 h-3" />
                             Completed
@@ -192,7 +197,7 @@ export default function QuizzesPage() {
                       )}
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                      {isLocked ? <Lock className="w-6 h-6 text-text-muted" /> : isCompleted ? <Trophy className="w-6 h-6 text-accent-warning" /> : <FileEdit className="w-6 h-6 text-cosmic-primary" />}
+                      {isLocked ? <Lock className="w-6 h-6 text-text-muted" /> : isQuizCompleted(quiz.id) ? <Trophy className="w-6 h-6 text-accent-warning" /> : <FileEdit className="w-6 h-6 text-cosmic-primary" />}
                     </div>
                   </div>
 
@@ -236,7 +241,7 @@ export default function QuizzesPage() {
                         {bestScore !== null && (
                           <div className="bg-bg-elevated/50 rounded-lg p-3">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs text-text-muted">Best Score</span>
+                              <span className="text-xs text-text-muted">Score</span>
                               <span className={`text-sm font-bold ${bestScore >= 70 ? 'text-accent-success' : 'text-accent-warning'}`}>
                                 {bestScore}%
                               </span>
@@ -246,10 +251,10 @@ export default function QuizzesPage() {
                         )}
                         <Link href={`/quizzes/${quiz.id}`} className="block">
                           <Button
-                            variant={isCompleted ? 'outline' : 'primary'}
+                            variant={isQuizCompleted(quiz.id) ? 'outline' : 'primary'}
                             className="w-full gap-2"
                           >
-                            {isCompleted ? <><Trophy className="w-4 h-4" /> Retake Quiz</> : <><Play className="w-4 h-4" /> Start Quiz</>}
+                            {isQuizCompleted(quiz.id) ? <><Trophy className="w-4 h-4" /> Retake Quiz</> : <><Play className="w-4 h-4" /> Start Quiz</>}
                           </Button>
                         </Link>
                       </>
