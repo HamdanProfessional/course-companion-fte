@@ -52,15 +52,53 @@ class BackendClient:
         if self.client:
             await self.client.aclose()
 
-    async def get_quiz(self, quiz_id: str) -> Dict[str, Any]:
-        """Get quiz by ID from backend."""
-        response = await self.client.get(f"{self.base_url}/api/v1/quizzes/{quiz_id}")
+    async def get_chapters(self) -> list[Dict[str, Any]]:
+        """Get all chapters from backend (v3 API)."""
+        response = await self.client.get(f"{self.base_url}/api/v3/tutor/chapters")
         response.raise_for_status()
         return response.json()
 
-    async def list_quizzes(self) -> list[Dict[str, Any]]:
-        """List all quizzes."""
-        response = await self.client.get(f"{self.base_url}/api/v1/quizzes")
+    async def get_chapter(self, chapter_id: str) -> Dict[str, Any]:
+        """Get chapter by ID from backend (v3 API)."""
+        response = await self.client.get(f"{self.base_url}/api/v3/tutor/chapters/{chapter_id}")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_quiz_by_id(self, quiz_id: str) -> Dict[str, Any]:
+        """Get quiz by ID from backend (v3 API)."""
+        response = await self.client.get(f"{self.base_url}/api/v3/tutor/quizzes/by-chapter/{quiz_id}")
+        response.raise_for_status()
+        return response.json()
+
+    async def list_all_quizzes(self) -> list[Dict[str, Any]]:
+        """List all available chapters with quizzes (v3 API)."""
+        # First get all chapters
+        chapters = await self.get_chapters()
+
+        # Filter chapters that have quizzes
+        quizzes = []
+        for chapter in chapters:
+            if chapter.get("has_quiz"):
+                quizzes.append({
+                    "id": chapter["id"],
+                    "title": chapter["title"],
+                    "difficulty": chapter.get("difficulty_level", "intermediate"),
+                    "order": chapter.get("order", 0)
+                })
+        return quizzes
+
+    async def get_progress(self, user_id: str) -> Dict[str, Any]:
+        """Get user progress from backend (v3 API)."""
+        response = await self.client.get(f"{self.base_url}/api/v3/tutor/progress/{user_id}")
+        response.raise_for_status()
+        return response.json()
+
+    async def search_content(self, query: str, limit: int = 5) -> list[Dict[str, Any]]:
+        """Search chapters and content by keywords."""
+        response = await self.client.get(
+            f"{self.base_url}/api/v1/search",
+            params={"q": query, "limit": limit}
+        )
         response.raise_for_status()
         return response.json()
 
@@ -97,39 +135,85 @@ def create_widget_response(content: str) -> Dict[str, Any]:
     }
 
 
-async def get_quiz_tool(quiz_id: str) -> Dict[str, Any]:
-    """Get quiz and return with widget metadata."""
-    if not quiz_id:
-        raise ValueError("quiz_id is required")
+async def get_chapter_tool(chapter_id: str) -> Dict[str, Any]:
+    """Get chapter content."""
+    if not chapter_id:
+        raise ValueError("chapter_id is required")
 
-    logger.info(f"Fetching quiz: {quiz_id}")
+    logger.info(f"Fetching chapter: {chapter_id}")
 
     async with BackendClient(BACKEND_URL) as backend:
-        quiz_data = await backend.get_quiz(quiz_id)
+        chapter_data = await backend.get_chapter(chapter_id)
+        content = json.dumps(chapter_data, indent=2)
+        return {"content": [{"type": "text", "text": content}]}
+
+
+async def list_chapters_tool() -> Dict[str, Any]:
+    """List all available chapters."""
+    logger.info("Listing chapters")
+
+    async with BackendClient(BACKEND_URL) as backend:
+        chapters = await backend.get_chapters()
+
+        result = {
+            "chapters": [
+                {
+                    "id": c.get("id"),
+                    "title": c.get("title"),
+                    "order": c.get("order"),
+                    "difficulty": c.get("difficulty_level", "intermediate"),
+                    "has_quiz": c.get("has_quiz", False),
+                    "estimated_time": c.get("estimated_time", 30)
+                }
+                for c in chapters
+            ],
+            "total": len(chapters)
+        }
+
+        content = json.dumps(result, indent=2)
+        return {"content": [{"type": "text", "text": content}]}
+
+
+async def get_quiz_tool(chapter_id: str) -> Dict[str, Any]:
+    """Get quiz for a chapter and return with widget metadata."""
+    if not chapter_id:
+        raise ValueError("chapter_id is required")
+
+    logger.info(f"Fetching quiz for chapter: {chapter_id}")
+
+    async with BackendClient(BACKEND_URL) as backend:
+        quiz_data = await backend.get_quiz_by_id(chapter_id)
         content = json.dumps(quiz_data, indent=2)
         return create_widget_response(content)
 
 
 async def list_quizzes_tool() -> Dict[str, Any]:
-    """List all available quizzes."""
+    """List all available quizzes (by chapter)."""
     logger.info("Listing quizzes")
 
     async with BackendClient(BACKEND_URL) as backend:
-        quizzes = await backend.list_quizzes()
+        quizzes = await backend.list_all_quizzes()
 
         result = {
-            "quizzes": [
-                {
-                    "id": q["id"],
-                    "title": q["title"],
-                    "difficulty": q["difficulty"],
-                    "question_count": len(q.get("questions", [])),
-                }
-                for q in quizzes
-            ]
+            "quizzes": quizzes,
+            "total": len(quizzes),
+            "note": "Each quiz is associated with a chapter. Use the chapter ID to get the full quiz."
         }
 
         content = json.dumps(result, indent=2)
+        return {"content": [{"type": "text", "text": content}]}
+
+
+async def get_progress_tool(user_id: str) -> Dict[str, Any]:
+    """Get user progress."""
+    if not user_id:
+        raise ValueError("user_id is required")
+
+    logger.info(f"Fetching progress for user: {user_id}")
+
+    async with BackendClient(BACKEND_URL) as backend:
+        progress_data = await backend.get_progress(user_id)
+        content = json.dumps(progress_data, indent=2)
         return {"content": [{"type": "text", "text": content}]}
 
 
@@ -149,22 +233,8 @@ async def list_tools() -> list[Tool]:
     """List available MCP tools."""
     return [
         Tool(
-            name="get_quiz",
-            description="Get quiz questions and load interactive UI widget. Shows a React quiz component in ChatGPT.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "quiz_id": {
-                        "type": "string",
-                        "description": "Quiz ID (e.g., '45e2efd0-8065-4d10-9bf4-19408e3a73fb')"
-                    }
-                },
-                "required": ["quiz_id"]
-            }
-        ),
-        Tool(
-            name="list_quizzes",
-            description="List all available quizzes with their IDs",
+            name="list_chapters",
+            description="List all available course chapters with their IDs, titles, and difficulty levels. Use this to find chapter IDs for getting content or quizzes.",
             inputSchema={
                 "type": "object",
                 "properties": {},
@@ -172,14 +242,65 @@ async def list_tools() -> list[Tool]:
             }
         ),
         Tool(
+            name="get_chapter",
+            description="Get full chapter content including text, examples, and key concepts. Use chapter_id from list_chapters.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "chapter_id": {
+                        "type": "string",
+                        "description": "Chapter ID to get content for (e.g., from list_chapters)"
+                    }
+                },
+                "required": ["chapter_id"]
+            }
+        ),
+        Tool(
+            name="get_quiz",
+            description="Get quiz questions for a chapter and load interactive UI widget. Shows a React quiz component in ChatGPT. Use chapter_id from list_chapters or list_quizzes.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "chapter_id": {
+                        "type": "string",
+                        "description": "Chapter ID to get quiz for"
+                    }
+                },
+                "required": ["chapter_id"]
+            }
+        ),
+        Tool(
+            name="list_quizzes",
+            description="List all available quizzes organized by chapter. Returns chapter IDs that can be used with get_quiz.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_progress",
+            description="Get user's learning progress including completed chapters, quiz scores, and streak. Requires user_id.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "User ID (UUID format)"
+                    }
+                },
+                "required": ["user_id"]
+            }
+        ),
+        Tool(
             name="search_content",
-            description="Search course content by keywords",
+            description="Search course content by keywords across all chapters.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query (e.g., 'MCP', 'neural networks')"
+                        "description": "Search query (e.g., 'MCP', 'neural networks', 'FastAPI')"
                     },
                     "limit": {
                         "type": "number",
@@ -197,14 +318,23 @@ async def list_tools() -> list[Tool]:
 async def call_tool(name: str, arguments: Any) -> Any:
     """Handle tool calls."""
     try:
-        if name == "get_quiz":
+        if name == "list_chapters":
+            return await list_chapters_tool()
+        elif name == "get_chapter":
+            return await get_chapter_tool(**arguments)
+        elif name == "get_quiz":
             return await get_quiz_tool(**arguments)
         elif name == "list_quizzes":
             return await list_quizzes_tool()
+        elif name == "get_progress":
+            return await get_progress_tool(**arguments)
         elif name == "search_content":
             return await search_content_tool(**arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
+        return {"content": [{"type": "text", "text": f"API Error: {e.response.status_code} - {str(e)}"}]}
     except Exception as e:
         logger.error(f"Tool error: {e}", exc_info=True)
         return {"content": [{"type": "text", "text": f"Error: {str(e)}"}]}
