@@ -32,7 +32,7 @@ WIDGET_DOMAIN = os.getenv("WIDGET_DOMAIN", "92.113.147.250")
 WIDGET_FULL_URL = os.getenv("WIDGET_URL", f"http://{WIDGET_DOMAIN}:3505/ui")
 
 # Skill definitions
-SKILLS_DIR = Path(".claude/skills")
+SKILLS_DIR = Path(".claude")
 SKILL_INSTRUCTIONS = {
     "concept-explainer": {
         "name": "Concept Explainer",
