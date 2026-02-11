@@ -13,6 +13,7 @@ import logging
 import os
 from typing import Any, Dict, Optional
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -29,6 +30,54 @@ logger = logging.getLogger(__name__)
 BACKEND_URL = os.getenv("BACKEND_URL", "http://92.113.147.250:3505")
 WIDGET_DOMAIN = os.getenv("WIDGET_DOMAIN", "92.113.147.250")
 WIDGET_FULL_URL = os.getenv("WIDGET_URL", f"http://{WIDGET_DOMAIN}:3505/ui")
+
+# Skill definitions
+SKILLS_DIR = Path(".claude/skills")
+SKILL_INSTRUCTIONS = {
+    "concept-explainer": {
+        "name": "Concept Explainer",
+        "description": "Explains concepts at learner's level using analogies and examples. Use this when the student asks to 'explain', 'what is', 'how does', 'help me understand'. Breaks down complex topics using:
+        - Simple analogies from real-world scenarios
+        - Progressive complexity (start simple, add detail)
+        - Concrete examples before abstract concepts
+        - Check for understanding with simple questions
+        - If confused, simplify and try a different analogy",
+        "file": "concept-explainer/SKILL.md"
+    },
+    "quiz-master": {
+        "name": "Quiz Master",
+        "description": "Conducts quizzes with encouragement and immediate feedback. Use this when students request 'quiz', 'test me', 'practice', 'check my knowledge'. Presents questions, validates answers, provides feedback, and maintains motivation. Always end with positive reinforcement.",
+        "file": "quiz-master/SKILL.md"
+    },
+    "socratic-tutor": {
+        "name": "Socratic Tutor",
+        "description": "Guides learning through questioning rather than direct answers. Use this when students say 'help me think', 'I'm stuck', 'give me a hint'. Facilitates discovery by asking targeted questions that lead to insight. Never give the answer directly.",
+        "file": "socratic-tutor/SKILL.md"
+    },
+    "progress-motivator": {
+        "name": "Progress Motivator",
+        "description": "Tracks progress, celebrates achievements, and maintains motivation. Use this when students ask about 'my progress', 'streak', 'how am I doing'. Monitors completion, encourages consistency, and provides positive reinforcement. Highlight specific achievements.",
+        "file": "progress-motivator/SKILL.md"
+    }
+}
+
+# Intent to skill mapping
+INTENT_TO_SKILL = {
+    "explain": "concept-explainer",
+    "what is": "concept-explainer",
+    "how does": "concept-explainer",
+    "help me understand": "concept-explainer",
+    "quiz": "quiz-master",
+    "test me": "quiz-master",
+    "practice": "quiz-master",
+    "check my knowledge": "quiz-master",
+    "help me think": "socratic-tutor",
+    "i'm stuck": "socratic-tutor",
+    "give me a hint": "socratic-tutor",
+    "my progress": "progress-motivator",
+    "streak": "progress-motivator",
+    "how am i doing": "progress-motivator",
+}
 
 # Create FastAPI app for SSE endpoint
 app = FastAPI(title="Course Companion FTE MCP Server")
@@ -135,6 +184,78 @@ def create_widget_response(content: str) -> Dict[str, Any]:
     }
 
 
+def get_skill_for_intent(user_message: str) -> Optional[str]:
+    """
+    Detect intent from user message and return appropriate skill.
+    """
+    user_message_lower = user_message.lower()
+    for trigger, skill in INTENT_TO_SKILL.items():
+        if trigger in user_message_lower:
+            return skill
+    return None
+
+
+async def load_skill_instruction(skill_name: str) -> Dict[str, Any]:
+    """
+    Load skill instruction from SKILL.md file.
+    """
+    if skill_name not in SKILL_INSTRUCTIONS:
+        return {
+            "content": [{"type": "text", "text": f"Skill {skill_name} not found"}],
+            "skill_name": skill_name,
+            "available_skills": list(SKILL_INSTRUCTIONS.keys())
+        }
+
+    skill_info = SKILL_INSTRUCTIONS[skill_name]
+    skill_file = SKILLS_DIR / skill_info["file"]
+
+    if not skill_file.exists():
+        logger.warning(f"Skill file not found: {skill_file}")
+
+    try:
+        with open(skill_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        return {
+            "content": [{"type": "text", "text": content}],
+            "skill_name": skill_name,
+            "skill_description": skill_info["description"],
+            "available_skills": list(SKILL_INSTRUCTIONS.keys()),
+            "skill_file": str(skill_file)
+        }
+    except IOError as e:
+        logger.error(f"Failed to load skill {skill_name}: {e}")
+        return {
+            "content": [{"type": "text", "text": f"Failed to load skill {skill_name}: {str(e)}"}],
+            "skill_name": skill_name,
+            "available_skills": list(SKILL_INSTRUCTIONS.keys())
+        }
+
+
+async def get_skill_for_message(message: str) -> Dict[str, Any]:
+    """
+    Detect intent from message and return appropriate skill instructions.
+    """
+    skill_name = get_skill_for_intent(message)
+
+    if not skill_name:
+        return {
+            "content": [{"type": "text", "text": """
+I can help you with several types of educational support:
+
+1. **Concept Explanations** - Explain complex topics using analogies and examples
+2. **Quizzes** - Test your knowledge with practice questions
+3. **Guided Thinking** - Help you solve problems step-by-step
+4. **Progress Tracking** - Show your learning progress and achievements
+
+What would you like to work on?
+""" }],
+            "available_skills": list(SKILL_INSTRUCTIONS.keys())
+        }
+
+    return await load_skill_instruction(skill_name)
+
+
 async def get_chapter_tool(chapter_id: str) -> Dict[str, Any]:
     """Get chapter content."""
     if not chapter_id:
@@ -227,6 +348,38 @@ async def search_content_tool(query: str, limit: int = 5) -> Dict[str, Any]:
         return {"content": [{"type": "text", "text": content}]}
 
 
+async def get_skill_tool(message: str) -> Dict[str, Any]:
+    """
+    Get educational skill instructions based on user's message.
+    Detects intent and loads the appropriate skill (concept-explainer, quiz-master, socratic-tutor, progress-motivator).
+    """
+    logger.info(f"Getting skill for message: {message}")
+
+    return await get_skill_for_message(message)
+
+
+async def list_skills_tool() -> Dict[str, Any]:
+    """List all available educational skills."""
+    logger.info("Listing available skills")
+
+    skills_info = []
+    for skill_name, skill_data in SKILL_INSTRUCTIONS.items():
+        skill_file = SKILLS_DIR / skill_data["file"]
+        skills_info.append({
+            "name": skill_data["name"],
+            "description": skill_data["description"],
+            "available": skill_file.exists()
+        })
+
+    content = json.dumps({
+        "skills": skills_info,
+        "total": len(skills_info),
+        "message": "Use get_skill with your message to activate the appropriate educational support."
+    }, indent=2)
+
+    return {"content": [{"type": "text", "text": content}]}
+
+
 # Register MCP tools
 @mcp_server.list_tools()
 async def list_tools() -> list[Tool]:
@@ -310,6 +463,29 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["query"]
             }
+        ),
+        Tool(
+            name="get_skill",
+            description="Use this when the student needs educational support. Detects intent and loads the appropriate skill (concept-explainer, quiz-master, socratic-tutor, or progress-motivator) to guide the interaction. Pass the student's message to activate the right educational behavior.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Student's message to detect intent and load appropriate skill"
+                    }
+                },
+                "required": ["message"]
+            }
+        ),
+        Tool(
+            name="list_skills",
+            description="List all available educational skills and their descriptions. Shows what types of support are available (concept explanations, quizzes, guided thinking, progress tracking).",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         )
     ]
 
@@ -330,6 +506,12 @@ async def call_tool(name: str, arguments: Any) -> Any:
             return await get_progress_tool(**arguments)
         elif name == "search_content":
             return await search_content_tool(**arguments)
+        elif name == "get_skill":
+            # Get skill from message
+            message = arguments.get("message", "")
+            return await get_skill_tool(message)
+        elif name == "list_skills":
+            return await list_skills_tool()
         else:
             raise ValueError(f"Unknown tool: {name}")
     except httpx.HTTPStatusError as e:
