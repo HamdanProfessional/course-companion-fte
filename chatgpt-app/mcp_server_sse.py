@@ -36,12 +36,7 @@ SKILLS_DIR = Path(".claude/skills")
 SKILL_INSTRUCTIONS = {
     "concept-explainer": {
         "name": "Concept Explainer",
-        "description": "Explains concepts at learner's level using analogies and examples. Use this when the student asks to 'explain', 'what is', 'how does', 'help me understand'. Breaks down complex topics using:
-        - Simple analogies from real-world scenarios
-        - Progressive complexity (start simple, add detail)
-        - Concrete examples before abstract concepts
-        - Check for understanding with simple questions
-        - If confused, simplify and try a different analogy",
+        "description": "Explains concepts at learner's level using analogies and examples. Use this when the student asks to 'explain', 'what is', 'how does', 'help me understand'. Breaks down complex topics using simple analogies from real-world scenarios, progressive complexity (start simple, add detail), concrete examples before abstract concepts, checking for understanding with simple questions, and simplifying when confused.",
         "file": "concept-explainer/SKILL.md"
     },
     "quiz-master": {
