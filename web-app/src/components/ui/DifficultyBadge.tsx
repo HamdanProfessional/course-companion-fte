@@ -11,6 +11,7 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Sprout, TrendingUp, Rocket, type LucideIcon } from 'lucide-react';
 import { DIFFICULTY_BADGE } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
