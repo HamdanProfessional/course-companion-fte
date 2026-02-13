@@ -31,27 +31,12 @@ from src.services.adaptive_service import (
     generate_personalized_path,
     AdaptiveServiceError
 )
-# Mentor service - Phase 3 feature (may not exist in Zero-Backend-LLM architecture)
-try:
-    from src.services.mentor_service import MentorService, MentorServiceError
-except ImportError:
-    # Provide stub implementation for Phase 1 compatibility
-    class MentorServiceError(Exception):
-        pass
-
-    class MentorService:
-        def __init__(self, db):
-            self.db = db
-
-        async def answer_question(self, user_id, question, chapter_context=None, conversation_history=None):
-            raise MentorServiceError("AI Mentor feature is not available in Zero-Backend-LLM mode. Please enable Phase 2/3 LLM features.")
-
-        async def explain_topic(self, topic, context=None, complexity_level="intermediate", include_examples=True):
-            raise MentorServiceError("AI Explanation feature is not available in Zero-Backend-LLM mode. Please enable Phase 2/3 LLM features.")
+# Mentor service - Phase 3 feature
+from src.services.mentor_service import MentorService, MentorServiceError
 
 from src.models.database import User
 from src.models.schemas import ChapterDetail
-from src.api.dependencies import get_current_user, get_optional_user
+from src.api.dependencies import get_optional_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -149,6 +134,37 @@ class QuizGradingRequest(BaseModel):
     question_contexts: Optional[Dict[str, str]] = None
 
 
+class GenerateQuizRequest(BaseModel):
+    """Request for AI-generated quiz questions."""
+    topic: str = Field(..., min_length=3, description="Topic to generate questions about (e.g., 'AI Agents', 'MCP Integration')")
+    subtopic: Optional[str] = Field(None, description="Specific subtopic (optional)")
+    difficulty: str = Field(default="beginner", description="Difficulty: beginner, intermediate, advanced, mixed")
+    num_questions: int = Field(default=5, ge=3, le=10, description="Number of questions to generate (3-10)")
+
+
+class GeneratedQuestionItem(BaseModel):
+    """AI-generated question."""
+    id: str
+    question_text: str
+    options: Dict[str, str]
+    correct_answer: str
+    explanation: str
+    difficulty: str
+    topic: str
+    subtopic: str
+
+
+class GeneratedQuizResponse(BaseModel):
+    """Response with AI-generated quiz."""
+    quiz_id: str
+    questions: List[GeneratedQuestionItem]
+    total_questions: int
+    topic: str
+    subtopic: Optional[str]
+    difficulty: str
+    generated_at: str
+
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -240,6 +256,14 @@ async def get_knowledge_analysis(
     **Phase 3 Feature**: Available to all premium users.
 
     **Authentication**: Optional - Works for authenticated users or guest users with user_id.
+
+    Args:
+        user_id: User UUID from query param
+        current_user: Authenticated user from JWT
+        db: Database session
+
+    Returns:
+        AdaptiveAnalysis with weak/strong topics and recommendations
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -250,10 +274,10 @@ async def get_knowledge_analysis(
     try:
         # Determine user_id: prefer current_user, fall back to query param
         _user_id = None
-        if current_user is not None:
+        if current_user:
             await verify_premium_access(current_user)
             _user_id = str(current_user.id)
-        elif user_id is not None:
+        elif user_id:
             _user_id = user_id
 
         # Return default response for guest users without user_id
@@ -319,6 +343,14 @@ async def get_recommendations(
     **Phase 3 Feature**: Smart recommendations for premium users.
 
     **Authentication**: Optional - Works for authenticated users or guest users with user_id.
+
+    Args:
+        user_id: User UUID from query param
+        current_user: Authenticated user from JWT
+        db: Database session
+
+    Returns:
+        ChapterRecommendation with personalized suggestion
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -329,10 +361,10 @@ async def get_recommendations(
     try:
         # Determine user_id: prefer current_user, fall back to query param
         _user_id = None
-        if current_user is not None:
+        if current_user:
             await verify_premium_access(current_user)
             _user_id = str(current_user.id)
-        elif user_id is not None:
+        elif user_id:
             _user_id = user_id
 
         # Return default response for guest users without user_id
@@ -361,6 +393,7 @@ async def get_recommendations(
         raise
     except AdaptiveServiceError as e:
         # Service returns degraded response, so this shouldn't happen
+        # But if it does, return 200 with degraded response
         logger.warning(f"Adaptive service returned error instead of degraded response: {e}")
         return ChapterRecommendation(
             next_chapter_id="",
@@ -402,6 +435,13 @@ async def create_learning_path(
     **Phase 3 Feature**: AI-powered learning paths.
 
     **Authentication**: Required - Users must be logged in.
+
+    Args:
+        current_user: Authenticated user from JWT
+        db: Database session
+
+    Returns:
+        LearningPathResponse with optimized chapter sequence
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -430,6 +470,7 @@ async def create_learning_path(
         raise
     except AdaptiveServiceError as e:
         # Service returns degraded response, so this shouldn't happen
+        # But if it does, return 200 with degraded response
         logger.warning(f"Adaptive service returned error instead of degraded response: {e}")
         return LearningPathResponse(
             path=[],
@@ -452,7 +493,8 @@ async def create_learning_path(
 async def mentor_chat(
     request: MentorChatRequest,
     conversation_id: Optional[UUID] = Query(None, description="Conversation UUID for chat history"),
-    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = Query(None, description="User ID for alternative auth"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -468,14 +510,23 @@ async def mentor_chat(
 
     **Phase 3 Feature**: Interactive AI tutoring with chat history.
 
-    **Authentication**: Required - Users must be logged in to chat with the mentor.
+    **Authentication**: Optional - Works for authenticated users or user_id.
 
     Example question:
     ```
     "Can you explain how MCP servers work and how they connect to ChatGPT?"
     ```
     """
-    logger.info(f"Mentor chat request from user {current_user.id}, conversation_id: {conversation_id}")
+    # Determine actual user_id: prefer current_user, fall back to query param
+    _user_id = None
+    if current_user:
+        await verify_premium_access(current_user)
+        _user_id = str(current_user.id)
+    elif user_id:
+        _user_id = user_id
+
+    # Log AFTER determining user_id
+    logger.info(f"mentor chat request from user {_user_id}, conversation_id: {conversation_id}")
     logger.info(f"Question: {request.question[:100]}...")
     logger.info(f"Conversation history length: {len(request.conversation_history) if request.conversation_history else 0}")
 
@@ -486,9 +537,6 @@ async def mentor_chat(
         )
 
     try:
-        # Premium check can be optional for basic mentor features
-        user = await verify_premium_access(current_user)
-
         # Convert conversation history
         history = []
         if request.conversation_history:
@@ -503,7 +551,7 @@ async def mentor_chat(
 
         # Get answer from mentor
         response = await mentor_service.answer_question(
-            user_id=str(current_user.id),
+            user_id=_user_id,
             question=request.question,
             chapter_context=request.chapter_context,
             conversation_history=history
@@ -518,7 +566,7 @@ async def mentor_chat(
             conv_result = await db.execute(
                 select(ChatConversation).where(
                     ChatConversation.id == conversation_id,
-                    ChatConversation.user_id == current_user.id
+                    ChatConversation.user_id == _user_id
                 )
             )
             conversation = conv_result.scalar_one_or_none()
@@ -540,12 +588,12 @@ async def mentor_chat(
                 )
                 db.add(assistant_message)
 
-                # Update conversation title if it's the first message
+                # Update conversation title if it's first message
                 from sqlalchemy import func
                 msg_count_result = await db.execute(
                     select(func.count(ChatMessage.id)).where(ChatMessage.conversation_id == conversation_id)
                 )
-                msg_count = msg_count_result.scalar() - 2  # Subtract the two messages we just added
+                msg_count = msg_count_result.scalar() - 2  # Subtract two messages we just added
 
                 if msg_count == 0:
                     # Update title with first message preview
@@ -564,13 +612,13 @@ async def mentor_chat(
     except HTTPException:
         raise
     except MentorServiceError as e:
-        logger.error(f"Mentor service error for user {current_user.id}: {e}", exc_info=True)
+        logger.error(f"Mentor service error for user {_user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Error in mentor chat for user {current_user.id}: {e}", exc_info=True)
+        logger.error(f"Unexpected error in mentor chat for user {_user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get mentor response"
@@ -600,6 +648,14 @@ async def explain_content(
     - `beginner`: Simple language, lots of examples
     - `intermediate`: Balanced (default)
     - `advanced`: Technical depth, nuanced
+
+    Args:
+        request: Content explanation request
+        current_user: Authenticated user from JWT
+        db: Database session
+
+    Returns:
+        ContentExplanationResponse with explanation and examples
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -645,8 +701,14 @@ async def explain_content(
 
     except HTTPException:
         raise
+    except MentorServiceError as e:
+        logger.error(f"LLM error in topic explanation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate explanation"
+        )
     except Exception as e:
-        logger.error(f"Error explaining content: {e}")
+        logger.error(f"Unexpected error in topic explanation: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate explanation"
@@ -672,7 +734,7 @@ async def grade_quiz_with_ai(
 
     **Authentication**: Required - Users must be logged in.
 
-    This is an alias to the quizzes endpoint with LLM mode enabled.
+    This is an alias to quizzes endpoint with LLM mode enabled.
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -731,6 +793,13 @@ async def get_llm_usage_costs(
     **Phase 3 Feature**: Cost tracking and monitoring.
 
     **Authentication**: Required - Pro users only.
+
+    Args:
+        current_user: Authenticated user from JWT
+        db: Database session
+
+    Returns:
+        Cost breakdown by feature and time period
     """
     try:
         if current_user.tier != "PRO":
@@ -832,6 +901,14 @@ async def generate_quiz_with_ai(
     **Phase 3 Feature**: AI-powered infinite quiz generation.
 
     **Authentication**: Required - Users must be logged in.
+
+    Args:
+        request: Quiz generation request
+        current_user: Authenticated user from JWT
+        db: Database session
+
+    Returns:
+        GeneratedQuizResponse with AI-generated questions
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -858,32 +935,32 @@ async def generate_quiz_with_ai(
             "mixed": "mix of beginner, intermediate, and advanced questions"
         }
 
-        system_prompt = """You are an expert AI tutor generating quiz questions about AI agents, MCP (Model Context Protocol), ChatGPT applications, and web development.
+        system_prompt = f"""You are an expert AI tutor generating quiz questions about AI agents, MCP (Model Context Protocol), ChatGPT applications, and web development.
 
-Generate multiple-choice questions in the following JSON format:
-{
+Generate {request.num_questions} multiple-choice questions in the following JSON format:
+{{
     "questions": [
-        {
-            "question": "Clear question text",
-            "options": {
-                "A": "First option",
-                "B": "Second option",
-                "C": "Third option",
-                "D": "Fourth option"
-            },
-            "correct_answer": "A",
-            "explanation": "Detailed explanation of why this is correct",
-            "difficulty": "beginner|intermediate|advanced"
-        }
-    ]
-}
+    {{
+        "question": "Clear question text",
+        "options": {{
+            "A": "First option",
+            "B": "Second option",
+            "C": "Third option",
+            "D": "Fourth option"
+        }},
+        "correct_answer": "A",
+        "explanation": "Detailed explanation of why this is correct",
+        "difficulty": "{request.difficulty}"
+    }}
+]
 
 Requirements:
 - Questions must be clear and unambiguous
 - All options should be plausible
 - Only one correct answer per question
 - Explanations should be educational
-- Difficulty must match the requested level"""
+- Difficulty must match requested level
+- Questions should cover different aspects of {request.topic}"""
 
         user_prompt = f"""Generate {request.num_questions} multiple-choice quiz questions about:
 
@@ -899,7 +976,7 @@ Return valid JSON with the questions array."""
             system_prompt=system_prompt,
             temperature=0.7,
             response_format={"type": "json_object"},
-            max_tokens=2000  # Ensure we have enough tokens for the response
+            max_tokens=2000
         )
 
         # Parse JSON response
@@ -937,29 +1014,6 @@ Return valid JSON with the questions array."""
                     response_data = json.loads(cleaned)
                 else:
                     response_data = json.loads(response)
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse quiz JSON: {e}")
-            logger.error(f"Response was: {response[:1000]}")
-            # Try to provide a fallback response
-            try:
-                # Generate a simple fallback quiz
-                questions_data = [{
-                    "question": f"What is {request.topic}?",
-                    "options": {
-                        "A": "A software program",
-                        "B": "An autonomous system that perceives and acts",
-                        "C": "A database",
-                        "D": "A programming language"
-                    },
-                    "correct_answer": "B",
-                    "explanation": f"{request.topic} refers to autonomous systems that can perceive their environment and take actions.",
-                    "difficulty": request.difficulty
-                }]
-            except:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to generate valid quiz questions. The AI response was incomplete. Please try again."
-                )
 
         questions_data = response_data.get("questions", [])
 
