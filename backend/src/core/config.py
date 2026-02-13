@@ -107,8 +107,8 @@ class Settings(BaseSettings):
         description="GLM API key (required if llm_provider=glm)"
     )
     glm_model: str = Field(
-        default="glm-4.5-flash",
-        description="GLM model to use (glm-4.5-flash recommended for cost efficiency, also supports glm-4.7, glm-4.6, glm-4-plus)"
+        default="glm-4.5-air",
+        description="GLM model to use (glm-4.5-air recommended for cost efficiency, also supports glm-4.5-flash, glm-4-plus)"
     )
     glm_base_url: str = Field(
         default="https://open.bigmodel.cn/api/paas/v4",

@@ -45,7 +45,7 @@ class LLMProviderPricing:
     # GLM (Zhipu AI) pricing (as of 2026)
     GLM_PRICING = {
         "glm-4-plus": {"input": 0.10, "output": 0.10},  # Approximate pricing
-        "glm-4.7": {"input": 0.10, "output": 0.10},  # Latest GLM model
+        "glm-4.5-air": {"input": 0.05, "output": 0.05},  # Cost-efficient model
         "glm-4.5-flash": {"input": 0.01, "output": 0.01},  # Fast, cost-efficient model
         "glm-4": {"input": 0.10, "output": 0.10},
     }
