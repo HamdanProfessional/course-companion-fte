@@ -56,7 +56,8 @@ export default function AdaptiveLearningPage() {
     );
   };
 
-  if (statusLoading || analysisLoading || recLoading) {
+  // Show initial loading only for tier check
+  if (!tier) {
     return (
       <PageContainer>
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -105,10 +106,16 @@ export default function AdaptiveLearningPage() {
                   <Target className="w-6 h-6 text-cosmic-primary" />
                 </div>
                 Knowledge Gap Analysis
+                {analysisLoading && <span className="ml-auto text-sm text-text-muted">Analyzing...</span>}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {analysis ? (
+              {analysisLoading ? (
+                <div className="text-center py-8">
+                  <LoadingSpinner size="md" />
+                  <p className="text-text-muted mt-3">AI is analyzing your quiz performance...</p>
+                </div>
+              ) : analysis ? (
                 <div className="space-y-6">
                   {/* Weak Topics - Nebula Theme with Animations */}
                   {analysis.weak_topics && analysis.weak_topics.length > 0 && (
@@ -313,17 +320,23 @@ export default function AdaptiveLearningPage() {
           </Card>
 
           {/* Personalized Recommendation */}
-          {recommendation && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
-                    <Compass className="w-6 h-6 text-cosmic-primary" />
-                  </div>
-                  Recommended Next Chapter
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cosmic-primary/20 to-cosmic-purple/20 flex items-center justify-center">
+                  <Compass className="w-6 h-6 text-cosmic-primary" />
+                </div>
+                Recommended Next Chapter
+                {recLoading && <span className="ml-auto text-sm text-text-muted">Finding best chapter...</span>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recLoading ? (
+                <div className="text-center py-8">
+                  <LoadingSpinner size="md" />
+                  <p className="text-text-muted mt-3">AI is finding your optimal next chapter...</p>
+                </div>
+              ) : recommendation ? (
                 <div className="bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 rounded-lg p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -365,9 +378,9 @@ export default function AdaptiveLearningPage() {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : null}
+            </CardContent>
+          </Card>
 
           {/* Generate Learning Path */}
           <Card>

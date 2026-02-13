@@ -227,6 +227,7 @@ export function useV3AIStatus() {
   return useQuery({
     queryKey: ['v3', 'ai', 'status'],
     queryFn: () => tutorApi.getAIStatus(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
@@ -238,6 +239,9 @@ export function useV3KnowledgeAnalysis() {
     queryKey: ['v3', 'ai', 'knowledge-analysis'],
     queryFn: () => tutorApi.getKnowledgeAnalysis(),
     enabled: typeof window !== 'undefined',
+    staleTime: 10 * 60 * 1000, // 10 minutes - LLM calls are expensive
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    retry: 1, // Only retry once on failure
   });
 }
 
@@ -249,6 +253,9 @@ export function useV3Recommendations() {
     queryKey: ['v3', 'ai', 'recommendations'],
     queryFn: () => tutorApi.getRecommendations(),
     enabled: typeof window !== 'undefined',
+    staleTime: 10 * 60 * 1000, // 10 minutes - LLM calls are expensive
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    retry: 1, // Only retry once on failure
   });
 }
 
