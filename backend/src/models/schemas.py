@@ -257,12 +257,21 @@ class ProgressUpdate(BaseModel):
     chapter_id: uuid.UUID = Field(..., description="Chapter ID to mark as complete")
 
 
+class QuizAttemptItem(BaseModel):
+    """Schema for a quiz attempt in progress tracking."""
+    quiz_id: uuid.UUID
+    score: int = Field(..., ge=0, le=100, description="Score as percentage (0-100)")
+    completed_at: datetime
+    passed: bool = Field(..., description="Passed if score >= 70%")
+
+
 class Progress(ProgressBase):
     """Schema for progress response."""
     id: uuid.UUID
     user_id: uuid.UUID
     completion_percentage: float = Field(..., description="Percentage of course completed")
     last_activity: datetime
+    quiz_attempts: List[QuizAttemptItem] = Field(default_factory=list, description="List of quiz attempts with scores")
 
     class Config:
         from_attributes = True

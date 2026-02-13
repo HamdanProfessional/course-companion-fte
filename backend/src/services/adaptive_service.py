@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from src.core.llm import get_llm_client, LLMClientError
+from src.core.llm import get_llm_client, LLMClientError, LLMRateLimitError
 from src.services.cost_tracking_service import get_cost_tracking_client
 from src.models.database import (
     User, Chapter, Quiz, QuizAttempt, Progress, Question
@@ -238,10 +238,16 @@ Provide knowledge gap analysis in JSON format."""
 
     except LLMClientError as e:
         logger.error(f"LLM error in knowledge gap analysis: {e}")
-        raise AdaptiveServiceError(f"Failed to analyze knowledge gaps: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_knowledge_analysis(performance_data)
+    except LLMRateLimitError as e:
+        logger.warning(f"Rate limit hit in knowledge gap analysis: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_knowledge_analysis(performance_data)
     except Exception as e:
         logger.error(f"Unexpected error in knowledge gap analysis: {e}")
-        raise AdaptiveServiceError(f"Analysis failed: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_knowledge_analysis(performance_data)
 
 
 async def recommend_next_chapter(
@@ -427,10 +433,16 @@ Provide recommendation in JSON format."""
 
     except LLMClientError as e:
         logger.error(f"LLM error in chapter recommendation: {e}")
-        raise AdaptiveServiceError(f"Failed to generate recommendation: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_recommendation(next_in_sequence)
+    except LLMRateLimitError as e:
+        logger.warning(f"Rate limit hit in chapter recommendation: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_recommendation(next_in_sequence)
     except Exception as e:
         logger.error(f"Unexpected error in chapter recommendation: {e}")
-        raise AdaptiveServiceError(f"Recommendation failed: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_recommendation(next_in_sequence)
 
 
 async def generate_personalized_path(
@@ -552,10 +564,16 @@ Generate optimal learning path in JSON format."""
 
     except LLMClientError as e:
         logger.error(f"LLM error in path generation: {e}")
-        raise AdaptiveServiceError(f"Failed to generate path: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_learning_path(incomplete_chapters, available_time_hours)
+    except LLMRateLimitError as e:
+        logger.warning(f"Rate limit hit in path generation: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_learning_path(incomplete_chapters, available_time_hours)
     except Exception as e:
         logger.error(f"Unexpected error in path generation: {e}")
-        raise AdaptiveServiceError(f"Path generation failed: {e}")
+        # Return degraded response instead of raising error
+        return _get_degraded_learning_path(incomplete_chapters, available_time_hours)
 
 
 # Helper functions
@@ -591,3 +609,120 @@ def format_chapters_for_path(chapters: List[Dict[str, Any]]) -> str:
             f"{c['title']} - {c['difficulty']} - {c['estimated_time_minutes']}min"
         )
     return "\n".join(lines)
+
+
+def _get_degraded_knowledge_analysis(performance_data: List[Dict[str, Any]]) -> KnowledgeGapAnalysis:
+    """
+    Return degraded knowledge gap analysis when LLM is unavailable.
+
+    Uses rule-based analysis as fallback.
+    """
+    if not performance_data:
+        return KnowledgeGapAnalysis(
+            weak_topics=[],
+            strong_topics=[],
+            recommended_review=[],
+            confidence_score=0.0,
+            explanation="Take some quizzes first to enable knowledge gap analysis."
+        )
+
+    # Rule-based analysis
+    topic_performance = {}
+    for item in performance_data:
+        topic = item["topic"]
+        if topic not in topic_performance:
+            topic_performance[topic] = {"correct": 0, "total": 0}
+        topic_performance[topic]["total"] += 1
+        if item["correct"]:
+            topic_performance[topic]["correct"] += 1
+
+    weak_topics = []
+    strong_topics = []
+    recommended_review = []
+
+    for topic, stats in topic_performance.items():
+        accuracy = stats["correct"] / stats["total"] if stats["total"] > 0 else 0
+        if accuracy < 0.7:
+            weak_topics.append(topic)
+            recommended_review.append(topic)
+        elif accuracy > 0.85:
+            strong_topics.append(topic)
+
+    confidence_score = min(len(performance_data) / 10, 1.0)  # More data = higher confidence
+
+    return KnowledgeGapAnalysis(
+        weak_topics=weak_topics,
+        strong_topics=strong_topics,
+        recommended_review=recommended_review,
+        confidence_score=confidence_score,
+        explanation=f"Based on your quiz performance across {len(performance_data)} questions. AI analysis is temporarily unavailable; using basic analysis."
+    )
+
+
+def _get_degraded_recommendation(next_chapter: Any) -> ChapterRecommendation:
+    """
+    Return degraded chapter recommendation when LLM is unavailable.
+
+    Uses simple sequence-based recommendation as fallback.
+    """
+    if not next_chapter:
+        return ChapterRecommendation(
+            next_chapter_id="",
+            next_chapter_title="Course Complete!",
+            reason="Congratulations! You've completed all chapters.",
+            alternative_paths=[],
+            estimated_completion_minutes=0,
+            difficulty_match="N/A"
+        )
+
+    return ChapterRecommendation(
+        next_chapter_id=str(next_chapter.id),
+        next_chapter_title=next_chapter.title,
+        reason=f"Continue with '{next_chapter.title}' (AI recommendations temporarily unavailable).",
+        alternative_paths=[],
+        estimated_completion_minutes=next_chapter.estimated_time or 30,
+        difficulty_match=next_chapter.difficulty_level or "intermediate"
+    )
+
+
+def _get_degraded_learning_path(
+    incomplete_chapters: List[Dict[str, Any]],
+    available_time_hours: int
+) -> LearningPath:
+    """
+    Return degraded learning path when LLM is unavailable.
+
+    Uses simple sequential path as fallback.
+    """
+    # Simple sequential path
+    path = []
+    for i, c in enumerate(incomplete_chapters):
+        path.append({
+            "chapter_id": c["id"],
+            "title": c["title"],
+            "order": i + 1,
+            "estimated_minutes": c.get("estimated_time_minutes", 30),
+            "reason": "Follow the course sequence"
+        })
+
+    # Create simple milestones
+    milestones = []
+    chapters_per_week = max(1, int((available_time_hours * 60) / 30))  # Assume 30 min per chapter
+    for i in range(0, len(incomplete_chapters), chapters_per_week):
+        week = (i // chapters_per_week) + 1
+        milestone_chapters = incomplete_chapters[i:i + chapters_per_week]
+        milestones.append({
+            "week": week,
+            "chapters": [c["id"] for c in milestone_chapters],
+            "goal": f"Complete {len(milestone_chapters)} chapters",
+            "total_hours": round(len(milestone_chapters) * 0.5, 1)
+        })
+
+    total_hours = round(len(incomplete_chapters) * 0.5, 1)  # Assume 30 min per chapter
+
+    return LearningPath(
+        path=path,
+        milestones=milestones,
+        total_hours=total_hours,
+        rationale=f"Sequential learning path based on course order. AI-powered customization temporarily unavailable. Estimated {total_hours} hours to complete {len(incomplete_chapters)} chapters at {available_time_hours} hours per week."
+    )

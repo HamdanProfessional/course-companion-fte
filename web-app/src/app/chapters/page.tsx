@@ -12,10 +12,11 @@ import { Badge } from '@/components/ui/Badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer';
 import { EmptyStates } from '@/components/ui/EmptyState';
+import { DifficultyBadge } from '@/components/ui/DifficultyBadge';
 import { useChapters, useProgress, useUserTier } from '@/hooks';
 import Link from 'next/link';
 import * as React from 'react';
-import { Sprout, Rocket, Trophy, Lock, BookOpen, CheckCircle, Play, Target, Star, Search, Clock, Check } from 'lucide-react';
+import { Rocket, Trophy, Lock, BookOpen, CheckCircle, Play, Target, Star, Search, Clock, Check } from 'lucide-react';
 
 type FilterType = 'all' | 'completed' | 'in-progress' | 'locked';
 
@@ -79,14 +80,6 @@ export default function ChaptersPage() {
     }
   }) || [];
 
-  const getDifficultyBadge = (level: string) => {
-    const badges = {
-      beginner: { variant: 'beginner' as const, label: 'Beginner', icon: Sprout },
-      intermediate: { variant: 'intermediate' as const, label: 'Intermediate', icon: Rocket },
-      advanced: { variant: 'advanced' as const, label: 'Advanced', icon: Trophy },
-    };
-    return badges[level.toLowerCase() as keyof typeof badges] || badges.beginner;
-  };
 
   return (
     <PageContainer>
@@ -158,7 +151,6 @@ export default function ChaptersPage() {
           {filteredChapters.map((chapter, index) => {
           const isCompleted = completedChapters.has(chapter.id);
           const isLocked = tier === 'FREE' && index >= 3;
-          const difficultyBadge = getDifficultyBadge(chapter.difficulty_level);
 
           return (
             <Card
@@ -180,7 +172,7 @@ export default function ChaptersPage() {
                         </Badge>
                       )}
                     </div>
-                    <CardTitle className="text-xl group-hover:text-accent-primary transition-colors">
+                    <CardTitle className="text-lg group-hover:text-accent-primary transition-colors line-clamp-2">
                       {chapter.title}
                     </CardTitle>
                   </div>
@@ -190,10 +182,7 @@ export default function ChaptersPage() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={difficultyBadge.variant} className="gap-1">
-                    <difficultyBadge.icon className="w-3 h-3" />
-                    {difficultyBadge.label}
-                  </Badge>
+                  <DifficultyBadge level={chapter.difficulty_level} />
                   <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-bg-elevated px-2 py-1 rounded-md">
                     <Clock className="w-3 h-3" /> {chapter.estimated_time} min
                   </span>
@@ -201,7 +190,7 @@ export default function ChaptersPage() {
               </CardHeader>
 
               <CardContent>
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   {isLocked ? (
                     <div className="bg-accent-warning/10 border border-accent-warning/30 rounded-lg p-4 text-center">
                       <p className="text-sm text-accent-warning font-medium mb-1 flex items-center justify-center gap-2">
@@ -211,8 +200,8 @@ export default function ChaptersPage() {
                       <p className="text-xs text-text-muted">
                         Upgrade to PRO to unlock this chapter
                       </p>
-                      <Link href="/profile">
-                        <Button variant="outline" size="sm" className="mt-3">
+                      <Link href="/profile" className="inline-block mt-3">
+                        <Button variant="outline" size="sm" className="w-full">
                           Upgrade Now
                         </Button>
                       </Link>
@@ -222,6 +211,7 @@ export default function ChaptersPage() {
                       <Link href={`/chapters/${chapter.id}`} className="block">
                         <Button
                           variant={isCompleted ? 'outline' : 'primary'}
+                          size="sm"
                           className="w-full gap-2"
                         >
                           {isCompleted ? <><BookOpen className="w-4 h-4" /> Review Chapter</> : <><Play className="w-4 h-4" /> Start Chapter</>}
@@ -232,6 +222,7 @@ export default function ChaptersPage() {
                         <Link href={`/quizzes/${chapter.quiz_id}`} className="block">
                           <Button
                             variant="secondary"
+                            size="sm"
                             className="w-full gap-2"
                           >
                             <Target className="w-4 h-4" />

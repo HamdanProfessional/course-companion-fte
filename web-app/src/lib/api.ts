@@ -34,6 +34,13 @@ export interface Question {
   order: number;
 }
 
+export interface QuizAttemptItem {
+  quiz_id: string;
+  score: number;
+  completed_at: string;
+  passed: boolean;
+}
+
 export interface Progress {
   id: string;
   user_id: string;
@@ -41,6 +48,7 @@ export interface Progress {
   current_chapter_id: string | null;
   completion_percentage: number;
   last_activity: string;
+  quiz_attempts?: QuizAttemptItem[];
 }
 
 export interface Streak {
@@ -159,7 +167,7 @@ class BackendClient {
 
   // Progress APIs
   async getProgress(userId: string): Promise<Progress> {
-    return this.request<Progress>(`/api/v1/progress/${userId}`);
+    return this.request<Progress>(`/api/v3/tutor/progress/summary?user_id=${userId}`);
   }
 
   async updateProgress(userId: string, chapterId: string): Promise<Progress> {
@@ -167,6 +175,10 @@ class BackendClient {
       method: 'PUT',
       body: JSON.stringify({ chapter_id: chapterId }),
     });
+  }
+
+  async getQuizAttempts(userId: string): Promise<QuizAttemptItem[]> {
+    return this.request<QuizAttemptItem[]>(`/api/v3/tutor/progress/quiz-attempts?user_id=${userId}`);
   }
 
   async getStreak(userId: string): Promise<Streak> {

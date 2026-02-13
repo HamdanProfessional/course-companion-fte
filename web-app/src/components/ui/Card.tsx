@@ -36,7 +36,12 @@ Card.displayName = 'Card';
 export const CardHeader = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, ...props }, ref) => {
     return (
-      <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />
+      <div
+        ref={ref}
+        className={cn('flex flex-col gap-[6px] p-6', className)}
+        {...props}
+        style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '1.5rem', ...props.style }}
+      />
     );
   }
 );

@@ -50,28 +50,14 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS - use specific headers for security
+# Configure CORS - explicitly handle OPTIONS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    # Specific headers instead of wildcard for security
-    allow_headers=[
-        "Content-Type",
-        "Authorization",
-        "X-Requested-With",
-        "Accept",
-        "Origin",
-        "Access-Control-Request-Method",
-        "Access-Control-Request-Headers",
-    ],
-    # Only expose specific headers that are safe to expose
-    expose_headers=[
-        "Content-Length",
-        "Content-Type",
-        "X-Total-Count",
-    ],
+    allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -316,9 +302,15 @@ async def ui_static_files(file_path: str):
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+
+    # Get port from environment variable or use settings default
+    port = int(os.getenv("BACKEND_PORT", str(settings.backend_port)))
+    host = os.getenv("BACKEND_HOST", settings.backend_host)
+
     uvicorn.run(
         "src.api.main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=host,
+        port=port,
         reload=settings.debug,
     )

@@ -26,7 +26,7 @@ from src.core.database import get_db
 from src.services.progress_service import ProgressService
 from src.models.database import Progress as UserProgress, Streak as UserStreak, QuizAttempt, User
 from src.models.schemas import Progress
-from src.api.dependencies import get_current_user
+from src.api.dependencies import get_current_user, get_optional_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -275,7 +275,8 @@ async def check_and_unlock_achievements(
 
 @router.get("/summary", response_model=ProgressSummary)
 async def get_progress_summary(
-    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = Query(None, description="User ID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -290,14 +291,30 @@ async def get_progress_summary(
 
     **Phase 3 Enhancement**: Comprehensive progress dashboard.
 
-    **Authentication**: Required - Users must be logged in to view their progress.
+    **Authentication**: Optional - Works for authenticated users or guest users with user_id.
     """
     try:
-        user_uuid = current_user.id
+        _user_id = user_id or (str(current_user.id) if current_user else None)
+
+        if _user_id is None:
+            return ProgressSummary(
+                user_id="",
+                completion_percentage=0.0,
+                completed_chapters=[],
+                total_chapters=0,
+                current_chapter_id=None,
+                last_activity=datetime.utcnow(),
+                total_quizzes_taken=0,
+                average_score=0.0,
+                current_streak=0,
+                longest_streak=0,
+                total_achievements=len(ACHIEVEMENTS),
+                unlocked_achievements=0
+            )
 
         # Get user progress
         result = await db.execute(
-            select(UserProgress).where(UserProgress.user_id == user_uuid)
+            select(UserProgress).where(UserProgress.user_id == _user_id)
         )
         user_progress = result.scalar_one_or_none()
 
@@ -308,14 +325,14 @@ async def get_progress_summary(
 
         # Get streak
         result = await db.execute(
-            select(UserStreak).where(UserStreak.user_id == user_uuid)
+            select(UserStreak).where(UserStreak.user_id == _user_id)
         )
         user_streak = result.scalar_one_or_none()
 
         # Get quiz stats
         result = await db.execute(
             select(func.count(QuizAttempt.id), func.avg(QuizAttempt.score))
-            .where(QuizAttempt.user_id == user_uuid)
+            .where(QuizAttempt.user_id == _user_id)
         )
         quiz_stats = result.first()
         total_quizzes = quiz_stats[0] or 0
@@ -337,7 +354,7 @@ async def get_progress_summary(
         longest_streak = user_streak.longest_streak if user_streak else 0
 
         return ProgressSummary(
-            user_id=str(current_user.id),
+            user_id=_user_id,
             completion_percentage=completion_pct,
             completed_chapters=completed_chapters,
             total_chapters=total_chapters,
@@ -361,7 +378,8 @@ async def get_progress_summary(
 
 @router.get("/chapters", response_model=List[ChapterProgress])
 async def get_chapters_progress(
-    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = Query(None, description="User ID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -371,10 +389,13 @@ async def get_chapters_progress(
 
     **Phase 3 Enhancement**: Detailed chapter-by-chapter progress.
 
-    **Authentication**: Required - Users must be logged in to view their progress.
+    **Authentication**: Optional - Works for authenticated users or guest users with user_id.
     """
     try:
-        user_uuid = current_user.id
+        _user_id = user_id or (str(current_user.id) if current_user else None)
+
+        if _user_id is None:
+            return []
 
         from src.models.database import Chapter, Quiz
 
@@ -386,7 +407,7 @@ async def get_chapters_progress(
 
         # Get user progress
         result = await db.execute(
-            select(UserProgress).where(UserProgress.user_id == user_uuid)
+            select(UserProgress).where(UserProgress.user_id == _user_id)
         )
         user_progress = result.scalar_one_or_none()
 
@@ -413,7 +434,7 @@ async def get_chapters_progress(
                 result = await db.execute(
                     select(func.max(QuizAttempt.score))
                     .where(QuizAttempt.quiz_id == quiz.id)
-                    .where(QuizAttempt.user_id == user_uuid)
+                    .where(QuizAttempt.user_id == _user_id)
                 )
                 score = result.scalar()
                 quiz_taken = score is not None
@@ -492,7 +513,8 @@ async def update_progress(
 
 @router.get("/streak/calendar", response_model=StreakCalendar)
 async def get_streak_calendar(
-    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = Query(None, description="User ID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     year: int = Query(default=None, description="Year (default current)"),
     month: int = Query(default=None, description="Month (default current)"),
     db: AsyncSession = Depends(get_db)
@@ -504,10 +526,20 @@ async def get_streak_calendar(
 
     **Phase 3 Enhancement**: Visual calendar for gamification.
 
-    **Authentication**: Required - Users must be logged in to view their streak.
+    **Authentication**: Optional - Works for authenticated users or guest users with user_id.
     """
     try:
-        user_uuid = current_user.id
+        _user_id = user_id or (str(current_user.id) if current_user else None)
+
+        if _user_id is None:
+            return StreakCalendar(
+                year=year or datetime.utcnow().year,
+                month=month or datetime.utcnow().month,
+                days=[],
+                current_streak=0,
+                longest_streak=0,
+                total_active_days=0
+            )
 
         from datetime import date
         import calendar
@@ -519,7 +551,7 @@ async def get_streak_calendar(
 
         # Get user streak
         result = await db.execute(
-            select(UserStreak).where(UserStreak.user_id == user_uuid)
+            select(UserStreak).where(UserStreak.user_id == _user_id)
         )
         user_streak = result.scalar_one_or_none()
 
@@ -558,7 +590,8 @@ async def get_streak_calendar(
 
 @router.get("/quiz-scores", response_model=List[ScoreHistoryItem])
 async def get_score_history(
-    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = Query(None, description="User ID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     limit: int = Query(30, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ):
@@ -567,16 +600,19 @@ async def get_score_history(
 
     **Phase 3 Enhancement**: Performance visualization data.
 
-    **Authentication**: Required - Users must be logged in to view their history.
+    **Authentication**: Optional - Works for authenticated users or guest users with user_id.
     """
     try:
-        user_uuid = current_user.id
+        _user_id = user_id or (str(current_user.id) if current_user else None)
+
+        if _user_id is None:
+            return []
 
         from src.models.database import Quiz
 
         result = await db.execute(
             select(QuizAttempt)
-            .where(QuizAttempt.user_id == user_uuid)
+            .where(QuizAttempt.user_id == _user_id)
             .join(Quiz, QuizAttempt.quiz_id == Quiz.id)
             .order_by(QuizAttempt.completed_at.desc())
             .limit(limit)
@@ -674,4 +710,54 @@ async def daily_checkin(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to record checkin"
+        )
+
+
+@router.get("/quiz-attempts", response_model=List[Dict[str, Any]])
+async def get_quiz_attempts(
+    user_id: Optional[str] = Query(None, description="User ID"),
+    current_user: Optional[User] = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all quiz attempts for a user.
+
+    Returns a list of quiz attempts with scores and completion status.
+    This is used by the frontend to track quiz progress.
+
+    **Phase 3 Enhancement**: Quiz progress tracking for gamification.
+
+    **Authentication**: Optional - Works for authenticated users or guest users with user_id.
+    """
+    try:
+        _user_id = user_id or (str(current_user.id) if current_user else None)
+
+        if _user_id is None:
+            return []
+
+        # Get all quiz attempts for the user
+        result = await db.execute(
+            select(QuizAttempt)
+            .where(QuizAttempt.user_id == _user_id)
+            .order_by(QuizAttempt.completed_at.desc())
+        )
+        attempts = result.scalars().all()
+
+        # Format the response
+        quiz_attempts_data = []
+        for attempt in attempts:
+            quiz_attempts_data.append({
+                "quiz_id": str(attempt.quiz_id),
+                "score": attempt.score,
+                "completed_at": attempt.completed_at.isoformat(),
+                "passed": attempt.score >= 70
+            })
+
+        return quiz_attempts_data
+
+    except Exception as e:
+        logger.error(f"Error getting quiz attempts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve quiz attempts"
         )

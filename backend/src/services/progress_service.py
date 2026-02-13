@@ -10,8 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
-from src.models.database import Progress, Chapter, Streak
-from src.models.schemas import Progress as ProgressSchema, Streak as StreakSchema
+from src.models.database import Progress, Chapter, Streak, QuizAttempt
+from src.models.schemas import Progress as ProgressSchema, Streak as StreakSchema, QuizAttemptItem
 
 
 class ProgressService:
@@ -28,7 +28,7 @@ class ProgressService:
             user_id: User UUID
 
         Returns:
-            User progress with completion percentage
+            User progress with completion percentage and quiz attempts
         """
         # Get progress record
         result = await self.db.execute(
@@ -74,6 +74,25 @@ class ProgressService:
             (completed_count / total_chapters * 100) if total_chapters > 0 else 0.0
         )
 
+        # Fetch quiz attempts for the user
+        quiz_attempts_result = await self.db.execute(
+            select(QuizAttempt)
+            .where(QuizAttempt.user_id == user_id)
+            .order_by(QuizAttempt.completed_at.desc())
+        )
+        quiz_attempts_db = quiz_attempts_result.scalars().all()
+
+        # Convert to QuizAttemptItem schemas
+        quiz_attempts = [
+            QuizAttemptItem(
+                quiz_id=attempt.quiz_id,
+                score=attempt.score,
+                completed_at=attempt.completed_at,
+                passed=attempt.score >= 70
+            )
+            for attempt in quiz_attempts_db
+        ]
+
         return ProgressSchema(
             id=str(progress.id),
             user_id=str(progress.user_id),
@@ -81,6 +100,7 @@ class ProgressService:
             current_chapter_id=str(progress.current_chapter_id) if progress.current_chapter_id else None,
             completion_percentage=round(completion_percentage, 2),
             last_activity=progress.last_activity,
+            quiz_attempts=quiz_attempts,
         )
 
     async def update_progress(

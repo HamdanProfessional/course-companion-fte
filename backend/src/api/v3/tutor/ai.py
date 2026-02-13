@@ -154,8 +154,17 @@ class QuizGradingRequest(BaseModel):
 # =============================================================================
 
 
-async def verify_premium_access(user: User) -> User:
+async def verify_premium_access(user: Optional[User]) -> User:
     """Verify user has premium access for AI features."""
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "detail": "Authentication required for AI features",
+                "login_url": "/api/v3/tutor/auth/login"
+            }
+        )
+
     if user.tier == "FREE":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -215,7 +224,8 @@ async def get_ai_status():
 
 @router.get("/adaptive/analysis", response_model=AdaptiveAnalysis)
 async def get_knowledge_analysis(
-    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = Query(None, description="User ID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -229,7 +239,7 @@ async def get_knowledge_analysis(
 
     **Phase 3 Feature**: Available to all premium users.
 
-    **Authentication**: Required - Users must be logged in.
+    **Authentication**: Optional - Works for authenticated users or guest users with user_id.
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -238,9 +248,25 @@ async def get_knowledge_analysis(
         )
 
     try:
-        await verify_premium_access(current_user)
+        # Determine user_id: prefer current_user, fall back to query param
+        _user_id = None
+        if current_user is not None:
+            await verify_premium_access(current_user)
+            _user_id = str(current_user.id)
+        elif user_id is not None:
+            _user_id = user_id
 
-        analysis = await analyze_knowledge_gaps(str(current_user.id), db)
+        # Return default response for guest users without user_id
+        if _user_id is None:
+            return AdaptiveAnalysis(
+                weak_topics=[],
+                strong_topics=[],
+                recommended_review=[],
+                confidence_score=0.0,
+                explanation="Please log in to enable knowledge gap analysis and personalized recommendations."
+            )
+
+        analysis = await analyze_knowledge_gaps(_user_id, db)
 
         return AdaptiveAnalysis(
             weak_topics=analysis.weak_topics,
@@ -253,22 +279,32 @@ async def get_knowledge_analysis(
     except HTTPException:
         raise
     except AdaptiveServiceError as e:
-        logger.error(f"Adaptive service error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+        # Service returns degraded response, so this shouldn't happen
+        # But if it does, return 200 with degraded response
+        logger.warning(f"Adaptive service returned error instead of degraded response: {e}")
+        return AdaptiveAnalysis(
+            weak_topics=[],
+            strong_topics=[],
+            recommended_review=[],
+            confidence_score=0.0,
+            explanation="AI analysis temporarily unavailable. Please try again later."
         )
     except Exception as e:
-        logger.error(f"Error in knowledge analysis: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to analyze knowledge gaps"
+        logger.error(f"Unexpected error in knowledge analysis: {e}")
+        # Return degraded response instead of 500 error
+        return AdaptiveAnalysis(
+            weak_topics=[],
+            strong_topics=[],
+            recommended_review=[],
+            confidence_score=0.0,
+            explanation="AI analysis temporarily unavailable. Please try again later."
         )
 
 
 @router.get("/adaptive/recommendations", response_model=ChapterRecommendation)
 async def get_recommendations(
-    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = Query(None, description="User ID"),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -282,7 +318,7 @@ async def get_recommendations(
 
     **Phase 3 Feature**: Smart recommendations for premium users.
 
-    **Authentication**: Required - Users must be logged in.
+    **Authentication**: Optional - Works for authenticated users or guest users with user_id.
     """
     if not settings.enable_phase_2_llm:
         raise HTTPException(
@@ -291,9 +327,26 @@ async def get_recommendations(
         )
 
     try:
-        await verify_premium_access(current_user)
+        # Determine user_id: prefer current_user, fall back to query param
+        _user_id = None
+        if current_user is not None:
+            await verify_premium_access(current_user)
+            _user_id = str(current_user.id)
+        elif user_id is not None:
+            _user_id = user_id
 
-        recommendation = await recommend_next_chapter(str(current_user.id), db)
+        # Return default response for guest users without user_id
+        if _user_id is None:
+            return ChapterRecommendation(
+                next_chapter_id="",
+                next_chapter_title="Getting Started",
+                reason="Please log in to enable personalized chapter recommendations based on your progress.",
+                alternative_paths=[],
+                estimated_completion_minutes=15,
+                difficulty_match="beginner"
+            )
+
+        recommendation = await recommend_next_chapter(_user_id, db)
 
         return ChapterRecommendation(
             next_chapter_id=recommendation.next_chapter_id,
@@ -307,16 +360,26 @@ async def get_recommendations(
     except HTTPException:
         raise
     except AdaptiveServiceError as e:
-        logger.error(f"Adaptive service error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+        # Service returns degraded response, so this shouldn't happen
+        logger.warning(f"Adaptive service returned error instead of degraded response: {e}")
+        return ChapterRecommendation(
+            next_chapter_id="",
+            next_chapter_title="Getting Started",
+            reason="AI recommendations temporarily unavailable. Please continue with the next chapter in your course.",
+            alternative_paths=[],
+            estimated_completion_minutes=15,
+            difficulty_match="beginner"
         )
     except Exception as e:
-        logger.error(f"Error getting recommendations: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate recommendations"
+        logger.error(f"Unexpected error getting recommendations: {e}")
+        # Return degraded response instead of 500 error
+        return ChapterRecommendation(
+            next_chapter_id="",
+            next_chapter_title="Getting Started",
+            reason="AI recommendations temporarily unavailable. Please try again later.",
+            alternative_paths=[],
+            estimated_completion_minutes=15,
+            difficulty_match="beginner"
         )
 
 
@@ -366,16 +429,22 @@ async def create_learning_path(
     except HTTPException:
         raise
     except AdaptiveServiceError as e:
-        logger.error(f"Adaptive service error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+        # Service returns degraded response, so this shouldn't happen
+        logger.warning(f"Adaptive service returned error instead of degraded response: {e}")
+        return LearningPathResponse(
+            path=[],
+            milestones=[],
+            total_hours=0.0,
+            rationale="AI learning path generation temporarily unavailable. Please try again later."
         )
     except Exception as e:
-        logger.error(f"Error creating learning path: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate learning path"
+        logger.error(f"Unexpected error creating learning path: {e}")
+        # Return degraded response instead of 500 error
+        return LearningPathResponse(
+            path=[],
+            milestones=[],
+            total_hours=0.0,
+            rationale="AI learning path generation temporarily unavailable. Please try again later."
         )
 
 

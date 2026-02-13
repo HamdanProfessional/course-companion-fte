@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     app_version: str = Field(default="1.0.0", description="Application version")
     debug: bool = Field(default=False, description="Debug mode")
 
+    # Server configuration
+    backend_port: int = Field(default=3505, description="Backend server port")
+    backend_host: str = Field(default="0.0.0.0", description="Backend server host")
+
     # Database configuration (Neon PostgreSQL)
     database_url: str = Field(
         default="postgresql+asyncpg://user:password@localhost/course_companion",
@@ -103,8 +107,8 @@ class Settings(BaseSettings):
         description="GLM API key (required if llm_provider=glm)"
     )
     glm_model: str = Field(
-        default="glm-4.7",
-        description="GLM model to use (glm-4.7 recommended, also supports glm-4.6, glm-4-plus)"
+        default="glm-4.5-flash",
+        description="GLM model to use (glm-4.5-flash recommended for cost efficiency, also supports glm-4.7, glm-4.6, glm-4-plus)"
     )
     glm_base_url: str = Field(
         default="https://open.bigmodel.cn/api/paas/v4",

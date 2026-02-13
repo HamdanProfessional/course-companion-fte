@@ -4,13 +4,13 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { backendApi, type Chapter, type Quiz, type Progress, type Streak } from '@/lib/api';
+import { backendApi, type Chapter, type Quiz, type Progress, type Streak, type QuizAttemptItem } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
 import { useIsPhase2Enabled } from './usePhase2';
 
 // Export backendApi for use in components
 export { backendApi };
-export type { Chapter, Quiz, Progress, Streak };
+export type { Chapter, Quiz, Progress, Streak, QuizAttemptItem };
 
 /**
  * Helper function to get current user ID from localStorage
@@ -74,6 +74,20 @@ export function useProgress(userId?: string) {
   return useQuery({
     queryKey: ['progress', id],
     queryFn: () => backendApi.getProgress(id!),
+    enabled: !!id && typeof window !== 'undefined', // Only run on client
+  });
+}
+
+/**
+ * Hook for fetching quiz attempts.
+ * Uses provided userId or falls back to logged-in user from localStorage.
+ */
+export function useQuizAttempts(userId?: string) {
+  const id = userId || getCurrentUserId();
+
+  return useQuery({
+    queryKey: ['quizAttempts', id],
+    queryFn: () => backendApi.getQuizAttempts(id!),
     enabled: !!id && typeof window !== 'undefined', // Only run on client
   });
 }

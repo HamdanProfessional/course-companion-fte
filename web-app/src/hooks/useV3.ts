@@ -93,9 +93,12 @@ export function useV3QuizSubmit() {
     mutationFn: ({ quizId, submission }: { quizId: string; submission: V3Types.QuizSubmission }) =>
       tutorApi.submitQuiz(quizId, submission),
     onSuccess: () => {
-      // Invalidate related queries
+      // Invalidate related queries to refresh quiz attempts and progress
       queryClient.invalidateQueries({ queryKey: ['v3', 'progress'] });
       queryClient.invalidateQueries({ queryKey: ['v3', 'quiz-history'] });
+      // BUG FIX #6: Invalidate quiz attempts to show updated completion status
+      queryClient.invalidateQueries({ queryKey: ['quizAttempts'] });
+      queryClient.invalidateQueries({ queryKey: ['progress'] });
     },
   });
 }

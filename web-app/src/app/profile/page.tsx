@@ -39,8 +39,10 @@ export default function ProfilePage() {
   const { data: plans, isLoading: plansLoading } = useV3SubscriptionPlans();
   const upgradeTier = useV3UpgradeTier();
 
-  const isFree = !user || user.tier === 'FREE';
+  // Use subscription as source of truth for tier status
   const currentTier = subscription?.current_tier || 'FREE';
+  const isFree = currentTier === 'FREE';
+  const isLoadingTier = subLoading || !subscription;
 
   const fetchCertificates = async () => {
     if (!user?.id) return;
@@ -101,18 +103,27 @@ export default function ProfilePage() {
   };
 
   const handleUpgrade = async (tier: 'PREMIUM' | 'PRO') => {
+    if (!user?.id) {
+      alert('Please log in to upgrade your plan.');
+      return;
+    }
+
     try {
-      const result = await upgradeTier.mutateAsync({
+      await upgradeTier.mutateAsync({
         newTier: tier,
         billingCycle,
       });
 
+      // Refetch subscription data to update UI
       await refetchSubscription();
 
+      // Success feedback (consider using a toast notification library)
+      console.log(`Successfully upgraded to ${tier}!`);
       alert(`Successfully upgraded to ${tier}!`);
-      window.location.reload();
     } catch (error) {
-      alert(`Upgrade failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`Upgrade failed:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Upgrade failed: ${errorMessage}`);
     }
   };
 
@@ -371,12 +382,21 @@ export default function ProfilePage() {
                           ))}
                         </ul>
 
-                        {!isCurrentPlan && plan.tier !== 'FREE' && (
+                        {plan.tier === 'FREE' ? (
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            disabled
+                            size="sm"
+                          >
+                            {isCurrentPlan ? 'Current Plan' : 'Free Tier'}
+                          </Button>
+                        ) : (
                           <Button
                             variant={isPopular ? 'primary' : 'outline'}
                             className="w-full"
                             onClick={() => handleUpgrade(plan.tier as 'PREMIUM' | 'PRO')}
-                            disabled={upgradeTier.isPending}
+                            disabled={upgradeTier.isPending || isLoadingTier || isCurrentPlan}
                             size="sm"
                           >
                             {upgradeTier.isPending ? (
@@ -384,6 +404,8 @@ export default function ProfilePage() {
                                 <Loader className="w-4 h-4 animate-spin" />
                                 Processing...
                               </span>
+                            ) : isCurrentPlan ? (
+                              <span>Current Plan</span>
                             ) : (
                               <span>Upgrade to {plan.tier}</span>
                             )}
