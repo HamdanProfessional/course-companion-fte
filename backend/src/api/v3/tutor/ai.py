@@ -36,7 +36,7 @@ from src.services.mentor_service import MentorService, MentorServiceError
 
 from src.models.database import User
 from src.models.schemas import ChapterDetail
-from src.api.dependencies import get_optional_user
+from src.api.dependencies import get_current_user, get_optional_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -1014,6 +1014,12 @@ Return valid JSON with the questions array."""
                     response_data = json.loads(cleaned)
                 else:
                     response_data = json.loads(response)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to parse generated quiz: {str(e)}"
+            )
 
         questions_data = response_data.get("questions", [])
 
