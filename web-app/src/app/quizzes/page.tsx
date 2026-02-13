@@ -19,7 +19,7 @@ import { DifficultyBadge } from '@/components/ui/DifficultyBadge';
 import { useQuizzes, useChapters, useProgress, useQuizAttempts, useUserTier } from '@/hooks';
 import Link from 'next/link';
 import * as React from 'react';
-import { FileEdit, Rocket, BookOpen, BarChart3, Flame, Lock, CheckCircle, Play, Target, Clock, Check, Trophy, Search, AlertCircle, Star, Zap, Crown } from 'lucide-react';
+import { FileEdit, Rocket, BookOpen, BarChart3, Flame, Lock, CheckCircle, Play, Target, Clock, Check, Trophy, Search, AlertCircle, Star, Zap, Crown, Lightbulb } from 'lucide-react';
 
 type FilterType = 'all' | 'completed' | 'in-progress' | 'locked';
 
@@ -41,6 +41,31 @@ const QUIZ_ACCESS_LIMITS = {
 const getCurrentUserId = (): string | undefined => {
   if (typeof window === 'undefined') return undefined;
   return localStorage.getItem('user_id') || undefined;
+};
+
+// Helper to get difficulty badge configuration
+const getDifficultyBadge = (level: string) => {
+  const badges = {
+    beginner: {
+      variant: 'beginner' as const,
+      label: 'Beginner',
+      color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10',
+      icon: <Target className="w-3.5 h-3.5" />
+    },
+    intermediate: {
+      variant: 'intermediate' as const,
+      label: 'Intermediate',
+      color: 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/10',
+      icon: <Flame className="w-3.5 h-3.5" />
+    },
+    advanced: {
+      variant: 'advanced' as const,
+      label: 'Advanced',
+      color: 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/10',
+      icon: <Zap className="w-3.5 h-3.5" />
+    },
+  };
+  return badges[level as keyof typeof badges] || badges.beginner;
 };
 
 export default function QuizzesPage() {
