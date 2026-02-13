@@ -134,7 +134,6 @@ async def answer_concept_question(
                 "title": ch.title,
                 "order": ch.order,
                 "difficulty": ch.difficulty_level,
-                "summary": ch.summary if ch.summary else "",
                 "content_preview": content_preview
             })
 
@@ -442,7 +441,6 @@ def format_chapters_for_mentor(chapters: List[Dict[str, Any]]) -> str:
         lines.append(f"""
 Chapter {ch['order']}: {ch['title']}
 Difficulty: {ch['difficulty']}
-{f"Summary: {ch['summary']}" if ch.get('summary') else ""}
 {f"Content: {ch['content_preview']}" if ch.get('content_preview') else ""}
 ---
 """)
