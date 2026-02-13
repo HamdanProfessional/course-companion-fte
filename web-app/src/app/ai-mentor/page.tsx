@@ -207,6 +207,13 @@ export default function AIMentorPage() {
           setIsListening(false);
           setIsRecording(false);
 
+          // Ignore "message port closed" errors from browser Speech API
+          const errorMsg = event.error?.toString() || '';
+          if (errorMsg.includes('message port closed') || errorMsg.includes('MessageChannel')) {
+            console.warn('Ignoring message port closed error from Speech API');
+            return;
+          }
+
           if (event.error === 'no-speech') {
             setVoiceError('No speech detected. Please try again.');
           } else if (event.error === 'not-allowed') {
@@ -278,9 +285,15 @@ export default function AIMentorPage() {
       recognition.start();
       setIsRecording(true);
       setVoiceError(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting recognition:', error);
-      setVoiceError('Could not start microphone');
+      // Ignore "message port closed" errors
+      const errorMsg = error?.toString() || '';
+      if (errorMsg.includes('message port closed') || errorMsg.includes('MessageChannel')) {
+        console.warn('Ignoring message port closed error on start');
+        return;
+      }
+      setVoiceError('Could not start microphone. Please try again.');
       setTimeout(() => setVoiceError(null), 3000);
     }
   }, [recognition]);
