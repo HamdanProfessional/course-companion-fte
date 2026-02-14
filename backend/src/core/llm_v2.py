@@ -99,6 +99,7 @@ class LLMProvider(Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GLM = "glm"  # Zhipu AI GLM 4.7
+    DEEPSEEK = "deepseek"  # DeepSeek AI
 
 
 # =============================================================================
@@ -191,7 +192,7 @@ class MultiKeyManager:
 
 class LLMClient:
     """
-    Unified LLM client supporting OpenAI, Anthropic, and GLM with automatic key rotation.
+    Unified LLM client supporting OpenAI, Anthropic, GLM, and DeepSeek with automatic key rotation.
 
     Usage:
         client = LLMClient()  # Auto-detects provider from settings
@@ -219,13 +220,13 @@ class LLMClient:
         Initialize LLM client with multi-key support.
 
         Args:
-            provider: LLM provider (openai/anthropic/glm). Defaults to settings.llm_provider
+            provider: LLM provider (openai/anthropic/glm/deepseek). Defaults to settings.llm_provider
             api_key: API key(s). Comma-separated for rotation, or single key
             model: Model name. Defaults to settings.{provider}_model
             temperature: Generation temperature. Defaults to settings.llm_temperature
             max_tokens: Max tokens. Defaults to settings.llm_max_tokens
             timeout: Request timeout. Defaults to settings.llm_timeout_seconds
-            base_url: Custom base URL for GLM provider
+            base_url: Custom base URL for GLM/DeepSeek provider
         """
         self.provider = LLMProvider(provider or settings.llm_provider)
         self.model = model or self._get_model()
@@ -240,7 +241,7 @@ class LLMClient:
         # Validate API keys
         if not self.api_keys:
             raise LLMClientError(
-                "No API keys provided. Set GLM_API_KEYS or {self.provider.value.upper()}_API_KEY"
+                f"No API keys provided. Set {{self.provider.value.upper()}}_API_KEYS or {{self.provider.value.upper()}}_API_KEY"
             )
 
         # Initialize key manager
@@ -250,6 +251,7 @@ class LLMClient:
         self._openai = None
         self._anthropic = None
         self._glm = None
+        self._deepseek = None
 
         logger.info(
             f"LLM client initialized: provider={self.provider.value}, "
@@ -271,6 +273,8 @@ class LLMClient:
         # Try to get from settings object (pydantic-settings)
         if self.provider == LLMProvider.GLM and settings.glm_api_keys:
             return settings.glm_api_keys
+        if self.provider == LLMProvider.DEEPSEEK and settings.deepseek_api_key:
+            return [settings.deepseek_api_key]
 
         # Try to get from environment variable
         env_var = f"{self.provider.value.upper()}_API_KEYS"
@@ -281,6 +285,8 @@ class LLMClient:
         # Try legacy single key format from settings
         if self.provider == LLMProvider.GLM and settings.glm_api_key:
             return [settings.glm_api_key]
+        if self.provider == LLMProvider.DEEPSEEK and settings.deepseek_api_key:
+            return [settings.deepseek_api_key]
 
         # Try legacy single key format from environment
         legacy_key = f"{self.provider.value.upper()}_API_KEY"
@@ -306,6 +312,8 @@ class LLMClient:
             return settings.anthropic_model
         elif self.provider == LLMProvider.GLM:
             return settings.glm_model
+        elif self.provider == LLMProvider.DEEPSEEK:
+            return settings.deepseek_model
         else:
             raise LLMClientError(f"Unknown provider: {self.provider}")
 
@@ -313,6 +321,8 @@ class LLMClient:
         """Get base URL from settings based on provider."""
         if self.provider == LLMProvider.GLM:
             return settings.glm_base_url
+        if self.provider == LLMProvider.DEEPSEEK:
+            return settings.deepseek_base_url
         return None
 
     async def generate(
@@ -361,6 +371,10 @@ class LLMClient:
                     )
                 elif self.provider == LLMProvider.GLM:
                     return await self._generate_glm(
+                        prompt, system_prompt, temp, tokens, response_format
+                    )
+                elif self.provider == LLMProvider.DEEPSEEK:
+                    return await self._generate_deepseek(
                         prompt, system_prompt, temp, tokens, response_format
                     )
 
@@ -542,6 +556,49 @@ class LLMClient:
 
         return cleaned_content
 
+    async def _generate_deepseek(
+        self,
+        prompt: str,
+        system_prompt: Optional[str],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[Dict[str, str]]
+    ) -> str:
+        """Generate using DeepSeek API (OpenAI-compatible)."""
+        client = self._get_deepseek_client()
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+        if response_format:
+            kwargs["response_format"] = response_format
+
+        key = self._get_api_key()
+
+        response = await asyncio.wait_for(
+            client.chat.completions.create(**kwargs),
+            timeout=self.timeout
+        )
+
+        content = response.choices[0].message.content or ""
+
+        # Strip thinking tags from reasoning models (DeepSeek-R1)
+        cleaned_content, _ = strip_thinking_tags(content)
+
+        # Record success
+        self.key_manager.record_success(key)
+
+        return cleaned_content
+
     # Lazy getters for clients
     def _get_openai_client(self):
         """Lazy load OpenAI client."""
@@ -587,6 +644,23 @@ class LLMClient:
                     "Install with: pip install openai"
                 )
         return self._glm
+
+    def _get_deepseek_client(self):
+        """Lazy load DeepSeek client using OpenAI-compatible API."""
+        if self._deepseek is None:
+            try:
+                import openai
+                # Use OpenAI client with custom base URL for DeepSeek
+                self._deepseek = openai.AsyncOpenAI(
+                    api_key=self._get_api_key(),
+                    base_url=self.base_url
+                )
+            except ImportError:
+                raise LLMClientError(
+                    "OpenAI library not installed. "
+                    "Install with: pip install openai"
+                )
+        return self._deepseek
 
     async def analyze(
         self,

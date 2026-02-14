@@ -96,6 +96,7 @@ class LLMProvider(Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GLM = "glm"  # Zhipu AI GLM 4.7
+    DEEPSEEK = "deepseek"  # DeepSeek AI
 
 
 class LLMClientError(Exception):
@@ -137,13 +138,13 @@ class LLMClient:
         Initialize LLM client.
 
         Args:
-            provider: LLM provider (openai/anthropic/glm). Defaults to settings.llm_provider
+            provider: LLM provider (openai/anthropic/glm/deepseek). Defaults to settings.llm_provider
             api_key: API key. Defaults to settings.{provider}_api_key
             model: Model name. Defaults to settings.{provider}_model
             temperature: Generation temperature. Defaults to settings.llm_temperature
             max_tokens: Max tokens. Defaults to settings.llm_max_tokens
             timeout: Request timeout. Defaults to settings.llm_timeout_seconds
-            base_url: Custom base URL for GLM provider
+            base_url: Custom base URL for GLM/DeepSeek provider
         """
         self.provider = LLMProvider(provider or settings.llm_provider)
         self.api_key = api_key or self._get_api_key()
@@ -164,6 +165,7 @@ class LLMClient:
         self._openai = None
         self._anthropic = None
         self._glm = None
+        self._deepseek = None
 
         logger.info(
             f"LLM client initialized: provider={self.provider.value}, "
@@ -178,6 +180,8 @@ class LLMClient:
             return settings.anthropic_api_key
         elif self.provider == LLMProvider.GLM:
             return settings.glm_api_key
+        elif self.provider == LLMProvider.DEEPSEEK:
+            return settings.deepseek_api_key
         else:
             raise LLMClientError(f"Unknown provider: {self.provider}")
 
@@ -189,6 +193,8 @@ class LLMClient:
             return settings.anthropic_model
         elif self.provider == LLMProvider.GLM:
             return settings.glm_model
+        elif self.provider == LLMProvider.DEEPSEEK:
+            return settings.deepseek_model
         else:
             raise LLMClientError(f"Unknown provider: {self.provider}")
 
@@ -196,6 +202,8 @@ class LLMClient:
         """Get base URL from settings based on provider."""
         if self.provider == LLMProvider.GLM:
             return settings.glm_base_url
+        if self.provider == LLMProvider.DEEPSEEK:
+            return settings.deepseek_base_url
         return None
 
     def _get_openai_client(self):
@@ -241,6 +249,23 @@ class LLMClient:
                 )
         return self._glm
 
+    def _get_deepseek_client(self):
+        """Lazy load DeepSeek client using OpenAI-compatible API."""
+        if self._deepseek is None:
+            try:
+                import openai
+                # Use OpenAI client with custom base URL for DeepSeek
+                self._deepseek = openai.AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=self.base_url
+                )
+            except ImportError:
+                raise LLMClientError(
+                    "OpenAI library not installed. "
+                    "Install with: pip install openai"
+                )
+        return self._deepseek
+
     async def generate(
         self,
         prompt: str,
@@ -284,6 +309,10 @@ class LLMClient:
                     )
                 elif self.provider == LLMProvider.GLM:
                     return await self._generate_glm(
+                        prompt, system_prompt, temp, tokens, response_format
+                    )
+                elif self.provider == LLMProvider.DEEPSEEK:
+                    return await self._generate_deepseek(
                         prompt, system_prompt, temp, tokens, response_format
                     )
 
@@ -402,6 +431,8 @@ class LLMClient:
 
         # GLM doesn't support response_format parameter, so we don't pass it
         # The prompt should instruct the model to respond in the desired format
+        if response_format:
+            logger.warning("GLM provider doesn't support response_format parameter, ignoring it")
 
         response = await asyncio.wait_for(
             client.chat.completions.create(**kwargs),
@@ -409,12 +440,58 @@ class LLMClient:
         )
 
         content = response.choices[0].message.content or ""
+
+        # Log the raw content for debugging
+        logger.debug(f"GLM raw content (first 200 chars): {repr(content[:200])}")
+
         # Strip thinking tags from reasoning models (DAN-Qwen, DeepSeek-R1, etc.)
         cleaned_content, thinking = strip_thinking_tags(content)
 
         # Log if thinking was found (for debugging)
         if thinking:
             logger.info(f"GLM response contained thinking tags ({len(thinking)} chars stripped)")
+
+        # Check if the response looks like an error
+        if cleaned_content.startswith('\n') and '"answer"' in cleaned_content:
+            logger.warning(f"GLM response appears malformed or truncated: {repr(cleaned_content[:200])}")
+
+        return cleaned_content
+
+    async def _generate_deepseek(
+        self,
+        prompt: str,
+        system_prompt: Optional[str],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[Dict[str, str]]
+    ) -> str:
+        """Generate using DeepSeek API (OpenAI-compatible)."""
+        client = self._get_deepseek_client()
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+        if response_format:
+            kwargs["response_format"] = response_format
+
+        response = await asyncio.wait_for(
+            client.chat.completions.create(**kwargs),
+            timeout=self.timeout
+        )
+
+        content = response.choices[0].message.content or ""
+
+        # Strip thinking tags from reasoning models (DeepSeek-R1)
+        cleaned_content, _ = strip_thinking_tags(content)
 
         return cleaned_content
 
@@ -520,11 +597,13 @@ Provide a structured analysis following the specified schema.
 _llm_client: Optional[LLMClient] = None
 
 
-def get_llm_client() -> Optional[LLMClient]:
+def get_llm_client() -> Optional["LLMClient"]:
     """
     Get or create LLM client singleton.
 
     Returns None if Phase 2 LLM features are disabled.
+    Returns LLM v2 client with multi-key rotation when LLM_V2=true.
+    Returns LLM v1 client when LLM_V2=false or not set.
     """
     global _llm_client
 
@@ -534,10 +613,21 @@ def get_llm_client() -> Optional[LLMClient]:
 
     if _llm_client is None:
         try:
-            _llm_client = LLMClient()
-            logger.info("LLM client initialized successfully")
+            # Check if LLM v2 is enabled
+            if settings.llm_v2:
+                logger.info("Initializing LLM v2 client with multi-key rotation")
+                from src.core import llm_v2
+                _llm_client = llm_v2.LLMClient()
+                logger.info("LLM v2 client initialized successfully with multi-key support")
+            else:
+                logger.info("Initializing LLM v1 client")
+                _llm_client = LLMClient()
+                logger.info("LLM v1 client initialized successfully")
         except LLMClientError as e:
             logger.error(f"Failed to initialize LLM client: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error initializing LLM client: {e}")
             return None
 
     return _llm_client

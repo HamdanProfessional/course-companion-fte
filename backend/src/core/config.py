@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     # LLM Provider Selection
     llm_provider: str = Field(
         default="openai",
-        description="LLM provider: 'openai', 'anthropic', or 'glm'"
+        description="LLM provider: 'openai', 'anthropic', 'glm', or 'deepseek'"
     )
 
     # OpenAI Configuration
@@ -117,6 +117,20 @@ class Settings(BaseSettings):
     glm_base_url: str = Field(
         default="https://api.z.ai/api/paas/v4",
         description="GLM API base URL"
+    )
+
+    # DeepSeek Configuration
+    deepseek_api_key: str = Field(
+        default="",
+        description="DeepSeek API key (required if llm_provider=deepseek)"
+    )
+    deepseek_model: str = Field(
+        default="deepseek-chat",
+        description="DeepSeek model to use (deepseek-chat recommended, also supports deepseek-coder)"
+    )
+    deepseek_base_url: str = Field(
+        default="https://api.deepseek.com",
+        description="DeepSeek API base URL"
     )
 
     # LLM Generation Parameters
@@ -177,8 +191,8 @@ class Settings(BaseSettings):
     def validate_llm_provider(cls, v: str) -> str:
         """Validate LLM provider choice."""
         v = v.lower()
-        if v not in ["openai", "anthropic", "glm"]:
-            raise ValueError("LLM provider must be 'openai', 'anthropic', or 'glm'")
+        if v not in ["openai", "anthropic", "glm", "deepseek"]:
+            raise ValueError("LLM provider must be 'openai', 'anthropic', 'glm', or 'deepseek'")
         return v
 
     @field_validator("llm_temperature")

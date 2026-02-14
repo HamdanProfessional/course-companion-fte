@@ -213,6 +213,8 @@ async def get_ai_status():
         model = settings.anthropic_model
     elif settings.llm_provider == "glm":
         model = settings.glm_model
+    elif settings.llm_provider == "deepseek":
+        model = settings.deepseek_model
     else:
         model = "unknown"
 
@@ -612,16 +614,18 @@ async def mentor_chat(
     except HTTPException:
         raise
     except MentorServiceError as e:
-        logger.error(f"Mentor service error for user {_user_id}: {e}")
+        logger.error(f"Mentor service error for user {user_id}: {e}")
+        # Return proper JSON error response
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail={"error": str(e), "message": "Failed to generate mentor response"}
         )
     except Exception as e:
-        logger.error(f"Unexpected error in mentor chat for user {_user_id}: {e}")
+        logger.error(f"Unexpected error in mentor chat for user {user_id}: {e}")
+        # Return proper JSON error response
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get mentor response"
+            detail={"error": str(e), "message": "Failed to generate mentor response"}
         )
 
 
