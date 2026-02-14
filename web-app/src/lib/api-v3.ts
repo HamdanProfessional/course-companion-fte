@@ -666,13 +666,13 @@ class TutorV3Client {
     difficulty: string;
     generated_at: string;
   }> {
-    const userId = this.getUserId();
-    const params = new URLSearchParams({ user_id: userId });
-
     return this.request(
-      `/api/v3/tutor/ai/generate-quiz?${params}`,
+      `/api/v3/tutor/ai/generate-quiz`,
       {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           topic: request.topic,
           subtopic: request.subtopic || null,

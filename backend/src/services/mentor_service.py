@@ -6,6 +6,7 @@ Only active when ENABLE_PHASE_2_LLM=true.
 """
 
 import logging
+import json
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 
@@ -102,9 +103,16 @@ async def answer_concept_question(
     Raises:
         MentorServiceError: If answering fails
     """
+    logger.info(f"=== answer_concept_question called ===")
+    logger.info(f"User ID: {user_id}")
+    logger.info(f"Question: {question}")
+
     llm_client = get_llm_client()
     if not llm_client:
+        logger.error("LLM client is not available")
         raise MentorServiceError("Phase 2 LLM features are not enabled")
+
+    logger.info(f"LLM client obtained: {llm_client.provider.value}")
 
     try:
         # Get user progress for context
@@ -148,19 +156,19 @@ async def answer_concept_question(
 
         system_prompt = """You are an AI tutor helping students learn about AI agents, MCP, and building agents with ChatGPT.
 
-IMPORTANT: You have access to the actual course content below. Use this content to provide accurate answers that match what students are learning in the course.
+IMPORTANT: You have access to actual course content below. Use this content to provide accurate answers that match what students are learning in the course.
 
 Your role:
 - Answer questions using the course content provided below
 - Reference specific chapters when relevant
 - Provide practical examples from the course material
-- Explain concepts at the appropriate level
+- Explain concepts at appropriate level
 - Generate 2-3 follow-up questions to deepen understanding
 
 COURSE CONTENT (use this for your answers):
 {chapters_content}
 
-Be encouraging and supportive. Always base your answers on the course content above.
+Be encouraging and supportive. Always base your answers on course content above.
 
 Respond in JSON format:
 {
@@ -182,33 +190,78 @@ Respond in JSON format:
 
 {context_str}
 
-Provide a helpful answer based on the course content in JSON format."""
+Provide a helpful answer based on course content in JSON format."""
 
         # Format course content for system prompt
-        chapters_content = format_chapters_for_mentor(chapters_info)
+        chapters_content = format_chapters_for_mentor(chapters_info, include_summary=True)
         system_prompt_with_content = system_prompt.format(chapters_content=chapters_content)
 
+        logger.info(f"=== ABOUT TO CALL LLM CLIENT ===")
+        logger.info(f"Provider: {llm_client.provider.value}")
+        logger.info(f"LLM Client Type: {type(llm_client).__name__}")
+
+        # llm_client.generate() returns a string (JSON format)
         response = await llm_client.generate(
             prompt=user_prompt,
             system_prompt=system_prompt_with_content,
             temperature=0.6,  # Balanced creativity
             response_format={"type": "json_object"}
         )
+        logger.info(f"=== LLM CALL SUCCEEDED ===")
 
-        import json
-        response_data = json.loads(response)
+        # Log raw LLM API response for debugging
+        logger.info(f"Raw LLM response (first 500 chars): {response[:500] if len(response) > 500 else response}")
 
-        return MentorResponse(
-            answer=response_data.get("answer", "I'd be happy to help with that!"),
-            related_chapters=response_data.get("related_chapters", []),
-            practice_problems=response_data.get("practice_problems", []),
-            follow_up_questions=response_data.get("follow_up_questions", []),
-            confidence=response_data.get("confidence", 0.7)
-        )
+        # Try to parse JSON from string response
+        try:
+            response_data = json.loads(response)
+            logger.info(f"Successfully parsed JSON from LLM response")
+            return MentorResponse(
+                answer=response_data.get("answer", "I'd be happy to help with that!"),
+                related_chapters=response_data.get("related_chapters", []),
+                practice_problems=response_data.get("practice_problems", []),
+                follow_up_questions=response_data.get("follow_up_questions", []),
+                confidence=response_data.get("confidence", 0.7)
+            )
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON from LLM response: {e}")
+            logger.error(f"Response that failed to parse: {response[:500] if len(response) > 500 else response}")
+            raise MentorServiceError(f"Failed to parse LLM response as JSON: {e}")
 
     except LLMClientError as e:
         logger.error(f"LLM error in mentor answer: {e}")
-        raise MentorServiceError(f"Failed to answer question: {e}")
+
+        # Handle specific error cases
+        error_str = str(e).lower()
+        if "rate limit" in error_str or "quota" in error_str or "429" in error_str or "1308" in error_str or "1113" in error_str:
+            logger.warning("GLM API quota/rate limit exceeded, returning fallback response")
+            return MentorResponse(
+                answer="I apologize, but I'm currently unable to process your request due to high demand. Please try again in a few minutes.",
+                related_chapters=[],
+                practice_problems=[],
+                follow_up_questions=["Could you try asking your question later?"],
+                confidence=0.1
+            )
+        elif "invalid api key" in error_str or "401" in error_str:
+            logger.error("GLM API key is invalid")
+            return MentorResponse(
+                answer="I apologize, but there's a configuration issue with the AI service. Please try again later.",
+                related_chapters=[],
+                practice_problems=[],
+                follow_up_questions=["Please try again later"],
+                confidence=0.0
+            )
+        else:
+            # For other errors, return a generic fallback
+            logger.error(f"Unexpected LLM error: {e}")
+            return MentorResponse(
+                answer="I apologize, but I'm having trouble processing your request right now. Please try asking your question again.",
+                related_chapters=[],
+                practice_problems=[],
+                follow_up_questions=["Could you rephrase your question?"],
+                confidence=0.3
+            )
+
     except Exception as e:
         logger.error(f"Unexpected error in mentor answer: {e}")
         raise MentorServiceError(f"Answer generation failed: {e}")
@@ -337,7 +390,6 @@ Provide personalized guidance in JSON format."""
             response_format={"type": "json_object"}
         )
 
-        import json
         guidance_data = json.loads(response)
 
         return StudyGuidance(
@@ -420,7 +472,6 @@ Generate practical, hands-on problems in JSON format."""
             response_format={"type": "json_object"}
         )
 
-        import json
         data = json.loads(response)
         return data.get("problems", [])
 
@@ -434,7 +485,7 @@ Generate practical, hands-on problems in JSON format."""
 
 # Helper functions
 
-def format_chapters_for_mentor(chapters: List[Dict[str, Any]]) -> str:
+def format_chapters_for_mentor(chapters: List[Dict[str, Any]], include_summary: bool = False) -> str:
     """Format chapters for mentor prompt with content."""
     lines = []
     for ch in chapters:
@@ -565,7 +616,6 @@ Respond in JSON format:
                 response_format={"type": "json_object"}
             )
 
-            import json
             result = json.loads(response)
 
             return result

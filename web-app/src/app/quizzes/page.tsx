@@ -371,8 +371,9 @@ export default function QuizzesPage() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
+                    {/* Destructure badge to use icon and variant directly */}
                     <Badge variant={difficultyBadge.variant} className={`gap-1 ${difficultyBadge.color}`}>
-                      <difficultyBadge.icon className="w-3 h-3" />
+                      {difficultyBadge.icon}
                       {difficultyBadge.label}
                     </Badge>
                     <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-bg-elevated px-2 py-1 rounded-md">

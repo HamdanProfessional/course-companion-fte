@@ -19,6 +19,15 @@ logger = logging.getLogger(__name__)
 
 from src.core.config import settings
 from src.core.database import init_db, close_db
+# Import llm_v2 when enabled for multi-key support
+import os
+if os.getenv("LLM_V2", "false").lower() == "true":
+    from src.core.llm_v2 import get_llm_client
+    logger.info("Using LLM v2 client with multi-key rotation support")
+    llm_client = get_llm_client
+else:
+    from src.core.llm import get_llm_client
+    logger.info("Using legacy LLM client")
 from src.models.schemas import HealthResponse, ErrorResponse
 from src.api.mcp_proper import router as mcp_router
 from src.api.content import router as content_router

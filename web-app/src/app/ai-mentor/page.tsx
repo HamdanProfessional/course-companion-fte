@@ -256,11 +256,11 @@ export default function AIMentorPage() {
   useEffect(() => {
     if (currentChatId && conversationDetail) {
       setMessages(
-        conversationDetail.messages.map(msg => ({
+        conversationDetail.messages?.map(msg => ({
           role: msg.role as 'user' | 'assistant' | 'system',
           content: msg.content,
           timestamp: msg.created_at,
-        }))
+        })) || []
       );
     }
   }, [currentChatId, conversationDetail]);

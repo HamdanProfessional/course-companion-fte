@@ -102,16 +102,20 @@ class Settings(BaseSettings):
     )
 
     # GLM (Zhipu AI) Configuration
+    glm_api_keys: List[str] = Field(
+        default_factory=list,
+        description="GLM API keys for rotation (comma-separated, primary first). Format: key1,key2,key3"
+    )
     glm_api_key: str = Field(
         default="",
-        description="GLM API key (required if llm_provider=glm)"
+        description="GLM API key (legacy, use glm_api_keys for rotation)"
     )
     glm_model: str = Field(
         default="glm-4.5-air",
         description="GLM model to use (glm-4.5-air recommended for cost efficiency, also supports glm-4.5-flash, glm-4-plus)"
     )
     glm_base_url: str = Field(
-        default="https://open.bigmodel.cn/api/paas/v4",
+        default="https://api.z.ai/api/paas/v4",
         description="GLM API base URL"
     )
 
@@ -128,6 +132,11 @@ class Settings(BaseSettings):
         default=30,
         description="Timeout for LLM API requests"
     )
+    # Use v2 LLM client with multi-key support
+    llm_v2: bool = Field(
+        default=False,
+        description="Use LLM client v2.0 with multi-key rotation support (default: False)"
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -135,6 +144,21 @@ class Settings(BaseSettings):
         """Parse CORS origins from string or list."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
+        return v
+
+    @field_validator("glm_api_keys", mode="before")
+    @classmethod
+    def parse_glm_api_keys(cls, v: Union[str, List[str]]) -> List[str]:
+        """Parse GLM API keys from string or list."""
+        if isinstance(v, str):
+            # Remove brackets if present (from JSON-like format)
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                v = v[1:-1].strip()
+            # Split by comma and trim whitespace
+            if v:
+                return [k.strip().strip('"') for k in v.split(",") if k.strip()]
+            return []
         return v
 
     @field_validator("database_url")
