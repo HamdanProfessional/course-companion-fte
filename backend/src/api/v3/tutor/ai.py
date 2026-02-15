@@ -313,7 +313,7 @@ async def get_knowledge_analysis(
             strong_topics=[],
             recommended_review=[],
             confidence_score=0.0,
-            explanation="AI analysis temporarily unavailable. Please try again later."
+            explanation=""  # Hide AI analysis message when unavailable
         )
     except Exception as e:
         logger.error(f"Unexpected error in knowledge analysis: {e}")
@@ -323,7 +323,7 @@ async def get_knowledge_analysis(
             strong_topics=[],
             recommended_review=[],
             confidence_score=0.0,
-            explanation="AI analysis temporarily unavailable. Please try again later."
+            explanation=""  # Hide AI analysis message when unavailable
         )
 
 
